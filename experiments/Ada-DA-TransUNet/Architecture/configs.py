@@ -21,6 +21,9 @@ def get_b16_config():
     config.decoder_channels = (256, 128, 64, 16)
     config.n_classes = 2
     config.activation = 'softmax'
+    config.window_size = 7
+    config.rank = 32
+    config.groups = 8
     return config
 
 
@@ -86,6 +89,9 @@ def get_l16_config():
     config.decoder_channels = (256, 128, 64, 16)
     config.n_classes = 2
     config.activation = 'softmax'
+    config.window_size = 7
+    config.rank = 32
+    config.groups = 8
     return config
 
 
@@ -102,6 +108,7 @@ def get_r50_l16_config():
     config.decoder_channels = (256, 128, 64, 16)
     config.skip_channels = [512, 256, 64, 16]
     config.n_classes = 2
+    config.n_skip = 3
     config.activation = 'softmax'
     return config
 
@@ -126,5 +133,7 @@ def get_h14_config():
     config.transformer.dropout_rate = 0.1
     config.classifier = 'token'
     config.representation_size = None
-
+    config.window_size = 7
+    config.rank = 32
+    config.groups = 8
     return config

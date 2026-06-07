@@ -11,8 +11,9 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 from datasets.dataset_synapse import Synapse_dataset
 from utils import test_single_volume
-from Architecture.DATransUNet import DA_Transformer as ViT_seg
-from Architecture.DATransUNet import CONFIGS as CONFIGS_ViT_seg
+from Architecture.AdaDATransUNet import AdaDATransUNet
+from Architecture.AdaDATransUNet import CONFIGS as CONFIGS_ViT_seg
+from Architecture.block import hardware_config
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--volume_path', type=str,
@@ -100,8 +101,8 @@ if __name__ == "__main__":
     args.is_pretrain = True
 
     # name the same snapshot defined in train script!
-    args.exp = 'TU_' + dataset_name + str(args.img_size)
-    snapshot_path = "../model/{}/{}".format(args.exp, 'TU')
+    args.exp = 'AdaDA_' + dataset_name + str(args.img_size)
+    snapshot_path = "../model/{}/{}".format(args.exp, 'AdaDA')
     snapshot_path = snapshot_path + '_pretrain' if args.is_pretrain else snapshot_path
     snapshot_path += '_' + args.vit_name
     snapshot_path = snapshot_path + '_skip' + str(args.n_skip)
@@ -117,10 +118,19 @@ if __name__ == "__main__":
     config_vit = CONFIGS_ViT_seg[args.vit_name]
     config_vit.n_classes = args.num_classes
     config_vit.n_skip = args.n_skip
+    if torch.cuda.is_available():
+        free_bytes, _ = torch.cuda.mem_get_info(0)
+        free_mem_gb = free_bytes / 1024**3
+    else:
+        free_mem_gb = 4.0
+    hw_cfg = hardware_config(free_mem_gb)
+    config_vit.window_size = hw_cfg["window_size"]
+    config_vit.rank = hw_cfg["rank"]
+    config_vit.groups = hw_cfg["groups"]
     config_vit.patches.size = (args.vit_patches_size, args.vit_patches_size)
     if args.vit_name.find('R50') !=-1:
         config_vit.patches.grid = (int(args.img_size/args.vit_patches_size), int(args.img_size/args.vit_patches_size))
-    net = ViT_seg(config_vit, img_size=args.img_size, num_classes=config_vit.n_classes).cuda()
+    net = AdaDATransUNet(config_vit, img_size=args.img_size, num_classes=config_vit.n_classes).cuda()
 
     snapshot = os.path.join(snapshot_path, 'best_model.pth')
     if not os.path.exists(snapshot): snapshot = snapshot.replace('best_model', 'epoch_'+str(args.max_epochs-1))

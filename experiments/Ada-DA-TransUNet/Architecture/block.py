@@ -1,27 +1,14 @@
 import torch
-from torch import nn
+import torch.nn as nn
+import torch.nn.functional as F
 import numpy as np
-import torch
 import math
-from torch.nn import Module, Sequential, Conv2d, ReLU,AdaptiveMaxPool2d, AdaptiveAvgPool2d, \
-    NLLLoss, BCELoss, CrossEntropyLoss, AvgPool2d, MaxPool2d, Parameter, Linear, Sigmoid, Softmax, Dropout, Embedding
-from torch.nn import functional as F
+from torch.nn import (Module, Sequential, Conv2d, ReLU, AdaptiveMaxPool2d, AdaptiveAvgPool2d,
+                      NLLLoss, BCELoss, CrossEntropyLoss, AvgPool2d, MaxPool2d, Parameter,
+                      Linear, Sigmoid, Softmax, Dropout, Embedding)
 from torch.autograd import Variable
-
-import torch
-from torch import nn
-import numpy as np
-import torch
-import math
-from torch.nn import Module, Sequential, Conv2d, ReLU,AdaptiveMaxPool2d, AdaptiveAvgPool2d, \
-    NLLLoss, BCELoss, CrossEntropyLoss, AvgPool2d, MaxPool2d, Parameter, Linear, Sigmoid, Softmax, Dropout, Embedding
-from torch.nn import functional as F
-from torch.autograd import Variable
-
 from os.path import join as pjoin
 from collections import OrderedDict
-
-import torch.nn.functional as F
 
 
 def np2th(weights, conv=False):
@@ -307,6 +294,115 @@ class DANetHead(nn.Module):
         feat_sum = sa_conv + sc_conv
 
         sasc_output = self.conv8(feat_sum)
-        
+
 
         return sasc_output
+
+
+# ---------------------------------------------------------------------------
+# AdaDA-TransUNet: windowed low-rank PAM, grouped CAM, adaptive DA block
+# ---------------------------------------------------------------------------
+
+def window_partition(x, window_size):
+    """(B, C, H, W) -> (B*nW, C, M, M)"""
+    B, C, H, W = x.shape
+    M = window_size
+    x = x.view(B, C, H // M, M, W // M, M)
+    return x.permute(0, 2, 4, 1, 3, 5).contiguous().view(-1, C, M, M)
+
+
+def window_reverse(windows, window_size, H, W):
+    """(B*nW, C, M, M) -> (B, C, H, W)"""
+    M = window_size
+    nW = (H // M) * (W // M)
+    B = windows.shape[0] // nW
+    C = windows.shape[1]
+    x = windows.view(B, H // M, W // M, C, M, M)
+    return x.permute(0, 3, 1, 4, 2, 5).contiguous().view(B, C, H, W)
+
+
+class LowRankWindowedPAM(nn.Module):
+    """
+    Windowed PAM: O(N^2 C) -> O(N*r*C) via Swin-style windows + low-rank projection.
+    Keys and values are projected from window_size^2 -> rank via self.proj_r.
+    """
+    def __init__(self, channels, window_size=7, rank=32):
+        super().__init__()
+        self.M      = window_size
+        N           = window_size ** 2
+        self.conv_B = nn.Conv1d(channels, channels, 1)
+        self.conv_C = nn.Conv1d(channels, channels, 1)
+        self.conv_D = nn.Conv1d(channels, channels, 1)
+        self.proj_r = nn.Linear(N, rank, bias=False)
+        self.alpha  = nn.Parameter(torch.zeros(1))
+
+    def forward(self, x):
+        B, C, H, W = x.shape
+        M = self.M
+        x_w  = window_partition(x, M)               # (B*nW, C, M, M)
+        nBW  = x_w.shape[0]
+        x_n  = x_w.view(nBW, C, M * M)              # (B*nW, C, N)
+        feat_B = self.conv_B(x_n)
+        feat_C = self.conv_C(x_n)
+        feat_D = self.conv_D(x_n)
+        C_r = self.proj_r(feat_C)                   # (B*nW, C, r)
+        D_r = self.proj_r(feat_D)
+        scores = torch.bmm(feat_B.transpose(1, 2), C_r)   # (B*nW, N, r)
+        scores = F.softmax(scores, dim=-1)
+        E_out  = torch.bmm(scores, D_r.transpose(1, 2))   # (B*nW, N, C)
+        E_n = self.alpha * E_out.transpose(1, 2) + x_n    # (B*nW, C, N)
+        return window_reverse(E_n.view(nBW, C, M, M), M, H, W)
+
+
+class GroupedCAM(nn.Module):
+    """
+    Channel attention split into G independent groups: O(C^2) -> O(C^2/G).
+    Each group computes its own (C/G x C/G) attention matrix.
+    """
+    def __init__(self, channels, groups=8):
+        super().__init__()
+        self.G    = groups
+        self.beta = nn.Parameter(torch.zeros(1))
+
+    def forward(self, x):
+        B, C, H, W = x.shape
+        G, Cg = self.G, C // self.G
+        x_g = x.view(B * G, Cg, H * W)             # (B*G, Cg, N)
+        X   = torch.bmm(x_g, x_g.transpose(1, 2))  # (B*G, Cg, Cg)
+        X   = F.softmax(X, dim=-1)
+        E_g = torch.bmm(X.transpose(1, 2), x_g)    # (B*G, Cg, N)
+        E   = self.beta * E_g + x_g
+        return E.view(B, C, H, W)
+
+
+class AdaDABlock(nn.Module):
+    """
+    Adaptive Dual Attention Block: LowRankWindowedPAM + GroupedCAM blended
+    via a differentiable per-channel soft gate (learnable compression ratio).
+    """
+    def __init__(self, channels, window_size=7, rank=32, groups=8):
+        super().__init__()
+        self.pam     = LowRankWindowedPAM(channels, window_size, rank)
+        self.cam     = GroupedCAM(channels, groups)
+        self.pool    = nn.AdaptiveAvgPool2d(1)
+        self.gate_fc = nn.Linear(channels, channels)
+        self.fusion  = nn.Conv2d(channels, channels, kernel_size=1)
+
+    def forward(self, x):
+        pam_out = self.pam(x)
+        cam_out = self.cam(x)
+        g = torch.sigmoid(
+            self.gate_fc(self.pool(x).view(x.shape[0], -1))
+        ).view(x.shape[0], -1, 1, 1)               # (B, C, 1, 1)
+        fused = self.fusion(g * pam_out + (1.0 - g) * cam_out)
+        return fused + x
+
+
+def hardware_config(free_mem_gb):
+    """Select rank/window_size/groups based on available GPU memory (GB)."""
+    if free_mem_gb > 8:
+        return {"rank": 64, "window_size": 14, "groups": 4}
+    elif free_mem_gb > 4:
+        return {"rank": 32, "window_size": 7,  "groups": 8}
+    else:
+        return {"rank": 16, "window_size": 7,  "groups": 16}
