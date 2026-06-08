@@ -23,38 +23,57 @@ Kaggle provides a free **T4 (15 GB VRAM)** or **P100 (16 GB VRAM)** GPU with a 3
 
 ### Step 1 — Upload to Kaggle Datasets
 
-Kaggle Notebooks cannot read local files. Upload everything once as private Kaggle Datasets:
+The Synapse dataset is already publicly available on Kaggle — no need to upload it. You only need to upload two private datasets once:
 
 1. Go to [kaggle.com/datasets](https://www.kaggle.com/datasets) → **New Dataset**
-2. Create a dataset for the data: upload `data/Synapse/` → name it e.g. `synapse-medical`
-3. Create a dataset for the weights: upload `model/` → name it e.g. `vit-pretrained-weights`
-4. Create a dataset for the code: upload `DA-TransUNet/` and `Ada-DA-TransUNet/` → name it e.g. `adada-transunet-code`
+2. Create a dataset for the weights: upload `model/` → name it e.g. `vit-pretrained-weights`
+3. Create a dataset for the code: upload `DA-TransUNet/` and `Ada-DA-TransUNet/` → name it e.g. `adada-transunet-code`
 
 ### Step 2 — Create a Kaggle Notebook
 
 1. Go to [kaggle.com/code](https://www.kaggle.com/code) → **New Notebook**
 2. **Settings → Accelerator**: select **GPU T4 x1**
-3. **Data → Add Data**: attach all three datasets from Step 1
+3. **Data → Add Data**: attach all three datasets:
+   - Search **dogcdt/synapse** (public) — Synapse multi-organ CT data
+   - Your `vit-pretrained-weights` dataset
+   - Your `adada-transunet-code` dataset
 4. Kaggle mounts datasets at `/kaggle/input/<dataset-name>/`
 
 ### Step 3 — Install dependencies
 
-```bash
-%%bash
-pip install -q timm einops ml-collections medpy SimpleITK tensorboardX
+In a Python notebook cell (prefix with `!`):
+
+```python
+!pip install -q timm einops ml-collections medpy SimpleITK tensorboardX
 ```
 
 > PyTorch, torchvision, scipy, h5py, numpy, and tqdm are pre-installed on Kaggle.
 
-### Step 4 — Copy code to a writable directory
+### Step 4 — One-time Kaggle setup
 
-Kaggle input is read-only. Copy code to `/kaggle/working/` before running:
+Run all of the following in a single cell. These only need to be done once per session:
 
-```bash
-%%bash
-cp -r /kaggle/input/adada-transunet-code/DA-TransUNet     /kaggle/working/DA-TransUNet
-cp -r /kaggle/input/adada-transunet-code/Ada-DA-TransUNet /kaggle/working/Ada-DA-TransUNet
+```python
+# 1. Copy code and weights to writable directory
+!cp -r /kaggle/input/datasets/deepsotaai/adada-transunet-code/DA-TransUNet     /kaggle/working/DA-TransUNet
+!cp -r /kaggle/input/datasets/deepsotaai/adada-transunet-code/Ada-DA-TransUNet /kaggle/working/Ada-DA-TransUNet
+!cp -r /kaggle/input/datasets/deepsotaai/vit-pretrained-weights/model           /kaggle/working/model
+
+# 2. Kaggle strips '+' from filenames on upload — rename the weights file back
+!mv /kaggle/working/model/vit_checkpoint/imagenet21k/R50ViT-B_16.npz \
+    /kaggle/working/model/vit_checkpoint/imagenet21k/R50+ViT-B_16.npz
+
+# 3. Fix conflict with Kaggle's pre-installed HuggingFace 'datasets' library
+!touch /kaggle/working/DA-TransUNet/datasets/__init__.py
+!touch /kaggle/working/Ada-DA-TransUNet/datasets/__init__.py
+
+# 4. Symlink Synapse data — train.py hardcodes '../data/Synapse/' and ignores --root_path
+!mkdir -p /kaggle/working/data/Synapse
+!ln -sfn /kaggle/input/datasets/dogcdt/synapse/Synapse/train_npz  /kaggle/working/data/Synapse/train_npz
+!ln -sfn /kaggle/input/datasets/dogcdt/synapse/Synapse/test_vol_h5 /kaggle/working/data/Synapse/test_vol_h5
 ```
+
+> Replace `deepsotaai` with your Kaggle username. Datasets attached via kagglehub are always under `/kaggle/input/datasets/<owner>/<dataset-name>/`.
 
 ---
 
@@ -69,8 +88,6 @@ cd /kaggle/working/DA-TransUNet
 python train.py \
   --dataset Synapse \
   --vit_name R50-ViT-B_16 \
-  --root_path /kaggle/input/synapse-medical/Synapse/train_npz \
-  --list_dir ./lists/lists_Synapse \
   --max_epochs 150 \
   --batch_size 24 \
   --base_lr 0.01 \
@@ -79,7 +96,7 @@ python train.py \
   --seed 1234
 ```
 
-> If OOM: use `--batch_size 12 --base_lr 0.005` (halve lr when halving batch size).
+> OOM: use `--batch_size 12 --base_lr 0.005`. Multi-GPU (`--n_gpu 2`) does not work — the O(N²) PAM attention OOMs during backward even at small batch sizes.
 
 **Test:**
 
@@ -90,7 +107,6 @@ cd /kaggle/working/DA-TransUNet
 python test.py \
   --dataset Synapse \
   --vit_name R50-ViT-B_16 \
-  --volume_path /kaggle/input/synapse-medical/Synapse/test_vol_h5 \
   --num_classes 9 \
   --img_size 224 \
   --is_savenii
@@ -133,8 +149,6 @@ cd /kaggle/working/Ada-DA-TransUNet
 python train.py \
   --dataset Synapse \
   --vit_name R50-ViT-B_16 \
-  --root_path /kaggle/input/synapse-medical/Synapse/train_npz \
-  --list_dir ./lists/lists_Synapse \
   --num_classes 9 \
   --max_epochs 150 \
   --batch_size 24 \
@@ -173,7 +187,6 @@ cd /kaggle/working/Ada-DA-TransUNet
 python test.py \
   --dataset Synapse \
   --vit_name R50-ViT-B_16 \
-  --volume_path /kaggle/input/synapse-medical/Synapse/test_vol_h5 \
   --num_classes 9 \
   --img_size 224 \
   --is_savenii
@@ -191,7 +204,10 @@ python test.py \
 | AdaDA (rank=32, window=7, groups=8) — default | ~11 GB | ~6 GB |
 | AdaDA (rank=16, window=7, groups=16) — lean | ~9 GB | ~5 GB |
 
-Kaggle T4 (15 GB): batch=24 fits for both models.
+- **Use `--n_gpu 1` on T4**. The O(N²) PAM in DA-TransUNet makes multi-GPU DataParallel OOM during backward. Use T4 x1 for both models to ensure a fair comparison.
+- **P100 is not supported**: Kaggle's current PyTorch (2.x) requires sm_70+ and P100 is sm_60 — use T4 instead.
+- **1x T4 (15 GB)**: batch=24 fits for both models. Training ~8 hrs.
+- First checkpoint saved at epoch 99; final at epoch 149. Do not stop before epoch 99 or all progress is lost.
 
 ---
 

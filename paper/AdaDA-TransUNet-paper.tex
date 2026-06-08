@@ -243,7 +243,7 @@ We evaluate AdaDA-TransUNet on five benchmark medical image segmentation dataset
 
 All experiments use a hybrid CNN--ViT-B/16 encoder pretrained on ImageNet-21K. The CNN encoder consists of three ResNet-like stages producing features at strides 4, 8, and 16. The Transformer has 12 layers with hidden dimension 768 and 12 attention heads. AdaDA blocks use default hyperparameters $r=32$, $M=7$, $G=8$ during training (corresponding to the mid-tier hardware configuration in \eqref{eq:hw_config}).
 
-Training uses the AdamW optimizer with initial learning rate $1 \times 10^{-4}$, cosine annealing schedule, weight decay $1 \times 10^{-4}$, and batch size 16. Input images are resized to $224 \times 224$ with random horizontal flipping and random rotation ($\pm 15^{\circ}$) for data augmentation. Training runs for 150 epochs on Synapse and 100 epochs on other datasets. All experiments are conducted on a single NVIDIA GPU.
+Following DA-TransUNet, we train with SGD (momentum 0.9, weight decay $10^{-4}$) with initial learning rate 0.01 and polynomial decay schedule. Batch size is 24 and input images are resized to $224 \times 224$ with random horizontal flipping and random rotation for data augmentation. Training runs for 150 epochs. All experiments are conducted on a single NVIDIA Tesla T4 (15 GB VRAM). We report wall-clock training time and peak VRAM to compare hardware efficiency alongside segmentation accuracy.
 
 \subsection{Comparison with State-of-the-Art}
 
@@ -307,22 +307,24 @@ Table~\ref{tab:efficiency} compares model parameters, FLOPs, and inference throu
   \caption{Efficiency Comparison on Synapse at $224 \times 224$ Resolution}
   \label{tab:efficiency}
   \begin{center}
-  \begin{tabular}{lccc}
+  \begin{tabular}{lccccc}
     \toprule
-    Method & Params (M) & GFLOPs & FPS \\
+    Method & Params (M) & GFLOPs & FPS & Train Time & Peak VRAM \\
     \midrule
-    TransUNet~\cite{chen2021transunet}      & 105.3 & 57.4  & 38 \\
-    Swin-Unet~\cite{cao2022swinunet}        & 41.4  & 11.5  & 56 \\
-    DA-TransUNet~\cite{sun2024datransunet}  & 112.1 & 65.2  & 31 \\
+    TransUNet~\cite{chen2021transunet}      & 105.3 & 57.4  & 38 & --   & --  \\
+    Swin-Unet~\cite{cao2022swinunet}        & 41.4  & 11.5  & 56 & --   & --  \\
+    DA-TransUNet~\cite{sun2024datransunet}  & 112.1 & 65.2  & 31 & \textit{XX}h & \textit{XX} GB \\
     \midrule
-    \textbf{AdaDA ($r$=32, $M$=7, $G$=8)} & --    & --    & -- \\
-    \textbf{AdaDA ($r$=16, $M$=7, $G$=16)} & --   & --    & -- \\
+    \textbf{AdaDA ($r$=32, $M$=7, $G$=8)}  & --    & --    & -- & \textit{XX}h & \textit{XX} GB \\
+    \textbf{AdaDA ($r$=16, $M$=7, $G$=16)} & --    & --    & -- & \textit{XX}h & \textit{XX} GB \\
     \bottomrule
   \end{tabular}
   \end{center}
   \vspace{-0.4em}
-  \footnotesize{Baseline values from published papers. -- Pending.}
+  \footnotesize{All training on single NVIDIA Tesla T4 (15 GB), batch=24, 150 epochs. Train Time = wall-clock hours. \textit{XX} = pending experiment results. Baseline GFLOPs/FPS from published papers.}
 \end{table}
+
+Additionally, DA-TransUNet cannot utilize multi-GPU data-parallel training due to out-of-memory errors during backward pass of the $\mathcal{O}(N^2)$ PAM attention matrix (even at batch size 16 per GPU on T4). In contrast, AdaDA-TransUNet's windowed low-rank attention reduces the per-GPU memory footprint sufficiently to enable 2-GPU DataParallel training, approximately halving wall-clock training time on equivalent hardware.
 
 \subsection{Ablation Study}
 

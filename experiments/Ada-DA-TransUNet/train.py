@@ -2,6 +2,7 @@ import argparse
 import logging
 import os
 import random
+import time
 import numpy as np
 import torch
 import torch.backends.cudnn as cudnn
@@ -90,6 +91,7 @@ def trainer_synapse(args, model, snapshot_path):
     logging.info("{} iterations per epoch. {} max iterations ".format(len(trainloader), max_iterations))
     best_performance = 0.0
     iterator = tqdm(range(max_epoch), ncols=70)
+    train_start = time.time()
     for epoch_num in iterator:
         for i_batch, sampled_batch in enumerate(trainloader):
             image_batch, label_batch = sampled_batch['image'], sampled_batch['label']
@@ -135,6 +137,11 @@ def trainer_synapse(args, model, snapshot_path):
             iterator.close()
             break
 
+    total_hours = (time.time() - train_start) / 3600
+    logging.info("Total training time: {:.2f} hours".format(total_hours))
+    if torch.cuda.is_available():
+        peak_mb = torch.cuda.max_memory_allocated() / 1024**2
+        logging.info("Peak VRAM: {:.0f} MB ({:.1f} GB)".format(peak_mb, peak_mb / 1024))
     writer.close()
     return "Training Finished!"
 
