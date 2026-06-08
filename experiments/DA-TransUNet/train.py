@@ -86,10 +86,12 @@ def trainer_synapse(args, model, snapshot_path):
     iterator = tqdm(range(max_epoch), ncols=70)
     train_start = time.time()
     for epoch_num in iterator:
+        epoch_loss_sum = 0.0
+        epoch_loss_ce_sum = 0.0
+        epoch_batches = 0
         for i_batch, sampled_batch in enumerate(trainloader):
             image_batch, label_batch = sampled_batch['image'], sampled_batch['label']
             image_batch, label_batch = image_batch.cuda(), label_batch.cuda()
-#             print(image_batch)
             outputs = model(image_batch)
             loss_ce = ce_loss(outputs, label_batch[:].long())
             loss_dice = dice_loss(outputs, label_batch, softmax=True)
@@ -102,11 +104,12 @@ def trainer_synapse(args, model, snapshot_path):
                 param_group['lr'] = lr_
 
             iter_num = iter_num + 1
+            epoch_loss_sum += loss.item()
+            epoch_loss_ce_sum += loss_ce.item()
+            epoch_batches += 1
             writer.add_scalar('info/lr', lr_, iter_num)
             writer.add_scalar('info/total_loss', loss, iter_num)
             writer.add_scalar('info/loss_ce', loss_ce, iter_num)
-
-            logging.info('iteration %d : loss : %f, loss_ce: %f' % (iter_num, loss.item(), loss_ce.item()))
 
             if iter_num % 20 == 0:
                 image = image_batch[1, 0:1, :, :]
@@ -116,6 +119,12 @@ def trainer_synapse(args, model, snapshot_path):
                 writer.add_image('train/Prediction', outputs[1, ...] * 50, iter_num)
                 labs = label_batch[1, ...].unsqueeze(0) * 50
                 writer.add_image('train/GroundTruth', labs, iter_num)
+
+        elapsed_h = (time.time() - train_start) / 3600
+        avg_loss = epoch_loss_sum / epoch_batches
+        avg_loss_ce = epoch_loss_ce_sum / epoch_batches
+        logging.info("epoch %d/%d  loss: %.4f  loss_ce: %.4f  lr: %.6f  elapsed: %.2fh" % (
+            epoch_num + 1, max_epoch, avg_loss, avg_loss_ce, lr_, elapsed_h))
 
         save_interval = 50  # int(max_epoch/6)
         if epoch_num > int(max_epoch / 2) and (epoch_num + 1) % save_interval == 0:
