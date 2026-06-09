@@ -134,19 +134,13 @@ class Embeddings(nn.Module):
         self.config = config
         img_size = _pair(img_size)
         
-        self.DAblock1 = AdaDABlock(768, window_size=config.window_size, rank=config.rank, groups=config.groups, disable_gate=config.disable_gate)
-
+        self.ada_block = AdaDABlock(768, window_size=config.window_size, rank=config.rank, groups=config.groups, disable_gate=config.disable_gate)
 
         if config.patches.get("grid") is not None:   # ResNet
             grid_size = config.patches["grid"]
             patch_size = (img_size[0] // 16 // grid_size[0], img_size[1] // 16 // grid_size[1])
             patch_size_real = (patch_size[0] * 16, patch_size[1] * 16)
-            n_patches = (img_size[0] // patch_size_real[0]) * (img_size[1] // patch_size_real[1])  
-#             print(patch_size_real[0])
-#             print(patch_size_real[1])
-#             print(patch_size)
-#             print(img_size[0])
-#             print(img_size[1])
+            n_patches = (img_size[0] // patch_size_real[0]) * (img_size[1] // patch_size_real[1])
             self.hybrid = True
         else:
             patch_size = _pair(config.patches["size"])
@@ -173,7 +167,7 @@ class Embeddings(nn.Module):
         else:
             features = None
         x = self.patch_embeddings(x)  # (B, hidden. n_patches^(1/2), n_patches^(1/2))
-        x = self.DAblock1(x)
+        x = self.ada_block(x)
         x = x.flatten(2)
         x = x.transpose(-1, -2)  # (B, n_patches, hidden)
 

@@ -14,7 +14,6 @@ from datasets.dataset_synapse import Synapse_dataset
 from utils import test_single_volume
 from Architecture.AdaDATransUNet import AdaDATransUNet
 from Architecture.AdaDATransUNet import CONFIGS as CONFIGS_ViT_seg
-from Architecture.block import hardware_config
 try:
     from thop import profile as thop_profile
     _THOP = True
@@ -46,6 +45,9 @@ parser.add_argument('--deterministic', type=int,  default=1, help='whether use d
 parser.add_argument('--base_lr', type=float,  default=0.01, help='segmentation network learning rate')
 parser.add_argument('--seed', type=int, default=1234, help='random seed')
 parser.add_argument('--vit_patches_size', type=int, default=16, help='vit_patches_size, default is 16')
+parser.add_argument('--window_size', type=int, default=7, help='window size — must match training')
+parser.add_argument('--rank', type=int, default=32, help='low-rank dim — must match training')
+parser.add_argument('--groups', type=int, default=8, help='channel groups — must match training')
 args = parser.parse_args()
 
 
@@ -148,15 +150,9 @@ if __name__ == "__main__":
     config_vit = CONFIGS_ViT_seg[args.vit_name]
     config_vit.n_classes = args.num_classes
     config_vit.n_skip = args.n_skip
-    if torch.cuda.is_available():
-        free_bytes, _ = torch.cuda.mem_get_info(0)
-        free_mem_gb = free_bytes / 1024**3
-    else:
-        free_mem_gb = 4.0
-    hw_cfg = hardware_config(free_mem_gb)
-    config_vit.window_size = hw_cfg["window_size"]
-    config_vit.rank = hw_cfg["rank"]
-    config_vit.groups = hw_cfg["groups"]
+    config_vit.window_size = args.window_size
+    config_vit.rank = args.rank
+    config_vit.groups = args.groups
     config_vit.patches.size = (args.vit_patches_size, args.vit_patches_size)
     if args.vit_name.find('R50') !=-1:
         config_vit.patches.grid = (int(args.img_size/args.vit_patches_size), int(args.img_size/args.vit_patches_size))

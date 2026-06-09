@@ -21,7 +21,7 @@ Both DA-TransUNet (baseline) and AdaDA-TransUNet are run under identical conditi
 
 | Dataset | DA-TransUNet Train | DA-TransUNet Test | AdaDA Train | AdaDA Test |
 |---------|-------------------|-------------------|-------------|------------|
-| Synapse | ✅ Done (~7.3h) | ✅ Done (DSC 79.36%, HD95 26.64mm) | ⏳ Pending | ⏳ Pending |
+| Synapse | ✅ Done (6.3h) | ✅ Done (DSC 79.36%, HD95 26.64mm, Params 107.95M, Infer 112.4s/vol, VRAM 0.5GB) — GFLOPs missing (thop failed) | ⏳ Pending | ⏳ Pending |
 | Kvasir-SEG | ⏳ Pending | ⏳ Pending | ⏳ Pending | ⏳ Pending |
 | ISIC 2018 | ⏳ Pending | ⏳ Pending | ⏳ Pending | ⏳ Pending |
 
@@ -50,7 +50,7 @@ AdaDA-TransUNet also tested with **T4 x2** to demonstrate multi-GPU scalability.
 
 | Run | GPU | Est. Time | Dataset | Purpose |
 |-----|-----|-----------|---------|---------|
-| DA-TransUNet Synapse (re-run) | T4 x1 | ~7.5h | Synapse | Captures VRAM + inference metrics |
+| DA-TransUNet Synapse (test-only re-run) | T4 x1 | ~20min | Synapse | Captures Params, GFLOPs, Infer Time, Infer VRAM (upload new code first) |
 | AdaDA Synapse | T4 x1 | ~7h | Synapse | Apples-to-apples vs DA baseline |
 | AdaDA Synapse | T4 x2 | ~4h | Synapse | Multi-GPU row in efficiency table |
 | DA-TransUNet Kvasir | T4 x1 | ~3h | Kvasir-SEG | |
@@ -125,7 +125,7 @@ Weekly quota: 30h. Week 1 uses ~23h, Week 2 uses ~8h — both within limit.
 
 ### Week 1 (main results)
 ```
-Night 1:  DA-TransUNet  Synapse  (T4 x1, ~7.5h)  ← re-run to capture VRAM + inference metrics
+Night 1:  DA-TransUNet  Synapse  (T4 x1, ~20min)  ✅ DONE — Params=107.95M, Infer=112.4s/vol, VRAM=0.5GB; GFLOPs still missing (thop failed, need re-run with explicit thop pip install)
 Night 2:  AdaDA         Synapse  (T4 x1, ~7h)    ← apples-to-apples efficiency row
 Night 3:  AdaDA         Synapse  (T4 x2, ~4h)    back-to-back with
           DA-TransUNet  Kvasir   (T4 x1, ~3h)    ← ~7h total, within 9h limit
@@ -173,10 +173,10 @@ Night 6:  AdaDA rank=8   Synapse  (T4 x2, ~4h)   --rank 8
 
 ### Efficiency (Synapse, T4)
 
-| Method | Params (M) | Train Time | Train VRAM | Infer Time (ms/case) | Infer VRAM | Multi-GPU |
-|--------|-----------|-----------|-----------|---------------------|-----------|-----------|
-| DA-TransUNet | XX | 7.3h | XX GB | XX | XX GB | No (OOM on T4 x2) |
-| AdaDA (r=32, M=7, G=8) | XX | XX h | XX GB | XX | XX GB | Yes (~4h on T4 x2) |
+| Method | Params (M) | GFLOPs | Train Time | Train VRAM | Infer Time (s/vol) | Infer VRAM | Multi-GPU |
+|--------|-----------|--------|-----------|-----------|-------------------|-----------|-----------|
+| DA-TransUNet | 107.95 | XX | 6.3h | XX GB | 112.4 | 0.5 GB | No (OOM on T4 x2) |
+| AdaDA (r=32, M=7, G=8) | XX | XX | XX h | XX GB | XX | XX GB | Yes (~4h on T4 x2) |
 
 > Params and inference metrics are logged by test.py. Train VRAM is logged at end of train.py.
 
@@ -184,7 +184,7 @@ Night 6:  AdaDA rank=8   Synapse  (T4 x2, ~4h)   --rank 8
 
 | Config | DSC (%) | HD95 (mm) | Notes |
 |--------|---------|-----------|-------|
-| DA-TransUNet (full PAM, no gate) | 79.36 | 26.64 | Baseline — already done |
+| DA-TransUNet (full PAM, no gate) | 79.36 | 26.64 | Baseline — confirmed (epoch_149.pth from da-transunet-checkpoints) |
 | AdaDA, r=32, fixed gate (0.5) | XX | XX | `--disable_gate` — gate contribution |
 | AdaDA, r=8, learned gate | XX | XX | `--rank 8` — rank sensitivity |
 | **AdaDA, r=32, learned gate** | **XX** | **XX** | **Full model (ours)** |

@@ -57,7 +57,28 @@ parser.add_argument('--groups', type=int,
                     default=8, help='number of channel groups for GroupedCAM')
 parser.add_argument('--disable_gate', action='store_true',
                     help='ablation: replace learned adaptive gate with fixed 0.5 blend')
+parser.add_argument('--val_interval', type=int, default=0,
+                    help='validate every N epochs and save best_model.pth (0 = disabled)')
 args = parser.parse_args()
+
+
+def _validate_synapse(args, model):
+    from datasets.dataset_synapse import Synapse_dataset
+    from utils import test_single_volume
+    vol_path = os.path.join(os.path.dirname(args.root_path), 'test_vol_h5')
+    db_val = Synapse_dataset(base_dir=vol_path, split="test_vol", list_dir=args.list_dir)
+    val_loader = DataLoader(db_val, batch_size=1, shuffle=False, num_workers=1)
+    net = model.module if hasattr(model, 'module') else model
+    model.eval()
+    metric_list = 0.0
+    with torch.no_grad():
+        for sample in val_loader:
+            metric_i = test_single_volume(
+                sample["image"], sample["label"], net,
+                classes=args.num_classes, patch_size=[args.img_size, args.img_size])
+            metric_list += np.array(metric_i)
+    model.train()
+    return float(np.mean(metric_list / len(db_val), axis=0)[0])
 
 
 def trainer_synapse(args, model, snapshot_path):
@@ -94,6 +115,7 @@ def trainer_synapse(args, model, snapshot_path):
     best_performance = 0.0
     iterator = tqdm(range(max_epoch), ncols=70)
     train_start = time.time()
+    val_time_s = 0.0
     for epoch_num in iterator:
         epoch_loss_sum = 0.0
         epoch_loss_ce_sum = 0.0
@@ -141,6 +163,19 @@ def trainer_synapse(args, model, snapshot_path):
             torch.save(model.state_dict(), save_mode_path)
             logging.info("save model to {}".format(save_mode_path))
 
+        if args.val_interval > 0 and (
+                (epoch_num + 1) % args.val_interval == 0 or epoch_num >= max_epoch - 1):
+            _val_t0 = time.time()
+            val_dice = _validate_synapse(args, model)
+            val_time_s += time.time() - _val_t0
+            logging.info("epoch %d val_dice: %.4f  best: %.4f" % (
+                epoch_num + 1, val_dice, best_performance))
+            if val_dice > best_performance:
+                best_performance = val_dice
+                net = model.module if hasattr(model, 'module') else model
+                torch.save(net.state_dict(), os.path.join(snapshot_path, 'best_model.pth'))
+                logging.info("=> best model saved (DSC %.4f)" % best_performance)
+
         if epoch_num >= max_epoch - 1:
             save_mode_path = os.path.join(snapshot_path, 'epoch_' + str(epoch_num) + '.pth')
             torch.save(model.state_dict(), save_mode_path)
@@ -148,8 +183,9 @@ def trainer_synapse(args, model, snapshot_path):
             iterator.close()
             break
 
-    total_hours = (time.time() - train_start) / 3600
-    logging.info("Total training time: {:.2f} hours".format(total_hours))
+    total_hours = (time.time() - train_start - val_time_s) / 3600
+    logging.info("Total training time: {:.2f} hours (excl. {:.1f} min validation overhead)".format(
+        total_hours, val_time_s / 60))
     if torch.cuda.is_available():
         peak_mb = torch.cuda.max_memory_allocated() / 1024**2
         logging.info("Peak VRAM: {:.0f} MB ({:.1f} GB)".format(peak_mb, peak_mb / 1024))
