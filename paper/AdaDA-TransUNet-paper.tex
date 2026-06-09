@@ -241,7 +241,7 @@ All experiments use a hybrid CNN--ViT-B/16 encoder pretrained on ImageNet-21K. T
 
 Following DA-TransUNet, we train with SGD (momentum 0.9, weight decay $10^{-4}$) with initial learning rate 0.01 and polynomial decay schedule. Batch size is 24 and input images are resized to $224 \times 224$ with random horizontal flipping and random rotation for data augmentation. Training runs for 150 epochs. All experiments are conducted on a single NVIDIA Tesla T4 (15 GB VRAM). We report wall-clock training time and peak VRAM to compare hardware efficiency alongside segmentation accuracy.
 
-To validate our experimental setup, we reproduced DA-TransUNet under identical conditions (same hardware, optimizer, and random seed). Our reproduction achieves 79.36\% DSC and 26.64 mm HD95, within 1\% DSC of the reported 81.03\%, confirming implementation correctness. The small gap is attributable to the absence of validation-based checkpoint selection in our setup; we use the final epoch checkpoint (epoch 149) for both models to ensure a fair comparison.
+To validate our experimental setup, we reproduced DA-TransUNet under identical conditions (same hardware, optimizer, and random seed). Our reproduction achieves 79.36\% DSC and 26.64 mm HD95, within 2\% DSC of the reported 81.03\%, confirming implementation correctness. The small gap is attributable to the absence of validation-based checkpoint selection in our setup; we use the final epoch checkpoint (epoch 149) for both models to ensure a fair comparison.
 
 \subsection{Comparison with State-of-the-Art}
 
@@ -309,11 +309,11 @@ Table~\ref{tab:efficiency} compares model parameters, GFLOPs, training VRAM, tra
   \setlength{\tabcolsep}{5pt}
   \begin{tabular}{lccccccc}
     \toprule
-    Method & Params (M) & GFLOPs & Train Time & Train VRAM & Infer Time (ms/vol) & Infer VRAM & Multi-GPU \\
+    Method & Params (M) & GFLOPs & Train Time & Train VRAM & Infer Time (s/vol) & Infer VRAM & Multi-GPU \\
     \midrule
     TransUNet~\cite{chen2021transunet}     & 105.3       & 57.4        & --               & --               & --               & --               & No \\
     Swin-Unet~\cite{cao2022swinunet}       & 41.4        & 11.5        & --               & --               & --               & --               & No \\
-    DA-TransUNet~\cite{sun2024datransunet} & \textit{XX} & \textit{XX} & 7.3h (T4$\times$1) & \textit{XX}   & \textit{XX}      & \textit{XX}      & No$^\ddagger$ \\
+    DA-TransUNet~\cite{sun2024datransunet} & 107.95      & \textit{XX} & 6.3h (T4$\times$1) & \textit{XX}   & 112.4            & 0.5 GB           & No$^\ddagger$ \\
     \midrule
     \multirow{2}{*}{\textbf{AdaDA ($r$=32, $M$=7, $G$=8)}}
       & \multirow{2}{*}{\textit{XX}} & \multirow{2}{*}{\textit{XX}}
@@ -323,7 +323,7 @@ Table~\ref{tab:efficiency} compares model parameters, GFLOPs, training VRAM, tra
   \end{tabular}
   \end{center}
   \vspace{-0.4em}
-  \footnotesize{GFLOPs by \texttt{thop} on a single $224\!\times\!224$ slice. Train VRAM = peak during backward pass; Infer Time = avg ms per CT volume over 12 test cases; Infer VRAM = peak during forward pass. TransUNet/Swin-Unet GFLOPs from published papers. \textit{XX} = pending.\\
+  \footnotesize{GFLOPs by \texttt{thop} on a single $224\!\times\!224$ slice. Train VRAM = peak during backward pass; Infer Time = avg seconds per CT volume over 12 test cases (includes NIfTI I/O); Infer VRAM = peak during forward pass. TransUNet/Swin-Unet GFLOPs from published papers. \textit{XX} = pending.\\
   $^\ddagger$~DA-TransUNet OOMs on 2$\times$T4 DataParallel: the $\mathcal{O}(N^2)$ PAM backward stores a $3136\!\times\!3136$ attention matrix per sample at the 56$\times$56 skip connection, exhausting GPU\,0 memory when it aggregates gradients from both devices.\\
   $^\S$~AdaDA's windowed low-rank PAM reduces the per-sample attention footprint by $>$25$\times$ at the same resolution, enabling 2-GPU DataParallel training and approximately halving wall-clock time with no change to model weights or accuracy.}
 \end{table*}
@@ -341,9 +341,9 @@ To quantify the contribution of the key design choices, we perform targeted abla
   \setlength{\tabcolsep}{5pt}
   \begin{tabular}{lcccccc}
     \toprule
-    Configuration & DSC (\%) $\uparrow$ & HD95 (mm) $\downarrow$ & GFLOPs & Train VRAM & Infer Time (ms/vol) & Infer VRAM \\
+    Configuration & DSC (\%) $\uparrow$ & HD95 (mm) $\downarrow$ & GFLOPs & Train VRAM & Infer Time (s/vol) & Infer VRAM \\
     \midrule
-    DA-TransUNet (baseline)    & 79.36        & 26.64        & \textit{XX} & \textit{XX} & \textit{XX} & \textit{XX} \\
+    DA-TransUNet (baseline)    & 79.36        & 26.64        & \textit{XX} & \textit{XX} & 112.4        & 0.5 GB       \\
     AdaDA, fixed gate ($r$=32) & \textit{XX}  & \textit{XX}  & \textit{XX} & \textit{XX} & \textit{XX} & \textit{XX} \\
     AdaDA, ada-gate ($r$=8)    & \textit{XX}  & \textit{XX}  & \textit{XX} & \textit{XX} & \textit{XX} & \textit{XX} \\
     \textbf{AdaDA, ada-gate ($r$=32) [ours]} & \textit{XX} & \textit{XX} & \textit{XX} & \textit{XX} & \textit{XX} & \textit{XX} \\
