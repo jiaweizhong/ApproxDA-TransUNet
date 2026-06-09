@@ -134,7 +134,7 @@ class Embeddings(nn.Module):
         self.config = config
         img_size = _pair(img_size)
         
-        self.DAblock1 = AdaDABlock(768, window_size=config.window_size, rank=config.rank, groups=config.groups)
+        self.DAblock1 = AdaDABlock(768, window_size=config.window_size, rank=config.rank, groups=config.groups, disable_gate=config.disable_gate)
 
 
         if config.patches.get("grid") is not None:   # ResNet
@@ -308,6 +308,7 @@ class DecoderBlock(nn.Module):
             window_size=7,
             rank=32,
             groups=8,
+            disable_gate=False,
     ):
         super().__init__()
         self.conv1 = Conv2dReLU(
@@ -326,7 +327,7 @@ class DecoderBlock(nn.Module):
         )
         self.up = nn.UpsamplingBilinear2d(scale_factor=2)
         self.da_skip = (
-            AdaDABlock(skip_channels, window_size=window_size, rank=rank, groups=groups)
+            AdaDABlock(skip_channels, window_size=window_size, rank=rank, groups=groups, disable_gate=disable_gate)
             if skip_channels > 0 else None
         )
 
@@ -377,7 +378,8 @@ class DecoderCup(nn.Module):
             DecoderBlock(in_ch, out_ch, sk_ch,
                          window_size=config.window_size,
                          rank=config.rank,
-                         groups=config.groups)
+                         groups=config.groups,
+                         disable_gate=config.disable_gate)
             for in_ch, out_ch, sk_ch in zip(in_channels, out_channels, skip_channels)
         ]
         self.blocks = nn.ModuleList(blocks)

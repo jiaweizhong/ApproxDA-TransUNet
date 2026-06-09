@@ -24,6 +24,7 @@ def get_b16_config():
     config.window_size = 7
     config.rank = 32
     config.groups = 8
+    config.disable_gate = False
     return config
 
 
@@ -92,6 +93,7 @@ def get_l16_config():
     config.window_size = 7
     config.rank = 32
     config.groups = 8
+    config.disable_gate = False
     return config
 
 
@@ -136,4 +138,5 @@ def get_h14_config():
     config.window_size = 7
     config.rank = 32
     config.groups = 8
+    config.disable_gate = False
     return config

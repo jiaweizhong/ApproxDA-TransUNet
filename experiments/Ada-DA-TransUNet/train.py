@@ -55,6 +55,8 @@ parser.add_argument('--rank', type=int,
                     default=32, help='low-rank projection dimension for LowRankWindowedPAM')
 parser.add_argument('--groups', type=int,
                     default=8, help='number of channel groups for GroupedCAM')
+parser.add_argument('--disable_gate', action='store_true',
+                    help='ablation: replace learned adaptive gate with fixed 0.5 blend')
 args = parser.parse_args()
 
 
@@ -202,6 +204,7 @@ if __name__ == "__main__":
     config_vit.window_size = args.window_size
     config_vit.rank = args.rank
     config_vit.groups = args.groups
+    config_vit.disable_gate = args.disable_gate
     if args.vit_name.find('R50') != -1:
         config_vit.patches.grid = (int(args.img_size / args.vit_patches_size), int(args.img_size / args.vit_patches_size))
     net = AdaDATransUNet(config_vit, img_size=args.img_size, num_classes=config_vit.n_classes).cuda()

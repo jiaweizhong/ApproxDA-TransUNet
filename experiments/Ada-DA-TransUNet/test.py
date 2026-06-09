@@ -3,6 +3,7 @@ import logging
 import os
 import random
 import sys
+import time
 import numpy as np
 import torch
 import torch.backends.cudnn as cudnn
@@ -14,6 +15,11 @@ from utils import test_single_volume
 from Architecture.AdaDATransUNet import AdaDATransUNet
 from Architecture.AdaDATransUNet import CONFIGS as CONFIGS_ViT_seg
 from Architecture.block import hardware_config
+try:
+    from thop import profile as thop_profile
+    _THOP = True
+except ImportError:
+    _THOP = False
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--volume_path', type=str,
@@ -47,8 +53,24 @@ def inference(args, model, test_save_path=None):
     db_test = args.Dataset(base_dir=args.volume_path, split="test_vol", list_dir=args.list_dir)
     testloader = DataLoader(db_test, batch_size=1, shuffle=False, num_workers=1)
     logging.info("{} test iterations per epoch".format(len(testloader)))
+
+    n_params = sum(p.numel() for p in model.parameters()) / 1e6
+    logging.info("Model parameters: {:.2f} M".format(n_params))
+
+    if _THOP:
+        try:
+            dummy = torch.randn(1, 1, args.img_size, args.img_size).cuda()
+            macs, _ = thop_profile(model, inputs=(dummy,), verbose=False)
+            logging.info("GFLOPs (single 224x224 slice): {:.1f}".format(macs / 1e9))
+        except Exception as e:
+            logging.info("GFLOPs: could not profile ({})".format(e))
+
+    if torch.cuda.is_available():
+        torch.cuda.reset_peak_memory_stats()
+
     model.eval()
     metric_list = 0.0
+    infer_start = time.time()
     for i_batch, sampled_batch in tqdm(enumerate(testloader)):
         h, w = sampled_batch["image"].size()[2:]
         image, label, case_name = sampled_batch["image"], sampled_batch["label"], sampled_batch['case_name'][0]
@@ -56,6 +78,14 @@ def inference(args, model, test_save_path=None):
                                       test_save_path=test_save_path, case=case_name, z_spacing=args.z_spacing)
         metric_list += np.array(metric_i)
         logging.info('idx %d case %s mean_dice %f mean_hd95 %f' % (i_batch, case_name, np.mean(metric_i, axis=0)[0], np.mean(metric_i, axis=0)[1]))
+
+    infer_total_s = time.time() - infer_start
+    avg_case_ms = infer_total_s / len(db_test) * 1000
+    logging.info("Inference total: {:.1f}s  avg per case: {:.1f}ms".format(infer_total_s, avg_case_ms))
+    if torch.cuda.is_available():
+        peak_mb = torch.cuda.max_memory_allocated() / 1024**2
+        logging.info("Inference peak VRAM: {:.0f} MB ({:.1f} GB)".format(peak_mb, peak_mb / 1024))
+
     metric_list = metric_list / len(db_test)
     for i in range(1, args.num_classes):
         logging.info('Mean class %d mean_dice %f mean_hd95 %f' % (i, metric_list[i-1][0], metric_list[i-1][1]))
