@@ -320,16 +320,22 @@ class DecoderBlock(nn.Module):
             use_batchnorm=use_batchnorm,
         )
         self.up = nn.UpsamplingBilinear2d(scale_factor=2)
-        self.da_skip = (
-            AdaDABlock(skip_channels, window_size=window_size, rank=rank, groups=groups, disable_gate=disable_gate)
-            if skip_channels > 0 else None
-        )
+        self.da  = AdaDABlock(64,  window_size=window_size, rank=rank, groups=groups, disable_gate=disable_gate)
+        self.da2 = AdaDABlock(256, window_size=window_size, rank=rank, groups=groups, disable_gate=disable_gate)
+        self.da3 = AdaDABlock(512, window_size=window_size, rank=rank, groups=groups, disable_gate=disable_gate)
 
     def forward(self, x, skip=None):
         x = self.up(x)
         if skip is not None:
-            if self.da_skip is not None:
-                skip = self.da_skip(skip)
+            if skip.size(1) and x.size(1) == 64:
+                skip = self.da(skip)
+
+            if skip.size(1) and x.size(1) == 256:
+                skip = self.da2(skip)
+
+            if skip.size(1) and x.size(1) == 512:
+                skip = self.da3(skip)
+
             x = torch.cat([x, skip], dim=1)
         x = self.conv1(x)
         x = self.conv2(x)
