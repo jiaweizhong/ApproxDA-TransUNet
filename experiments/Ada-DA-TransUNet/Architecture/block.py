@@ -248,6 +248,7 @@ def norm(planes, mode='bn', groups=16):
 
 def window_partition(x, window_size):
     """(B, C, H, W) -> (B*nW, C, M, M)"""
+    x = x.contiguous()
     B, C, H, W = x.shape
     M = window_size
     x = x.view(B, C, H // M, M, W // M, M)
@@ -256,6 +257,7 @@ def window_partition(x, window_size):
 
 def window_reverse(windows, window_size, H, W):
     """(B*nW, C, M, M) -> (B, C, H, W)"""
+    windows = windows.contiguous()
     M = window_size
     nW = (H // M) * (W // M)
     B = windows.shape[0] // nW
@@ -284,7 +286,7 @@ class LowRankWindowedPAM(nn.Module):
         M = self.M
         x_w  = window_partition(x, M)               # (B*nW, C, M, M)
         nBW  = x_w.shape[0]
-        x_n  = x_w.view(nBW, C, M * M)              # (B*nW, C, N)
+        x_n  = x_w.contiguous().view(nBW, C, M * M)  # (B*nW, C, N)
         feat_B = self.conv_B(x_n)
         feat_C = self.conv_C(x_n)
         feat_D = self.conv_D(x_n)

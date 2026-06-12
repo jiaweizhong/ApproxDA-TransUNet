@@ -327,6 +327,7 @@ class DecoderBlock(nn.Module):
     def forward(self, x, skip=None):
         x = self.up(x)
         if skip is not None:
+            skip = skip.contiguous()
             if skip.size(1) and x.size(1) == 64:
                 skip = self.da(skip)
 
