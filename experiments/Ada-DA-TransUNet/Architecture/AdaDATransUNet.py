@@ -169,7 +169,7 @@ class Embeddings(nn.Module):
         x = self.patch_embeddings(x)  # (B, hidden. n_patches^(1/2), n_patches^(1/2))
         x = self.ada_block(x)
         x = x.flatten(2)
-        x = x.transpose(-1, -2)  # (B, n_patches, hidden)
+        x = x.transpose(-1, -2).contiguous()  # (B, n_patches, hidden)
 
         embeddings = x + self.position_embeddings
         embeddings = self.dropout(embeddings)
