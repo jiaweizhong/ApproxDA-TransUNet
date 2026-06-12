@@ -248,6 +248,7 @@ def norm(planes, mode='bn', groups=16):
 
 def window_partition(x, window_size):
     """(B, C, H, W) -> (B*nW, C, M, M)"""
+    # DataParallel scatter() returns non-contiguous views; .view() below requires contiguous layout
     x = x.contiguous()
     B, C, H, W = x.shape
     M = window_size
@@ -263,7 +264,10 @@ def window_reverse(windows, window_size, H, W):
     B = windows.shape[0] // nW
     C = windows.shape[1]
     x = windows.view(B, H // M, W // M, C, M, M)
-    return x.permute(0, 3, 1, 4, 2, 5).contiguous().view(B, C, H, W)
+    # Final .contiguous() required: .view(B,C,H,W) after permute produces strides
+    # (C*H*W, H*W, M*W, M) instead of standard NCHW (C*H*W, H*W, W, 1),
+    # causing cuDNN "no engine found" errors in downstream Conv2d.
+    return x.permute(0, 3, 1, 4, 2, 5).contiguous().view(B, C, H, W).contiguous()
 
 
 class LowRankWindowedPAM(nn.Module):
