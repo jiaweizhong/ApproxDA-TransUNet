@@ -60,7 +60,6 @@ env/
 
 # Dataset directories (add your own paths if needed)
 data/
-datasets/
 
 # Training logs / experiment outputs
 runs/
