@@ -21,7 +21,7 @@ Both DA-TransUNet (baseline) and AdaDA-TransUNet are run under identical conditi
 
 | Dataset | DA-TransUNet Train | DA-TransUNet Test | AdaDA Train | AdaDA Test |
 |---------|-------------------|-------------------|-------------|------------|
-| Synapse | ✅ Done (6.3h) | ✅ Done (DSC 79.36%, HD95 26.64mm, Params 107.95M, Infer 112.4s/vol, VRAM 0.5GB) — GFLOPs missing (thop failed) | ⏳ Pending | ⏳ Pending |
+| Synapse | ✅ Done (6.3h) | ✅ Done (DSC 79.36%, HD95 26.64mm, Params 107.95M, Infer 112.4s/vol, VRAM 0.5GB) — GFLOPs still XX (need DA-TransUNet test-only re-run with thop) | ⚠️ Preliminary (partial ~130ep run: DSC 78.35%, HD95 27.34mm, Params 109.90M, GFLOPs 27.2, Infer 103.7s/vol, VRAM 0.5GB) — full re-run needed | ⚠️ Done (preliminary) |
 | Kvasir-SEG | ⏳ Pending | ⏳ Pending | ⏳ Pending | ⏳ Pending |
 | ISIC 2018 | ⏳ Pending | ⏳ Pending | ⏳ Pending | ⏳ Pending |
 

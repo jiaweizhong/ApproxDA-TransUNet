@@ -290,10 +290,10 @@ class LowRankWindowedPAM(nn.Module):
         feat_D = self.conv_D(x_n)
         C_r = self.proj_r(feat_C)                   # (B*nW, C, r)
         D_r = self.proj_r(feat_D)
-        scores = torch.bmm(feat_B.transpose(1, 2), C_r)   # (B*nW, N, r)
+        scores = torch.bmm(feat_B.transpose(1, 2).contiguous(), C_r)   # (B*nW, N, r)
         scores = F.softmax(scores, dim=-1)
-        E_out  = torch.bmm(scores, D_r.transpose(1, 2))   # (B*nW, N, C)
-        E_n = self.alpha * E_out.transpose(1, 2) + x_n    # (B*nW, C, N)
+        E_out  = torch.bmm(scores, D_r.transpose(1, 2).contiguous())   # (B*nW, N, C)
+        E_n = self.alpha * E_out.transpose(1, 2).contiguous() + x_n    # (B*nW, C, N)
         return window_reverse(E_n.view(nBW, C, M, M), M, H, W)
 
 
@@ -310,7 +310,7 @@ class GroupedCAM(nn.Module):
     def forward(self, x):
         B, C, H, W = x.shape
         G, Cg = self.G, C // self.G
-        x_g = x.view(B * G, Cg, H * W)             # (B*G, Cg, N)
+        x_g = x.contiguous().view(B * G, Cg, H * W)             # (B*G, Cg, N)
         X   = torch.bmm(x_g, x_g.transpose(1, 2))  # (B*G, Cg, Cg)
         X   = F.softmax(X, dim=-1)
         E_g = torch.bmm(X.transpose(1, 2), x_g)    # (B*G, Cg, N)
