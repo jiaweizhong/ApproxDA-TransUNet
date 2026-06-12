@@ -316,10 +316,10 @@ class GroupedCAM(nn.Module):
     def forward(self, x):
         B, C, H, W = x.shape
         G, Cg = self.G, C // self.G
-        x_g = x.contiguous().view(B * G, Cg, H * W)             # (B*G, Cg, N)
-        X   = torch.bmm(x_g, x_g.transpose(1, 2))  # (B*G, Cg, Cg)
+        x_g = x.contiguous().view(B * G, Cg, H * W)                          # (B*G, Cg, N)
+        X   = torch.bmm(x_g, x_g.transpose(1, 2).contiguous())  # (B*G, Cg, Cg)
         X   = F.softmax(X, dim=-1)
-        E_g = torch.bmm(X.transpose(1, 2), x_g)    # (B*G, Cg, N)
+        E_g = torch.bmm(X.transpose(1, 2).contiguous(), x_g)    # (B*G, Cg, N)
         E   = self.beta * E_g + x_g
         return E.view(B, C, H, W)
 
