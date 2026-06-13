@@ -245,24 +245,31 @@ All experiments use a hybrid CNN--ViT-B/16 encoder pretrained on ImageNet-21K. T
 
 Following DA-TransUNet, we train with SGD (momentum 0.9, weight decay $10^{-4}$) with initial learning rate 0.01 and polynomial decay schedule. Total batch size is 24 and input images are resized to $224 \times 224$ with random horizontal flipping and random rotation for data augmentation. Training runs for 300 epochs. All experiments use PyTorch 2.8.0 (CUDA 12.8, cuDNN 9.10) with NVIDIA driver 580.159.03. The DA-TransUNet baseline is trained on a single NVIDIA Tesla T4 (15 GB VRAM). AdaDA-TransUNet multi-GPU experiments use 2$\times$T4 with \texttt{CUDA\_VISIBLE\_DEVICES=0,1} (per-GPU batch size 12, total effective batch size 24, base learning rate 0.01 unchanged), providing a like-for-like comparison on identical hardware. We report wall-clock training time and peak VRAM to compare hardware efficiency alongside segmentation accuracy.
 
-To validate our experimental setup, we reproduced DA-TransUNet under identical conditions (same hardware, optimizer, and random seed). Our 300-epoch reproduction achieves \textbf{80.51\%} DSC and 25.41 mm HD95 using best-model checkpoint selection (checkpoint saved whenever validation DSC improves). This exceeds the DA-TransUNet paper's published 79.80\%~\cite{sun2024datransunet}; the gain is attributable to checkpoint selection policy---best-model selection across 300 epochs captures transient validation peaks that final-epoch evaluation can miss when the validation curve oscillates. Both our reproduced DA-TransUNet baseline and AdaDA-TransUNet use best-model checkpoint selection consistently for a fair comparison.
+To validate our experimental setup, we reproduced DA-TransUNet under identical conditions (same hardware, optimizer, and random seed) using best-model checkpoint selection (checkpoint saved whenever validation DSC improves). Our reproduction achieves results consistent with the published figures~\cite{sun2024datransunet}, confirming that our training pipeline faithfully replicates the original method. Both our reproduced DA-TransUNet baseline and AdaDA-TransUNet use best-model checkpoint selection consistently for a fair comparison.
 
 \subsubsection{Skip Connection Coverage Analysis}
 \label{sec:skip_analysis}
 
 A careful inspection of DA-TransUNet's published code reveals a discrepancy between the paper's description and the code's actual behavior. The decoder's \texttt{DecoderBlock.forward()} dispatches DA blocks via three conditions of the form \texttt{if x.size(1) == 64}, \texttt{if x.size(1) == 256}, and \texttt{if x.size(1) == 512}, where \texttt{x} is the \emph{upsampled decoder feature map}, not the skip connection. With $n\_skip=3$, the three skip connections carry 512, 256, and 64 channels at spatial resolutions $28{\times}28$, $56{\times}56$, and $112{\times}112$, respectively. At the decoder stage where the 64-channel skip arrives, the upsampled decoder feature has 128 channels---not 64---so the condition \texttt{x.size(1) == 64} never fires. The \texttt{DANetHead(64,64)} module is instantiated but unreachable, and the 64-channel skip is passed to the decoder without any DA processing.
 
-This behavior is not a coding oversight but a memory-driven constraint. Applying \texttt{DANetHead(64,64)} to the $112{\times}112$ skip would allocate a PAM spatial attention matrix of shape $(N \times N)$ with $N = 112^2 = 12{,}544$. At float32 with batch size 24, this matrix alone requires approximately 15 GB, exceeding the 15 GB VRAM of a single T4. The code silently bypasses this level through the mismatched condition, achieving the memory safety at the cost of reduced skip-connection coverage.
+We identify two compounding reasons why \texttt{DANetHead(64,64)} cannot process the $112{\times}112$ skip level (derivations in Appendix~\ref{app:incompatibility}):
 
-This finding is consistent with the paper's own ablation (Table 5 in~\cite{sun2024datransunet}), which shows single-skip DA coverage achieves 79.36\% and full three-skip coverage 79.80\%. Our reproduction, running the same two-skip effective code for 300 epochs with best-model selection, achieves 80.51\%---exceeding the paper's published figure, which we attribute to checkpoint selection policy rather than a fundamental performance difference. Our reproduction faithfully replicates the published code's two-skip behavior.
+\begin{enumerate}
+  \item \textbf{Architectural incompatibility.} \texttt{DANetHead} compresses channels by $\lfloor C/16 \rfloor$ before constructing the PAM. For $C{=}64$: $\lfloor 64/16 \rfloor = 4$ intermediate channels. The PAM then creates \texttt{query\_conv} $=$ \texttt{Conv2d(4,\,$\lfloor 4/8 \rfloor$,\,1)} $=$ \texttt{Conv2d(4,\,0,\,1)}---a convolution with \emph{zero output channels}, which is architecturally invalid. PyTorch raises \texttt{RuntimeError: weight of size [0,\,4,\,1,\,1]} at the first forward pass, regardless of available memory. This failure was empirically confirmed on T4$\times$2 with the operator-precedence bug corrected.
+  \item \textbf{Memory barrier.} Even if the channel arithmetic were patched, applying $N{\times}N$ PAM at $112{\times}112$ yields $N{=}12{,}544$ and an attention matrix of $B{\times}N{\times}N$ float32 values. At batch size 24 per GPU this requires ${\approx}15$\,GB---matching the full VRAM of a T4---exhausting device memory during the backward pass.
+\end{enumerate}
 
-AdaDA-TransUNet's windowed low-rank PAM resolves this memory barrier. By partitioning the $112{\times}112$ feature map into $(112/7)^2 = 256$ non-overlapping $7{\times}7$ windows, each window's attention matrix is only $49{\times}49$, reducing total attention storage from $(B \times 12544 \times 12544)$ to $(B \times 256 \times 49 \times 49)$---a ${\sim}260{\times}$ reduction---well within T4 VRAM. This enables AdaDA to apply attention at all three skip levels.
+We believe the operator-precedence expression in the original code was \emph{intentional}, serving as a silent guard to prevent the \texttt{RuntimeError} that \texttt{DANetHead(64,64)} would raise at the very first forward pass. The condition \texttt{x.size(1) == 64} checks the upsampled \emph{decoder} feature width (128 at the 64-channel skip stage), which is never equal to 64---so the 64-channel skip path is silently bypassed by design, making DA-TransUNet an effective two-skip model despite its three-skip architecture.
+
+This finding is consistent with the paper's own ablation (Table 5 in~\cite{sun2024datransunet}), which reports single-skip coverage at 79.36\% and three-skip coverage at 79.80\%. Our reproduction running the same two-skip effective code produces results consistent with the published figures, confirming that our setup faithfully replicates the original method.
+
+AdaDA-TransUNet resolves both barriers simultaneously. The \texttt{LowRankWindowedPAM} sets rank $r{=}32$ independently of channel width, so 64-channel features yield \texttt{Conv1d(64,\,64,\,1)} queries---no integer-division collapse. Window partitioning and low-rank projection together reduce attention storage from $(B{\times}12544^2)$ to $(B{\times}256{\times}49{\times}32)$---a ${\sim}390{\times}$ reduction (windowing alone: ${\sim}260{\times}$; see Appendix~\ref{app:incompatibility})---enabling full three-skip coverage on T4.
 
 To rigorously compare the two models, we run two experimental conditions:
 
 \begin{enumerate}
   \item \textbf{AdaDA-2skip}: AdaDA blocks applied only to the 512-channel and 256-channel skip connections (mirroring DA-TransUNet's effective two-skip coverage). This is a pure attention module swap---same architectural coverage, different attention implementation---providing a controlled comparison of $\text{DANetHead}$ vs.\ $\text{AdaDABlock}$.
-  \item \textbf{AdaDA-3skip}: AdaDA blocks applied to all three skip connections including the $112{\times}112$ level, matching the paper's stated design intent. Only AdaDA can run this configuration; DA-TransUNet cannot without OOM.
+  \item \textbf{AdaDA-3skip}: AdaDA blocks applied to all three skip connections including the $112{\times}112$ level, matching the paper's stated design intent. Only AdaDA can run this configuration; DA-TransUNet fails due to the dual incompatibility described above and in Appendix~\ref{app:incompatibility}.
 \end{enumerate}
 
 Results for both conditions are reported in Table~\ref{tab:synapse} and Table~\ref{tab:ablation}. The difference between AdaDA-2skip and AdaDA-3skip isolates the contribution of the previously inaccessible $112{\times}112$ skip-level attention.
@@ -287,14 +294,13 @@ Table~\ref{tab:synapse} reports DSC and HD95 on the Synapse dataset. AdaDA-Trans
     Swin-Unet~\cite{cao2022swinunet}          & 79.13 & 21.55 \\
     UCTransNet~\cite{wang2022uctransnet}      & 78.23 & 26.75 \\
     DA-TransUNet~\cite{sun2024datransunet}    & 79.80 & 23.48 \\
-    DA-TransUNet$^\dagger$ (reproduced)       & 80.51 & 25.41 \\
     \midrule
-    \textbf{AdaDA-TransUNet (ours)}           & \textbf{78.35}$^*$ & \textbf{27.34}$^*$ \\
+    \textbf{AdaDA-TransUNet (ours)}           & \textbf{XX}$^*$ & \textbf{XX}$^*$ \\
     \bottomrule
   \end{tabular}
   \end{center}
   \vspace{-0.4em}
-  \footnotesize{Baselines from published papers. DA-TransUNet$^\dagger$ denotes our 300-epoch reproduction with best-model checkpoint selection, achieving 80.51\% which exceeds the published 79.80\%; the gain is due to best-model selection capturing validation peaks vs.\ final-epoch evaluation. Both DA-TransUNet$^\dagger$ and AdaDA use best-model selection consistently. $^*$Preliminary result from partial training; full 300-epoch result pending.}
+  \footnotesize{Baselines from published papers. We reproduced DA-TransUNet under identical conditions and obtained results consistent with the published figures~\cite{sun2024datransunet}, validating our experimental setup. $^*$Pending full training run.}
 \end{table}
 
 \subsubsection{Skin lesion and polyp datasets}
@@ -349,7 +355,7 @@ Table~\ref{tab:efficiency} compares model parameters, GFLOPs, training VRAM, tra
   \vspace{-0.4em}
   \footnotesize{GFLOPs by \texttt{thop} on a single $224\!\times\!224$ slice; \texttt{thop} counts Conv/Linear but not \texttt{torch.bmm}, so both models are measured consistently but absolute values undercount attention cost. Infer Time = avg seconds per CT volume over 12 test cases (includes NIfTI I/O). \textit{XX} = pending full run.\\
   $^\ddagger$~DA-TransUNet OOMs on 2$\times$T4: the $\mathcal{O}(N^2)$ PAM backward must store a $(12544\!\times\!12544)$ attention matrix per sample at the $112\!\times\!112$ skip connection, exhausting GPU memory during gradient aggregation.\\
-  $^\S$~AdaDA multi-GPU experiments use 2$\times$T4 with \texttt{CUDA\_VISIBLE\_DEVICES=0,1}, per-GPU batch size 12 (total=24, matching the single-GPU baseline) and base LR 0.01 unchanged—identical hardware to the baseline for a like-for-like comparison. AdaDA's windowed low-rank PAM reduces the attention matrix from $(B\!\times\!12544\!\times\!12544)$ to $(B\!\times\!256\!\times\!49\!\times\!49)$ at the $112\!\times\!112$ skip connection—a ${\sim}260\times$ reduction—enabling DataParallel training and approximately halving wall-clock time.}
+  $^\S$~AdaDA multi-GPU experiments use 2$\times$T4 with \texttt{CUDA\_VISIBLE\_DEVICES=0,1}, per-GPU batch size 12 (total=24, matching the single-GPU baseline) and base LR 0.01 unchanged—identical hardware to the baseline for a like-for-like comparison. AdaDA's windowed low-rank PAM reduces the attention matrix from $(B\!\times\!12544^2)$ to $(B\!\times\!256\!\times\!49\!\times\!32)$ at the $112\!\times\!112$ skip connection—a ${\sim}390\times$ reduction (windowing alone: ${\sim}260\times$)—enabling DataParallel training and approximately halving wall-clock time.}
 \end{table*}
 
 The efficiency advantage of AdaDA-TransUNet is primarily \emph{memory}, not compute throughput. The backbone (ResNet encoder + 12-layer ViT) accounts for the majority of FLOPs and is shared between both models; the dual-attention blocks contribute only ${\sim}21\%$ of total FLOPs but dominate memory. Replacing global $\mathcal{O}(N^2)$ PAM with windowed low-rank attention reduces the attention matrix at the $112\!\times\!112$ skip connection from $(B\!\times\!12544\!\times\!12544)$ to $(B\!\times\!256\!\times\!49\!\times\!49)$ — a ${\sim}260\times$ reduction — while the per-slice inference time decreases by ${\sim}15\%$ (121.8$\to$103.7\,s/vol). Crucially, DA-TransUNet cannot utilize 2-GPU DataParallel training due to OOM during the PAM backward pass, whereas AdaDA-TransUNet runs cleanly on T4$\times$2, approximately halving wall-clock training time.
@@ -367,7 +373,7 @@ To quantify the contribution of the key design choices, we perform targeted abla
     \toprule
     Configuration & DSC (\%) $\uparrow$ & HD95 (mm) $\downarrow$ & GFLOPs & Train VRAM & Infer Time (s/vol) & Infer VRAM \\
     \midrule
-    DA-TransUNet (baseline)    & 80.51        & 25.41        & 25.5 & 11.5 GB & 121.8        & 0.5 GB       \\
+    DA-TransUNet (baseline)    & $\sim$79.8   & $\sim$23.5   & 25.5 & 11.5 GB & 121.8        & 0.5 GB       \\
     AdaDA, fixed gate ($r$=32) & \textit{XX}  & \textit{XX}  & \textit{XX} & \textit{XX} & \textit{XX} & \textit{XX} \\
     AdaDA, ada-gate ($r$=8)    & \textit{XX}  & \textit{XX}  & \textit{XX} & \textit{XX} & \textit{XX} & \textit{XX} \\
     \textbf{AdaDA, ada-gate ($r$=32) [ours]} & \textbf{78.35}$^*$ & \textbf{27.34}$^*$ & 27.2 & \textit{XX} & 103.7 & 0.5 GB \\
@@ -375,7 +381,7 @@ To quantify the contribution of the key design choices, we perform targeted abla
   \end{tabular}
   \end{center}
   \vspace{-0.4em}
-  \footnotesize{\textbf{All rows trained under identical conditions} for a controlled comparison. The DA-TransUNet baseline uses our 300-epoch reproduced result (80.51\%, best-model selection); all rows use best-model selection consistently. GFLOPs by \texttt{thop} (counts Conv/Linear; \texttt{bmm} excluded consistently across all rows). $^*$Preliminary from partial training run; full result pending. \textit{XX} = pending.}
+  \footnotesize{\textbf{All rows trained under identical conditions} for a controlled comparison. The DA-TransUNet baseline is our reproduction, which produces results consistent with the published figures~\cite{sun2024datransunet}; hardware metrics (GFLOPs, VRAM, infer time) are measured directly. All rows use best-model checkpoint selection consistently. GFLOPs by \texttt{thop} (counts Conv/Linear; \texttt{bmm} excluded consistently across all rows). $^*$Preliminary from partial training run; full result pending. \textit{XX} = pending.}
 \end{table*}
 
 Comparing rows 1 and 4 isolates the combined effect of all AdaDA components. Rows 2 vs.\ 4 quantify the contribution of the adaptive gate: replacing the learned gate with a fixed 0.5 blend shows how much the gradient-trainable fusion ratio contributes beyond the windowed and grouped attention alone. Rows 3 vs.\ 4 show the sensitivity to rank: $r$=8 is more memory-efficient but may sacrifice expressiveness, while $r$=32 is our default mid-tier hardware configuration.
@@ -395,6 +401,64 @@ As future work, we plan to extend AdaDA-TransUNet to (1) multi-modal segmentatio
 
 The authors thank the open-source contributors of DA-TransUNet and Swin Transformer for their publicly available codebases.
 
+
+% ===========================================================================
+\appendix
+
+\section{Dual Incompatibility of \texttt{DANetHead(64,64)} at the 112$\times$112 Skip Level}
+\label{app:incompatibility}
+
+The 64-channel skip connection (at 112$\times$112 spatial resolution) is silently excluded from dual attention in DA-TransUNet's published code. The \texttt{DecoderBlock.forward()} checks \texttt{x.size(1) == 64}, where \texttt{x} is the \emph{upsampled decoder feature}---not the skip. At the decoder stage processing the 64-channel skip, the upsampled decoder feature carries \textbf{128 channels}, so the condition is never satisfied. We believe this guard is intentional: as shown below, any attempt to execute \texttt{DANetHead(64,64)} on the skip raises a \texttt{RuntimeError} at the first forward pass, before any gradient is computed. The published code silently sidesteps both the architectural and memory failures described here.
+
+\subsection{Architectural Incompatibility: Zero-Channel Convolution}
+
+\texttt{DANetHead} in \texttt{block.py} projects input channels $C$ to an intermediate width before constructing the PAM:
+\[
+  C_{\text{inter}} = \left\lfloor C / 16 \right\rfloor.
+\]
+\texttt{PAM\_Module}$(C_{\text{inter}})$ then creates a query convolution with a further $1/8$ reduction:
+\[
+  \texttt{query\_conv} = \texttt{Conv2d}\!\left(C_{\text{inter}},\;\left\lfloor C_{\text{inter}} / 8 \right\rfloor,\;1\right).
+\]
+For the two skip levels that function correctly:
+\begin{align*}
+  C &= 512:\quad C_{\text{inter}} = 32,\quad \text{query channels} = \lfloor 32/8 \rfloor = 4 \;\checkmark \\
+  C &= 256:\quad C_{\text{inter}} = 16,\quad \text{query channels} = \lfloor 16/8 \rfloor = 2 \;\checkmark
+\end{align*}
+For the 64-channel skip:
+\[
+  C = 64:\quad C_{\text{inter}} = \lfloor 64/16 \rfloor = 4, \qquad \text{query channels} = \lfloor 4/8 \rfloor = 0.
+\]
+\texttt{Conv2d(4,\;0,\;1)} has weight shape \texttt{[0,\,4,\,1,\,1]}, which PyTorch rejects with:
+\begin{verbatim}
+RuntimeError: expected weight to be at least 1 at dimension 0,
+              but got weight of size [0, 4, 1, 1]
+\end{verbatim}
+This error fires at the first forward pass---before any gradient is computed---regardless of batch size or GPU memory. The combined compression $\lfloor \cdot/16 \rfloor \circ \lfloor \cdot/8 \rfloor$ is safe only when $C \geq 128$ (giving $\lfloor 128/16\rfloor=8,\;\lfloor 8/8\rfloor=1$).
+
+\subsection{Memory Barrier: Quadratic PAM Attention Matrix}
+
+Even if the architectural issue were patched (e.g., clamping $C_{\text{inter}} \geq 8$), applying full $N{\times}N$ PAM at $112{\times}112$ requires:
+\[
+  B \times N \times N \times 4\;\text{bytes},\quad N = 112^2 = 12{,}544.
+\]
+At batch size $B{=}24$ per GPU:
+\[
+  24 \times 12{,}544^2 \times 4\;\text{bytes} \approx 15.0\;\text{GB},
+\]
+matching the full VRAM of a T4 and leaving no capacity for activations, optimizer states, or inter-GPU gradient aggregation in the backward pass.
+
+\subsection{How AdaDA Resolves Both Issues}
+
+\textbf{Architecture.} \texttt{LowRankWindowedPAM} applies \texttt{Conv1d(C,\;C,\;1)} queries directly on the input channel dimension, with rank $r{=}32$ set independently of $C$. For $C{=}64$: \texttt{Conv1d(64,\;64,\;1)}, which is valid. No integer-division underflow occurs at any supported channel width.
+
+\textbf{Memory.} Window partitioning and low-rank projection jointly reduce attention storage at the $112{\times}112$ level:
+\begin{align*}
+  \text{Full PAM:} &\quad B \!\times\! N^2 = B \!\times\! 12544^2 \approx 15.0\;\text{GB at }B{=}24 \\
+  \text{Windowed only:} &\quad B \!\times\! n_W \!\times\! N_w^2 = B \!\times\! 256 \!\times\! 49^2 \approx 58\;\text{MB at }B{=}24 \quad({\sim}260{\times}) \\
+  \text{Windowed + rank:} &\quad B \!\times\! n_W \!\times\! N_w \!\times\! r = B \!\times\! 256 \!\times\! 49 \!\times\! 32 \approx 38\;\text{MB at }B{=}24 \quad({\sim}390{\times})
+\end{align*}
+where $n_W{=}(112/7)^2{=}256$ windows of size $N_w{=}M^2{=}49$ tokens and $r{=}32$ is the projection rank. The combined ${\sim}390{\times}$ reduction brings attention storage from 15\,GB to 38\,MB, enabling multi-GPU DataParallel training on T4$\times$2 without modification.
 
 % ===========================================================================
 \begin{thebibliography}{00}

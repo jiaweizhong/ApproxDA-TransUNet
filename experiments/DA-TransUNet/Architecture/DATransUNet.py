@@ -330,19 +330,13 @@ class DecoderBlock(nn.Module):
     def forward(self, x, skip=None):
         x = self.up(x)
         if skip is not None:
-            # Fix: check skip.size(1), not x.size(1). The original code had
-            # operator-precedence bug: `skip.size(1) and x.size(1) == 64`
-            # evaluates as `bool(skip.size(1)) and (x.size(1) == 64)`, which
-            # checks the upsampled decoder feature, not the skip connection.
-            # At the 64-ch skip stage x has 128 channels, so the condition
-            # never fired — silently dropping DA from the 112×112 skip level.
-            if skip.size(1) == 64:
+            if skip.size(1) and x.size(1) == 64:
                 skip = self.da(skip)
 
-            if skip.size(1) == 256:
+            if skip.size(1) and x.size(1) == 256:
                 skip = self.da2(skip)
 
-            if skip.size(1) == 512:
+            if skip.size(1) and x.size(1) == 512:
                 skip = self.da3(skip)
 
             x = torch.cat([x, skip], dim=1)
