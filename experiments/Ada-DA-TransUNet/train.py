@@ -6,6 +6,14 @@ import time
 import numpy as np
 import torch
 import torch.backends.cudnn as cudnn
+
+# Disable cublasLt fused gemm — prevents CUBLAS_STATUS_EXECUTION_FAILED on Kaggle T4
+# when DataParallel replica 1 gets a non-128-byte-aligned memory pointer.
+torch.set_float32_matmul_precision('highest')
+try:
+    torch.backends.cuda.preferred_blas_library("cublas")
+except AttributeError:
+    pass  # PyTorch < 2.2; set_float32_matmul_precision above still applies
 from Architecture.AdaDATransUNet import AdaDATransUNet
 from Architecture.AdaDATransUNet import CONFIGS as CONFIGS_ViT_seg
 import sys
@@ -99,7 +107,7 @@ def trainer_synapse(args, model, snapshot_path):
     def worker_init_fn(worker_id):
         random.seed(args.seed + worker_id)
 
-    trainloader = DataLoader(db_train, batch_size=batch_size, shuffle=True, num_workers=8, pin_memory=True,
+    trainloader = DataLoader(db_train, batch_size=batch_size, shuffle=True, num_workers=4, pin_memory=True,
                              worker_init_fn=worker_init_fn)
     if args.n_gpu > 1:
         model = nn.DataParallel(model)

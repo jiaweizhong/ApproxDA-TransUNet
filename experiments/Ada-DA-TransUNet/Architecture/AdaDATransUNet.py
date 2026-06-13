@@ -76,6 +76,7 @@ class Attention(nn.Module):
         return x.permute(0, 2, 1, 3).contiguous()
 
     def forward(self, hidden_states):
+        hidden_states = hidden_states.contiguous()  # ensure aligned ptr for cublasLt on replica 1
         mixed_query_layer = self.query(hidden_states)
         mixed_key_layer = self.key(hidden_states)
         mixed_value_layer = self.value(hidden_states)
