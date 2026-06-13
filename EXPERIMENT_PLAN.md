@@ -21,7 +21,7 @@ Both DA-TransUNet (baseline) and AdaDA-TransUNet are run under identical conditi
 
 | Dataset | DA-TransUNet Train | DA-TransUNet Test | AdaDA Train | AdaDA Test |
 |---------|-------------------|-------------------|-------------|------------|
-| Synapse | ✅ Done (22.35h, T4×1, 300ep) | ✅ Done (DSC 80.51%, HD95 25.41mm, GFLOPs 25.5, Params 107.95M, Infer 121.8s/vol, VRAM 0.5GB, best_model.pth) | ⏳ In Progress (T4×2, 300ep, val_interval=15) | ⏳ Pending |
+| Synapse | ✅ Done (~11.4h pure train, 22.35h wall-clock, T4×1, 300ep) — peak train VRAM pending next run | ✅ Done (DSC ~79.8%, GFLOPs 25.5, Params 107.95M, Infer 121.8s/vol, Infer VRAM 0.5GB, best_model.pth) | ⏳ In Progress (T4×2, 300ep, val_interval=15) | ⏳ Pending |
 | Kvasir-SEG | ⏳ Pending | ⏳ Pending | ⏳ Pending | ⏳ Pending |
 | ISIC 2018 | ⏳ Pending | ⏳ Pending | ⏳ Pending | ⏳ Pending |
 

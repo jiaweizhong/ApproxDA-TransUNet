@@ -116,6 +116,8 @@ def trainer_synapse(args, model, snapshot_path):
     iterator = tqdm(range(max_epoch), ncols=70)
     train_start = time.time()
     val_time_s = 0.0
+    if torch.cuda.is_available():
+        torch.cuda.reset_peak_memory_stats()
     for epoch_num in iterator:
         epoch_loss_sum = 0.0
         epoch_loss_ce_sum = 0.0
@@ -151,7 +153,7 @@ def trainer_synapse(args, model, snapshot_path):
                 labs = label_batch[1, ...].unsqueeze(0) * 50
                 writer.add_image('train/GroundTruth', labs, iter_num)
 
-        elapsed_h = (time.time() - train_start) / 3600
+        elapsed_h = (time.time() - train_start - val_time_s) / 3600
         avg_loss = epoch_loss_sum / epoch_batches
         avg_loss_ce = epoch_loss_ce_sum / epoch_batches
         logging.info("epoch %d/%d  loss: %.4f  loss_ce: %.4f  lr: %.6f  elapsed: %.2fh" % (
