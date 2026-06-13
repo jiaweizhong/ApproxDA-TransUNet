@@ -1,0 +1,344 @@
+[18:20:18.170] Namespace(root_path='../data/Synapse/train_npz', dataset='Synapse', list_dir='./lists/lists_Synapse', num_classes=9, max_iterations=30000, max_epochs=300, batch_size=24, n_gpu=1, deterministic=1, base_lr=0.01, img_size=224, seed=1234, n_skip=3, vit_name='R50-ViT-B_16', vit_patches_size=16, val_interval=10, is_pretrain=True, exp='TU_Synapse224')
+[18:20:18.183] 93 iterations per epoch. 27900 max iterations 
+[18:22:36.343] epoch 1/300  loss: 0.5277  loss_ce: 0.2712  lr: 0.009970  elapsed: 0.04h
+[18:24:53.585] epoch 2/300  loss: 0.3951  loss_ce: 0.0971  lr: 0.009940  elapsed: 0.08h
+[18:27:11.009] epoch 3/300  loss: 0.3793  loss_ce: 0.0825  lr: 0.009910  elapsed: 0.11h
+[18:29:28.812] epoch 4/300  loss: 0.3655  loss_ce: 0.0745  lr: 0.009880  elapsed: 0.15h
+[18:31:45.580] epoch 5/300  loss: 0.3098  loss_ce: 0.0657  lr: 0.009850  elapsed: 0.19h
+[18:34:03.309] epoch 6/300  loss: 0.2693  loss_ce: 0.0594  lr: 0.009820  elapsed: 0.23h
+[18:36:20.176] epoch 7/300  loss: 0.2524  loss_ce: 0.0545  lr: 0.009790  elapsed: 0.27h
+[18:38:37.820] epoch 8/300  loss: 0.1898  loss_ce: 0.0448  lr: 0.009760  elapsed: 0.31h
+[18:40:55.355] epoch 9/300  loss: 0.1567  loss_ce: 0.0410  lr: 0.009730  elapsed: 0.34h
+[18:43:13.024] epoch 10/300  loss: 0.1428  loss_ce: 0.0372  lr: 0.009700  elapsed: 0.38h
+[19:03:53.101] epoch 10 val_dice: 0.6407  best: 0.0000
+[19:03:53.687] => best model saved (DSC 0.6407)
+[19:06:09.810] epoch 11/300  loss: 0.1188  loss_ce: 0.0328  lr: 0.009670  elapsed: 0.76h
+[19:08:27.453] epoch 12/300  loss: 0.1119  loss_ce: 0.0312  lr: 0.009640  elapsed: 0.80h
+[19:10:44.393] epoch 13/300  loss: 0.0977  loss_ce: 0.0274  lr: 0.009609  elapsed: 0.84h
+[19:13:02.234] epoch 14/300  loss: 0.0937  loss_ce: 0.0262  lr: 0.009579  elapsed: 0.88h
+[19:15:19.984] epoch 15/300  loss: 0.0945  loss_ce: 0.0254  lr: 0.009549  elapsed: 0.92h
+[19:17:37.559] epoch 16/300  loss: 0.1029  loss_ce: 0.0288  lr: 0.009519  elapsed: 0.96h
+[19:19:54.996] epoch 17/300  loss: 0.0840  loss_ce: 0.0240  lr: 0.009489  elapsed: 0.99h
+[19:22:12.247] epoch 18/300  loss: 0.0810  loss_ce: 0.0216  lr: 0.009459  elapsed: 1.03h
+[19:24:29.419] epoch 19/300  loss: 0.0764  loss_ce: 0.0216  lr: 0.009428  elapsed: 1.07h
+[19:26:46.948] epoch 20/300  loss: 0.0783  loss_ce: 0.0209  lr: 0.009398  elapsed: 1.11h
+[19:49:31.094] epoch 20 val_dice: 0.7306  best: 0.6407
+[19:49:32.159] => best model saved (DSC 0.7306)
+[19:51:47.989] epoch 21/300  loss: 0.0765  loss_ce: 0.0207  lr: 0.009368  elapsed: 1.52h
+[19:54:04.499] epoch 22/300  loss: 0.0747  loss_ce: 0.0208  lr: 0.009338  elapsed: 1.56h
+[19:56:21.219] epoch 23/300  loss: 0.0679  loss_ce: 0.0188  lr: 0.009308  elapsed: 1.60h
+[19:58:38.381] epoch 24/300  loss: 0.0662  loss_ce: 0.0179  lr: 0.009277  elapsed: 1.64h
+[20:00:54.510] epoch 25/300  loss: 0.0640  loss_ce: 0.0184  lr: 0.009247  elapsed: 1.68h
+[20:03:09.572] epoch 26/300  loss: 0.0620  loss_ce: 0.0181  lr: 0.009217  elapsed: 1.71h
+[20:05:24.573] epoch 27/300  loss: 0.0589  loss_ce: 0.0172  lr: 0.009187  elapsed: 1.75h
+[20:07:40.620] epoch 28/300  loss: 0.0620  loss_ce: 0.0166  lr: 0.009156  elapsed: 1.79h
+[20:09:56.806] epoch 29/300  loss: 0.0584  loss_ce: 0.0166  lr: 0.009126  elapsed: 1.83h
+[20:12:12.624] epoch 30/300  loss: 0.0647  loss_ce: 0.0178  lr: 0.009096  elapsed: 1.87h
+[20:35:06.944] epoch 30 val_dice: 0.7675  best: 0.7306
+[20:35:07.888] => best model saved (DSC 0.7675)
+[20:37:23.486] epoch 31/300  loss: 0.0578  loss_ce: 0.0157  lr: 0.009065  elapsed: 2.28h
+[20:39:40.835] epoch 32/300  loss: 0.0574  loss_ce: 0.0159  lr: 0.009035  elapsed: 2.32h
+[20:41:58.745] epoch 33/300  loss: 0.0593  loss_ce: 0.0155  lr: 0.009005  elapsed: 2.36h
+[20:44:14.686] epoch 34/300  loss: 0.0551  loss_ce: 0.0150  lr: 0.008974  elapsed: 2.40h
+[20:46:32.103] epoch 35/300  loss: 0.0487  loss_ce: 0.0146  lr: 0.008944  elapsed: 2.44h
+[20:48:49.341] epoch 36/300  loss: 0.0526  loss_ce: 0.0146  lr: 0.008914  elapsed: 2.48h
+[20:51:06.468] epoch 37/300  loss: 0.0563  loss_ce: 0.0144  lr: 0.008883  elapsed: 2.51h
+[20:53:23.423] epoch 38/300  loss: 0.0550  loss_ce: 0.0141  lr: 0.008853  elapsed: 2.55h
+[20:55:40.614] epoch 39/300  loss: 0.0558  loss_ce: 0.0141  lr: 0.008822  elapsed: 2.59h
+[20:57:58.463] epoch 40/300  loss: 0.0511  loss_ce: 0.0141  lr: 0.008792  elapsed: 2.63h
+[21:20:53.449] epoch 40 val_dice: 0.7798  best: 0.7675
+[21:20:54.420] => best model saved (DSC 0.7798)
+[21:23:10.377] epoch 41/300  loss: 0.0464  loss_ce: 0.0135  lr: 0.008761  elapsed: 3.05h
+[21:25:27.832] epoch 42/300  loss: 0.0510  loss_ce: 0.0135  lr: 0.008731  elapsed: 3.09h
+[21:27:44.865] epoch 43/300  loss: 0.0508  loss_ce: 0.0133  lr: 0.008701  elapsed: 3.12h
+[21:30:03.045] epoch 44/300  loss: 0.0499  loss_ce: 0.0131  lr: 0.008670  elapsed: 3.16h
+[21:32:20.789] epoch 45/300  loss: 0.0521  loss_ce: 0.0137  lr: 0.008640  elapsed: 3.20h
+[21:34:38.739] epoch 46/300  loss: 0.0507  loss_ce: 0.0131  lr: 0.008609  elapsed: 3.24h
+[21:36:56.130] epoch 47/300  loss: 0.0467  loss_ce: 0.0127  lr: 0.008579  elapsed: 3.28h
+[21:39:14.173] epoch 48/300  loss: 0.0480  loss_ce: 0.0125  lr: 0.008548  elapsed: 3.32h
+[21:41:31.782] epoch 49/300  loss: 0.0458  loss_ce: 0.0129  lr: 0.008518  elapsed: 3.35h
+[21:43:49.781] epoch 50/300  loss: 0.0465  loss_ce: 0.0130  lr: 0.008487  elapsed: 3.39h
+[22:06:47.364] epoch 50 val_dice: 0.7936  best: 0.7798
+[22:06:48.328] => best model saved (DSC 0.7936)
+[22:09:05.370] epoch 51/300  loss: 0.0444  loss_ce: 0.0126  lr: 0.008456  elapsed: 3.81h
+[22:11:23.725] epoch 52/300  loss: 0.0483  loss_ce: 0.0121  lr: 0.008426  elapsed: 3.85h
+[22:13:40.923] epoch 53/300  loss: 0.0434  loss_ce: 0.0120  lr: 0.008395  elapsed: 3.89h
+[22:15:58.973] epoch 54/300  loss: 0.0467  loss_ce: 0.0122  lr: 0.008365  elapsed: 3.93h
+[22:18:15.582] epoch 55/300  loss: 0.0429  loss_ce: 0.0114  lr: 0.008334  elapsed: 3.97h
+[22:20:33.200] epoch 56/300  loss: 0.0438  loss_ce: 0.0121  lr: 0.008303  elapsed: 4.00h
+[22:22:50.087] epoch 57/300  loss: 0.0481  loss_ce: 0.0129  lr: 0.008273  elapsed: 4.04h
+[22:25:07.431] epoch 58/300  loss: 0.0413  loss_ce: 0.0117  lr: 0.008242  elapsed: 4.08h
+[22:27:24.417] epoch 59/300  loss: 0.0428  loss_ce: 0.0112  lr: 0.008212  elapsed: 4.12h
+[22:29:41.638] epoch 60/300  loss: 0.0415  loss_ce: 0.0115  lr: 0.008181  elapsed: 4.16h
+[22:52:42.046] epoch 60 val_dice: 0.7948  best: 0.7936
+[22:52:43.105] => best model saved (DSC 0.7948)
+[22:54:57.821] epoch 61/300  loss: 0.0441  loss_ce: 0.0115  lr: 0.008150  elapsed: 4.58h
+[22:57:13.799] epoch 62/300  loss: 0.0402  loss_ce: 0.0110  lr: 0.008119  elapsed: 4.62h
+[22:59:29.280] epoch 63/300  loss: 0.0455  loss_ce: 0.0126  lr: 0.008089  elapsed: 4.65h
+[23:01:44.517] epoch 64/300  loss: 0.0446  loss_ce: 0.0117  lr: 0.008058  elapsed: 4.69h
+[23:03:59.551] epoch 65/300  loss: 0.0428  loss_ce: 0.0116  lr: 0.008027  elapsed: 4.73h
+[23:06:14.049] epoch 66/300  loss: 0.0426  loss_ce: 0.0120  lr: 0.007997  elapsed: 4.77h
+[23:08:28.602] epoch 67/300  loss: 0.0406  loss_ce: 0.0111  lr: 0.007966  elapsed: 4.80h
+[23:10:42.072] epoch 68/300  loss: 0.0449  loss_ce: 0.0111  lr: 0.007935  elapsed: 4.84h
+[23:12:56.369] epoch 69/300  loss: 0.0418  loss_ce: 0.0111  lr: 0.007904  elapsed: 4.88h
+[23:15:10.667] epoch 70/300  loss: 0.0384  loss_ce: 0.0114  lr: 0.007873  elapsed: 4.91h
+[23:38:01.982] epoch 70 val_dice: 0.7861  best: 0.7948
+[23:40:15.707] epoch 71/300  loss: 0.0389  loss_ce: 0.0110  lr: 0.007843  elapsed: 5.33h
+[23:42:31.849] epoch 72/300  loss: 0.0416  loss_ce: 0.0109  lr: 0.007812  elapsed: 5.37h
+[23:44:47.381] epoch 73/300  loss: 0.0413  loss_ce: 0.0104  lr: 0.007781  elapsed: 5.41h
+[23:47:03.025] epoch 74/300  loss: 0.0392  loss_ce: 0.0105  lr: 0.007750  elapsed: 5.45h
+[23:49:18.415] epoch 75/300  loss: 0.0417  loss_ce: 0.0105  lr: 0.007719  elapsed: 5.48h
+[23:51:34.081] epoch 76/300  loss: 0.0392  loss_ce: 0.0102  lr: 0.007688  elapsed: 5.52h
+[23:53:49.502] epoch 77/300  loss: 0.0369  loss_ce: 0.0101  lr: 0.007657  elapsed: 5.56h
+[23:56:05.010] epoch 78/300  loss: 0.0408  loss_ce: 0.0102  lr: 0.007627  elapsed: 5.60h
+[23:58:20.989] epoch 79/300  loss: 0.0386  loss_ce: 0.0101  lr: 0.007596  elapsed: 5.63h
+[00:00:37.291] epoch 80/300  loss: 0.0338  loss_ce: 0.0100  lr: 0.007565  elapsed: 5.67h
+[00:23:50.957] epoch 80 val_dice: 0.8014  best: 0.7948
+[00:23:51.977] => best model saved (DSC 0.8014)
+[00:26:06.944] epoch 81/300  loss: 0.0388  loss_ce: 0.0098  lr: 0.007534  elapsed: 6.10h
+[00:28:22.755] epoch 82/300  loss: 0.0346  loss_ce: 0.0100  lr: 0.007503  elapsed: 6.13h
+[00:30:38.924] epoch 83/300  loss: 0.0375  loss_ce: 0.0098  lr: 0.007472  elapsed: 6.17h
+[00:32:55.447] epoch 84/300  loss: 0.0393  loss_ce: 0.0103  lr: 0.007441  elapsed: 6.21h
+[00:35:11.759] epoch 85/300  loss: 0.0376  loss_ce: 0.0098  lr: 0.007410  elapsed: 6.25h
+[00:37:28.036] epoch 86/300  loss: 0.0396  loss_ce: 0.0103  lr: 0.007379  elapsed: 6.29h
+[00:39:43.835] epoch 87/300  loss: 0.0382  loss_ce: 0.0104  lr: 0.007348  elapsed: 6.32h
+[00:41:59.397] epoch 88/300  loss: 0.0379  loss_ce: 0.0101  lr: 0.007317  elapsed: 6.36h
+[00:44:14.452] epoch 89/300  loss: 0.0366  loss_ce: 0.0098  lr: 0.007286  elapsed: 6.40h
+[00:46:30.522] epoch 90/300  loss: 0.0422  loss_ce: 0.0101  lr: 0.007255  elapsed: 6.44h
+[01:09:36.790] epoch 90 val_dice: 0.7852  best: 0.8014
+[01:11:50.957] epoch 91/300  loss: 0.0360  loss_ce: 0.0097  lr: 0.007223  elapsed: 6.86h
+[01:14:07.220] epoch 92/300  loss: 0.0333  loss_ce: 0.0095  lr: 0.007192  elapsed: 6.90h
+[01:16:23.076] epoch 93/300  loss: 0.0338  loss_ce: 0.0094  lr: 0.007161  elapsed: 6.93h
+[01:18:39.099] epoch 94/300  loss: 0.0402  loss_ce: 0.0115  lr: 0.007130  elapsed: 6.97h
+[01:20:54.785] epoch 95/300  loss: 0.0374  loss_ce: 0.0095  lr: 0.007099  elapsed: 7.01h
+[01:23:11.224] epoch 96/300  loss: 0.0384  loss_ce: 0.0094  lr: 0.007068  elapsed: 7.05h
+[01:25:27.624] epoch 97/300  loss: 0.0373  loss_ce: 0.0093  lr: 0.007037  elapsed: 7.09h
+[01:27:42.968] epoch 98/300  loss: 0.0321  loss_ce: 0.0093  lr: 0.007005  elapsed: 7.12h
+[01:29:58.491] epoch 99/300  loss: 0.0407  loss_ce: 0.0095  lr: 0.006974  elapsed: 7.16h
+[01:32:14.821] epoch 100/300  loss: 0.0368  loss_ce: 0.0093  lr: 0.006943  elapsed: 7.20h
+[01:54:58.899] epoch 100 val_dice: 0.7913  best: 0.8014
+[01:57:12.640] epoch 101/300  loss: 0.0380  loss_ce: 0.0092  lr: 0.006912  elapsed: 7.62h
+[01:59:28.752] epoch 102/300  loss: 0.0339  loss_ce: 0.0094  lr: 0.006880  elapsed: 7.65h
+[02:01:44.141] epoch 103/300  loss: 0.0387  loss_ce: 0.0101  lr: 0.006849  elapsed: 7.69h
+[02:04:00.364] epoch 104/300  loss: 0.0373  loss_ce: 0.0096  lr: 0.006818  elapsed: 7.73h
+[02:06:16.645] epoch 105/300  loss: 0.0378  loss_ce: 0.0098  lr: 0.006786  elapsed: 7.77h
+[02:08:32.961] epoch 106/300  loss: 0.0334  loss_ce: 0.0097  lr: 0.006755  elapsed: 7.80h
+[02:10:49.112] epoch 107/300  loss: 0.0365  loss_ce: 0.0100  lr: 0.006724  elapsed: 7.84h
+[02:13:04.974] epoch 108/300  loss: 0.0336  loss_ce: 0.0095  lr: 0.006692  elapsed: 7.88h
+[02:15:21.144] epoch 109/300  loss: 0.0318  loss_ce: 0.0091  lr: 0.006661  elapsed: 7.92h
+[02:17:37.360] epoch 110/300  loss: 0.0345  loss_ce: 0.0090  lr: 0.006630  elapsed: 7.96h
+[02:40:23.476] epoch 110 val_dice: 0.7959  best: 0.8014
+[02:42:37.621] epoch 111/300  loss: 0.0339  loss_ce: 0.0089  lr: 0.006598  elapsed: 8.37h
+[02:44:53.749] epoch 112/300  loss: 0.0335  loss_ce: 0.0089  lr: 0.006567  elapsed: 8.41h
+[02:47:09.921] epoch 113/300  loss: 0.0345  loss_ce: 0.0096  lr: 0.006535  elapsed: 8.45h
+[02:49:26.025] epoch 114/300  loss: 0.0351  loss_ce: 0.0098  lr: 0.006504  elapsed: 8.49h
+[02:51:41.951] epoch 115/300  loss: 0.0326  loss_ce: 0.0092  lr: 0.006472  elapsed: 8.52h
+[02:53:57.626] epoch 116/300  loss: 0.0389  loss_ce: 0.0089  lr: 0.006441  elapsed: 8.56h
+[02:56:13.748] epoch 117/300  loss: 0.0326  loss_ce: 0.0091  lr: 0.006409  elapsed: 8.60h
+[02:58:29.741] epoch 118/300  loss: 0.0333  loss_ce: 0.0089  lr: 0.006378  elapsed: 8.64h
+[03:00:47.616] epoch 119/300  loss: 0.0336  loss_ce: 0.0094  lr: 0.006346  elapsed: 8.67h
+[03:03:03.358] epoch 120/300  loss: 0.0317  loss_ce: 0.0090  lr: 0.006315  elapsed: 8.71h
+[03:25:59.931] epoch 120 val_dice: 0.7957  best: 0.8014
+[03:28:13.872] epoch 121/300  loss: 0.0326  loss_ce: 0.0090  lr: 0.006283  elapsed: 9.13h
+[03:30:29.108] epoch 122/300  loss: 0.0356  loss_ce: 0.0089  lr: 0.006252  elapsed: 9.17h
+[03:32:45.383] epoch 123/300  loss: 0.0335  loss_ce: 0.0088  lr: 0.006220  elapsed: 9.21h
+[03:35:01.481] epoch 124/300  loss: 0.0324  loss_ce: 0.0089  lr: 0.006188  elapsed: 9.25h
+[03:37:17.640] epoch 125/300  loss: 0.0341  loss_ce: 0.0089  lr: 0.006157  elapsed: 9.28h
+[03:39:33.808] epoch 126/300  loss: 0.0313  loss_ce: 0.0087  lr: 0.006125  elapsed: 9.32h
+[03:41:49.768] epoch 127/300  loss: 0.0318  loss_ce: 0.0088  lr: 0.006093  elapsed: 9.36h
+[03:44:05.841] epoch 128/300  loss: 0.0336  loss_ce: 0.0088  lr: 0.006062  elapsed: 9.40h
+[03:46:22.110] epoch 129/300  loss: 0.0361  loss_ce: 0.0090  lr: 0.006030  elapsed: 9.43h
+[03:48:38.204] epoch 130/300  loss: 0.0332  loss_ce: 0.0088  lr: 0.005998  elapsed: 9.47h
+[04:11:35.051] epoch 130 val_dice: 0.7942  best: 0.8014
+[04:13:49.376] epoch 131/300  loss: 0.0309  loss_ce: 0.0086  lr: 0.005966  elapsed: 9.89h
+[04:16:05.426] epoch 132/300  loss: 0.0321  loss_ce: 0.0086  lr: 0.005935  elapsed: 9.93h
+[04:18:21.794] epoch 133/300  loss: 0.0307  loss_ce: 0.0085  lr: 0.005903  elapsed: 9.97h
+[04:20:37.918] epoch 134/300  loss: 0.0317  loss_ce: 0.0085  lr: 0.005871  elapsed: 10.01h
+[04:22:54.019] epoch 135/300  loss: 0.0350  loss_ce: 0.0092  lr: 0.005839  elapsed: 10.04h
+[04:25:10.381] epoch 136/300  loss: 0.0332  loss_ce: 0.0086  lr: 0.005807  elapsed: 10.08h
+[04:27:27.197] epoch 137/300  loss: 0.0320  loss_ce: 0.0090  lr: 0.005775  elapsed: 10.12h
+[04:29:42.926] epoch 138/300  loss: 0.0313  loss_ce: 0.0089  lr: 0.005744  elapsed: 10.16h
+[04:31:58.877] epoch 139/300  loss: 0.0331  loss_ce: 0.0087  lr: 0.005712  elapsed: 10.19h
+[04:34:15.338] epoch 140/300  loss: 0.0349  loss_ce: 0.0088  lr: 0.005680  elapsed: 10.23h
+[04:57:02.384] epoch 140 val_dice: 0.7861  best: 0.8014
+[04:59:16.430] epoch 141/300  loss: 0.0364  loss_ce: 0.0085  lr: 0.005648  elapsed: 10.65h
+[05:01:31.534] epoch 142/300  loss: 0.0323  loss_ce: 0.0084  lr: 0.005616  elapsed: 10.69h
+[05:03:46.800] epoch 143/300  loss: 0.0305  loss_ce: 0.0083  lr: 0.005584  elapsed: 10.72h
+[05:06:02.000] epoch 144/300  loss: 0.0307  loss_ce: 0.0083  lr: 0.005552  elapsed: 10.76h
+[05:08:17.288] epoch 145/300  loss: 0.0341  loss_ce: 0.0107  lr: 0.005520  elapsed: 10.80h
+[05:10:32.444] epoch 146/300  loss: 0.0368  loss_ce: 0.0094  lr: 0.005488  elapsed: 10.84h
+[05:12:47.547] epoch 147/300  loss: 0.0348  loss_ce: 0.0088  lr: 0.005456  elapsed: 10.87h
+[05:15:02.413] epoch 148/300  loss: 0.0341  loss_ce: 0.0085  lr: 0.005423  elapsed: 10.91h
+[05:17:17.472] epoch 149/300  loss: 0.0318  loss_ce: 0.0083  lr: 0.005391  elapsed: 10.95h
+[05:19:32.491] epoch 150/300  loss: 0.0310  loss_ce: 0.0083  lr: 0.005359  elapsed: 10.99h
+[05:42:44.545] epoch 150 val_dice: 0.8039  best: 0.8014
+[05:42:45.575] => best model saved (DSC 0.8039)
+[05:44:59.115] epoch 151/300  loss: 0.0322  loss_ce: 0.0085  lr: 0.005327  elapsed: 11.41h
+[05:47:13.911] epoch 152/300  loss: 0.0327  loss_ce: 0.0086  lr: 0.005295  elapsed: 11.45h
+[05:49:29.141] epoch 153/300  loss: 0.0303  loss_ce: 0.0083  lr: 0.005263  elapsed: 11.49h
+[05:51:44.396] epoch 154/300  loss: 0.0317  loss_ce: 0.0083  lr: 0.005230  elapsed: 11.52h
+[05:53:59.210] epoch 155/300  loss: 0.0325  loss_ce: 0.0082  lr: 0.005198  elapsed: 11.56h
+[05:56:13.926] epoch 156/300  loss: 0.0327  loss_ce: 0.0086  lr: 0.005166  elapsed: 11.60h
+[05:58:28.932] epoch 157/300  loss: 0.0330  loss_ce: 0.0081  lr: 0.005134  elapsed: 11.64h
+[06:00:42.777] epoch 158/300  loss: 0.0312  loss_ce: 0.0081  lr: 0.005101  elapsed: 11.67h
+[06:02:56.921] epoch 159/300  loss: 0.0320  loss_ce: 0.0083  lr: 0.005069  elapsed: 11.71h
+[06:05:11.514] epoch 160/300  loss: 0.0320  loss_ce: 0.0081  lr: 0.005037  elapsed: 11.75h
+[06:28:29.769] epoch 160 val_dice: 0.8023  best: 0.8039
+[06:30:43.246] epoch 161/300  loss: 0.0333  loss_ce: 0.0083  lr: 0.005004  elapsed: 12.17h
+[06:32:56.681] epoch 162/300  loss: 0.0296  loss_ce: 0.0081  lr: 0.004972  elapsed: 12.21h
+[06:35:10.510] epoch 163/300  loss: 0.0323  loss_ce: 0.0080  lr: 0.004939  elapsed: 12.25h
+[06:37:24.613] epoch 164/300  loss: 0.0306  loss_ce: 0.0081  lr: 0.004907  elapsed: 12.29h
+[06:39:38.685] epoch 165/300  loss: 0.0298  loss_ce: 0.0082  lr: 0.004874  elapsed: 12.32h
+[06:41:52.038] epoch 166/300  loss: 0.0298  loss_ce: 0.0079  lr: 0.004842  elapsed: 12.36h
+[06:44:05.883] epoch 167/300  loss: 0.0283  loss_ce: 0.0079  lr: 0.004809  elapsed: 12.40h
+[06:46:19.925] epoch 168/300  loss: 0.0308  loss_ce: 0.0078  lr: 0.004777  elapsed: 12.43h
+[06:48:33.451] epoch 169/300  loss: 0.0325  loss_ce: 0.0078  lr: 0.004744  elapsed: 12.47h
+[06:50:47.087] epoch 170/300  loss: 0.0302  loss_ce: 0.0079  lr: 0.004712  elapsed: 12.51h
+[07:13:41.554] epoch 170 val_dice: 0.7951  best: 0.8039
+[07:15:54.669] epoch 171/300  loss: 0.0283  loss_ce: 0.0080  lr: 0.004679  elapsed: 12.93h
+[07:18:08.533] epoch 172/300  loss: 0.0314  loss_ce: 0.0078  lr: 0.004646  elapsed: 12.96h
+[07:20:21.524] epoch 173/300  loss: 0.0297  loss_ce: 0.0078  lr: 0.004614  elapsed: 13.00h
+[07:22:35.230] epoch 174/300  loss: 0.0325  loss_ce: 0.0077  lr: 0.004581  elapsed: 13.04h
+[07:24:48.559] epoch 175/300  loss: 0.0280  loss_ce: 0.0077  lr: 0.004548  elapsed: 13.08h
+[07:27:02.014] epoch 176/300  loss: 0.0289  loss_ce: 0.0080  lr: 0.004515  elapsed: 13.11h
+[07:29:15.671] epoch 177/300  loss: 0.0278  loss_ce: 0.0077  lr: 0.004483  elapsed: 13.15h
+[07:31:29.414] epoch 178/300  loss: 0.0305  loss_ce: 0.0077  lr: 0.004450  elapsed: 13.19h
+[07:33:42.781] epoch 179/300  loss: 0.0304  loss_ce: 0.0081  lr: 0.004417  elapsed: 13.22h
+[07:35:56.243] epoch 180/300  loss: 0.0278  loss_ce: 0.0080  lr: 0.004384  elapsed: 13.26h
+[07:58:42.105] epoch 180 val_dice: 0.7970  best: 0.8039
+[08:00:55.013] epoch 181/300  loss: 0.0286  loss_ce: 0.0078  lr: 0.004351  elapsed: 13.68h
+[08:03:09.393] epoch 182/300  loss: 0.0295  loss_ce: 0.0078  lr: 0.004318  elapsed: 13.71h
+[08:05:22.095] epoch 183/300  loss: 0.0330  loss_ce: 0.0076  lr: 0.004285  elapsed: 13.75h
+[08:07:35.621] epoch 184/300  loss: 0.0326  loss_ce: 0.0076  lr: 0.004252  elapsed: 13.79h
+[08:09:49.291] epoch 185/300  loss: 0.0323  loss_ce: 0.0076  lr: 0.004219  elapsed: 13.83h
+[08:12:02.921] epoch 186/300  loss: 0.0313  loss_ce: 0.0076  lr: 0.004186  elapsed: 13.86h
+[08:14:16.430] epoch 187/300  loss: 0.0284  loss_ce: 0.0078  lr: 0.004153  elapsed: 13.90h
+[08:16:29.965] epoch 188/300  loss: 0.0334  loss_ce: 0.0078  lr: 0.004120  elapsed: 13.94h
+[08:18:43.656] epoch 189/300  loss: 0.0276  loss_ce: 0.0076  lr: 0.004087  elapsed: 13.97h
+[08:20:57.136] epoch 190/300  loss: 0.0323  loss_ce: 0.0076  lr: 0.004054  elapsed: 14.01h
+[08:44:07.783] epoch 190 val_dice: 0.8008  best: 0.8039
+[08:46:20.531] epoch 191/300  loss: 0.0283  loss_ce: 0.0079  lr: 0.004021  elapsed: 14.43h
+[08:48:35.160] epoch 192/300  loss: 0.0288  loss_ce: 0.0077  lr: 0.003988  elapsed: 14.47h
+[08:50:48.633] epoch 193/300  loss: 0.0267  loss_ce: 0.0077  lr: 0.003954  elapsed: 14.51h
+[08:53:02.001] epoch 194/300  loss: 0.0310  loss_ce: 0.0076  lr: 0.003921  elapsed: 14.55h
+[08:55:15.981] epoch 195/300  loss: 0.0296  loss_ce: 0.0076  lr: 0.003888  elapsed: 14.58h
+[08:57:29.404] epoch 196/300  loss: 0.0291  loss_ce: 0.0075  lr: 0.003854  elapsed: 14.62h
+[08:59:42.765] epoch 197/300  loss: 0.0334  loss_ce: 0.0077  lr: 0.003821  elapsed: 14.66h
+[09:01:55.748] epoch 198/300  loss: 0.0326  loss_ce: 0.0076  lr: 0.003788  elapsed: 14.69h
+[09:04:09.236] epoch 199/300  loss: 0.0283  loss_ce: 0.0076  lr: 0.003754  elapsed: 14.73h
+[09:06:22.812] epoch 200/300  loss: 0.0316  loss_ce: 0.0077  lr: 0.003721  elapsed: 14.77h
+[09:06:23.413] save model to ../model/TU_Synapse224/TU_pretrain_R50-ViT-B_16_skip3_epo300_bs24_224/epoch_199.pth
+[09:29:27.545] epoch 200 val_dice: 0.8005  best: 0.8039
+[09:31:40.034] epoch 201/300  loss: 0.0298  loss_ce: 0.0075  lr: 0.003687  elapsed: 15.19h
+[09:33:54.379] epoch 202/300  loss: 0.0269  loss_ce: 0.0075  lr: 0.003654  elapsed: 15.23h
+[09:36:08.483] epoch 203/300  loss: 0.0289  loss_ce: 0.0075  lr: 0.003620  elapsed: 15.26h
+[09:38:22.633] epoch 204/300  loss: 0.0300  loss_ce: 0.0075  lr: 0.003587  elapsed: 15.30h
+[09:40:36.526] epoch 205/300  loss: 0.0278  loss_ce: 0.0074  lr: 0.003553  elapsed: 15.34h
+[09:42:50.392] epoch 206/300  loss: 0.0295  loss_ce: 0.0074  lr: 0.003519  elapsed: 15.38h
+[09:45:04.661] epoch 207/300  loss: 0.0286  loss_ce: 0.0075  lr: 0.003486  elapsed: 15.41h
+[09:47:18.745] epoch 208/300  loss: 0.0301  loss_ce: 0.0084  lr: 0.003452  elapsed: 15.45h
+[09:49:33.023] epoch 209/300  loss: 0.0285  loss_ce: 0.0076  lr: 0.003418  elapsed: 15.49h
+[09:51:47.279] epoch 210/300  loss: 0.0281  loss_ce: 0.0075  lr: 0.003384  elapsed: 15.52h
+[10:14:26.688] epoch 210 val_dice: 0.8025  best: 0.8039
+[10:16:38.712] epoch 211/300  loss: 0.0268  loss_ce: 0.0077  lr: 0.003350  elapsed: 15.94h
+[10:18:52.396] epoch 212/300  loss: 0.0313  loss_ce: 0.0074  lr: 0.003316  elapsed: 15.98h
+[10:21:06.024] epoch 213/300  loss: 0.0279  loss_ce: 0.0076  lr: 0.003283  elapsed: 16.01h
+[10:23:19.953] epoch 214/300  loss: 0.0253  loss_ce: 0.0075  lr: 0.003249  elapsed: 16.05h
+[10:25:33.766] epoch 215/300  loss: 0.0263  loss_ce: 0.0074  lr: 0.003215  elapsed: 16.09h
+[10:27:47.724] epoch 216/300  loss: 0.0276  loss_ce: 0.0075  lr: 0.003180  elapsed: 16.12h
+[10:30:01.421] epoch 217/300  loss: 0.0271  loss_ce: 0.0073  lr: 0.003146  elapsed: 16.16h
+[10:32:15.796] epoch 218/300  loss: 0.0314  loss_ce: 0.0073  lr: 0.003112  elapsed: 16.20h
+[10:34:29.453] epoch 219/300  loss: 0.0296  loss_ce: 0.0075  lr: 0.003078  elapsed: 16.24h
+[10:36:43.426] epoch 220/300  loss: 0.0289  loss_ce: 0.0074  lr: 0.003044  elapsed: 16.27h
+[10:59:56.442] epoch 220 val_dice: 0.8023  best: 0.8039
+[11:02:09.121] epoch 221/300  loss: 0.0286  loss_ce: 0.0075  lr: 0.003010  elapsed: 16.70h
+[11:04:23.453] epoch 222/300  loss: 0.0285  loss_ce: 0.0075  lr: 0.002975  elapsed: 16.73h
+[11:06:37.661] epoch 223/300  loss: 0.0271  loss_ce: 0.0074  lr: 0.002941  elapsed: 16.77h
+[11:08:52.013] epoch 224/300  loss: 0.0318  loss_ce: 0.0073  lr: 0.002907  elapsed: 16.81h
+[11:11:06.347] epoch 225/300  loss: 0.0267  loss_ce: 0.0073  lr: 0.002872  elapsed: 16.85h
+[11:13:20.317] epoch 226/300  loss: 0.0272  loss_ce: 0.0074  lr: 0.002838  elapsed: 16.88h
+[11:15:35.049] epoch 227/300  loss: 0.0328  loss_ce: 0.0073  lr: 0.002803  elapsed: 16.92h
+[11:17:49.441] epoch 228/300  loss: 0.0264  loss_ce: 0.0073  lr: 0.002769  elapsed: 16.96h
+[11:20:03.580] epoch 229/300  loss: 0.0267  loss_ce: 0.0073  lr: 0.002734  elapsed: 17.00h
+[11:22:17.822] epoch 230/300  loss: 0.0290  loss_ce: 0.0073  lr: 0.002699  elapsed: 17.03h
+[11:45:28.024] epoch 230 val_dice: 0.8017  best: 0.8039
+[11:47:40.756] epoch 231/300  loss: 0.0305  loss_ce: 0.0072  lr: 0.002665  elapsed: 17.46h
+[11:49:55.411] epoch 232/300  loss: 0.0280  loss_ce: 0.0072  lr: 0.002630  elapsed: 17.49h
+[11:52:10.130] epoch 233/300  loss: 0.0284  loss_ce: 0.0076  lr: 0.002595  elapsed: 17.53h
+[11:54:24.772] epoch 234/300  loss: 0.0289  loss_ce: 0.0073  lr: 0.002560  elapsed: 17.57h
+[11:56:38.876] epoch 235/300  loss: 0.0265  loss_ce: 0.0073  lr: 0.002525  elapsed: 17.61h
+[11:58:53.234] epoch 236/300  loss: 0.0282  loss_ce: 0.0073  lr: 0.002490  elapsed: 17.64h
+[12:01:07.375] epoch 237/300  loss: 0.0280  loss_ce: 0.0073  lr: 0.002455  elapsed: 17.68h
+[12:03:21.362] epoch 238/300  loss: 0.0272  loss_ce: 0.0073  lr: 0.002420  elapsed: 17.72h
+[12:05:35.348] epoch 239/300  loss: 0.0291  loss_ce: 0.0072  lr: 0.002385  elapsed: 17.75h
+[12:07:48.690] epoch 240/300  loss: 0.0317  loss_ce: 0.0071  lr: 0.002350  elapsed: 17.79h
+[12:30:58.395] epoch 240 val_dice: 0.7978  best: 0.8039
+[12:33:11.378] epoch 241/300  loss: 0.0315  loss_ce: 0.0071  lr: 0.002314  elapsed: 18.21h
+[12:35:26.301] epoch 242/300  loss: 0.0255  loss_ce: 0.0072  lr: 0.002279  elapsed: 18.25h
+[12:37:40.146] epoch 243/300  loss: 0.0246  loss_ce: 0.0073  lr: 0.002244  elapsed: 18.29h
+[12:39:53.726] epoch 244/300  loss: 0.0266  loss_ce: 0.0072  lr: 0.002208  elapsed: 18.33h
+[12:42:07.084] epoch 245/300  loss: 0.0271  loss_ce: 0.0071  lr: 0.002173  elapsed: 18.36h
+[12:44:20.361] epoch 246/300  loss: 0.0264  loss_ce: 0.0072  lr: 0.002137  elapsed: 18.40h
+[12:46:33.960] epoch 247/300  loss: 0.0295  loss_ce: 0.0071  lr: 0.002101  elapsed: 18.44h
+[12:48:47.321] epoch 248/300  loss: 0.0290  loss_ce: 0.0070  lr: 0.002066  elapsed: 18.47h
+[12:51:00.966] epoch 249/300  loss: 0.0276  loss_ce: 0.0074  lr: 0.002030  elapsed: 18.51h
+[12:53:14.702] epoch 250/300  loss: 0.0268  loss_ce: 0.0071  lr: 0.001994  elapsed: 18.55h
+[12:53:15.289] save model to ../model/TU_Synapse224/TU_pretrain_R50-ViT-B_16_skip3_epo300_bs24_224/epoch_249.pth
+[13:16:06.126] epoch 250 val_dice: 0.8024  best: 0.8039
+[13:18:19.473] epoch 251/300  loss: 0.0250  loss_ce: 0.0072  lr: 0.001958  elapsed: 18.97h
+[13:20:32.608] epoch 252/300  loss: 0.0268  loss_ce: 0.0074  lr: 0.001922  elapsed: 19.00h
+[13:22:46.057] epoch 253/300  loss: 0.0278  loss_ce: 0.0071  lr: 0.001886  elapsed: 19.04h
+[13:24:59.910] epoch 254/300  loss: 0.0247  loss_ce: 0.0071  lr: 0.001850  elapsed: 19.08h
+[13:27:13.950] epoch 255/300  loss: 0.0299  loss_ce: 0.0070  lr: 0.001814  elapsed: 19.12h
+[13:29:27.736] epoch 256/300  loss: 0.0257  loss_ce: 0.0070  lr: 0.001777  elapsed: 19.15h
+[13:31:41.477] epoch 257/300  loss: 0.0277  loss_ce: 0.0071  lr: 0.001741  elapsed: 19.19h
+[13:33:55.765] epoch 258/300  loss: 0.0266  loss_ce: 0.0069  lr: 0.001705  elapsed: 19.23h
+[13:36:09.769] epoch 259/300  loss: 0.0242  loss_ce: 0.0070  lr: 0.001668  elapsed: 19.26h
+[13:38:23.354] epoch 260/300  loss: 0.0282  loss_ce: 0.0070  lr: 0.001631  elapsed: 19.30h
+[14:01:28.140] epoch 260 val_dice: 0.8048  best: 0.8039
+[14:01:29.066] => best model saved (DSC 0.8048)
+[14:03:42.184] epoch 261/300  loss: 0.0253  loss_ce: 0.0072  lr: 0.001595  elapsed: 19.72h
+[14:05:56.058] epoch 262/300  loss: 0.0266  loss_ce: 0.0070  lr: 0.001558  elapsed: 19.76h
+[14:08:10.925] epoch 263/300  loss: 0.0290  loss_ce: 0.0070  lr: 0.001521  elapsed: 19.80h
+[14:10:25.432] epoch 264/300  loss: 0.0265  loss_ce: 0.0070  lr: 0.001484  elapsed: 19.84h
+[14:12:39.228] epoch 265/300  loss: 0.0268  loss_ce: 0.0070  lr: 0.001447  elapsed: 19.87h
+[14:14:53.059] epoch 266/300  loss: 0.0240  loss_ce: 0.0071  lr: 0.001409  elapsed: 19.91h
+[14:17:06.850] epoch 267/300  loss: 0.0273  loss_ce: 0.0073  lr: 0.001372  elapsed: 19.95h
+[14:19:20.765] epoch 268/300  loss: 0.0258  loss_ce: 0.0070  lr: 0.001335  elapsed: 19.98h
+[14:21:35.459] epoch 269/300  loss: 0.0286  loss_ce: 0.0070  lr: 0.001297  elapsed: 20.02h
+[14:23:49.755] epoch 270/300  loss: 0.0241  loss_ce: 0.0071  lr: 0.001259  elapsed: 20.06h
+[14:46:58.459] epoch 270 val_dice: 0.8051  best: 0.8048
+[14:46:59.407] => best model saved (DSC 0.8051)
+[14:49:12.857] epoch 271/300  loss: 0.0236  loss_ce: 0.0069  lr: 0.001222  elapsed: 20.48h
+[14:51:27.106] epoch 272/300  loss: 0.0278  loss_ce: 0.0069  lr: 0.001184  elapsed: 20.52h
+[14:53:41.340] epoch 273/300  loss: 0.0261  loss_ce: 0.0072  lr: 0.001145  elapsed: 20.56h
+[14:55:56.207] epoch 274/300  loss: 0.0292  loss_ce: 0.0069  lr: 0.001107  elapsed: 20.59h
+[14:58:10.740] epoch 275/300  loss: 0.0253  loss_ce: 0.0068  lr: 0.001069  elapsed: 20.63h
+[15:00:25.658] epoch 276/300  loss: 0.0273  loss_ce: 0.0069  lr: 0.001030  elapsed: 20.67h
+[15:02:40.347] epoch 277/300  loss: 0.0305  loss_ce: 0.0069  lr: 0.000992  elapsed: 20.71h
+[15:04:54.890] epoch 278/300  loss: 0.0260  loss_ce: 0.0069  lr: 0.000953  elapsed: 20.74h
+[15:07:09.650] epoch 279/300  loss: 0.0266  loss_ce: 0.0069  lr: 0.000914  elapsed: 20.78h
+[15:09:24.281] epoch 280/300  loss: 0.0248  loss_ce: 0.0070  lr: 0.000874  elapsed: 20.82h
+[15:32:29.394] epoch 280 val_dice: 0.8020  best: 0.8051
+[15:34:43.111] epoch 281/300  loss: 0.0272  loss_ce: 0.0069  lr: 0.000835  elapsed: 21.24h
+[15:36:57.448] epoch 282/300  loss: 0.0247  loss_ce: 0.0070  lr: 0.000795  elapsed: 21.28h
+[15:39:12.602] epoch 283/300  loss: 0.0276  loss_ce: 0.0069  lr: 0.000756  elapsed: 21.32h
+[15:41:26.818] epoch 284/300  loss: 0.0232  loss_ce: 0.0070  lr: 0.000715  elapsed: 21.35h
+[15:43:41.491] epoch 285/300  loss: 0.0277  loss_ce: 0.0068  lr: 0.000675  elapsed: 21.39h
+[15:45:56.904] epoch 286/300  loss: 0.0281  loss_ce: 0.0069  lr: 0.000634  elapsed: 21.43h
+[15:48:12.099] epoch 287/300  loss: 0.0255  loss_ce: 0.0070  lr: 0.000594  elapsed: 21.46h
+[15:50:27.333] epoch 288/300  loss: 0.0266  loss_ce: 0.0069  lr: 0.000552  elapsed: 21.50h
+[15:52:41.826] epoch 289/300  loss: 0.0289  loss_ce: 0.0067  lr: 0.000511  elapsed: 21.54h
+[15:54:57.057] epoch 290/300  loss: 0.0274  loss_ce: 0.0069  lr: 0.000469  elapsed: 21.58h
+[16:18:35.991] epoch 290 val_dice: 0.7984  best: 0.8051
+[16:20:50.293] epoch 291/300  loss: 0.0256  loss_ce: 0.0068  lr: 0.000426  elapsed: 22.01h
+[16:23:06.206] epoch 292/300  loss: 0.0235  loss_ce: 0.0069  lr: 0.000384  elapsed: 22.05h
+[16:25:21.805] epoch 293/300  loss: 0.0277  loss_ce: 0.0068  lr: 0.000340  elapsed: 22.08h
+[16:27:37.481] epoch 294/300  loss: 0.0251  loss_ce: 0.0068  lr: 0.000296  elapsed: 22.12h
+[16:29:52.976] epoch 295/300  loss: 0.0282  loss_ce: 0.0069  lr: 0.000251  elapsed: 22.16h
+[16:32:08.770] epoch 296/300  loss: 0.0244  loss_ce: 0.0068  lr: 0.000206  elapsed: 22.20h
+[16:34:23.496] epoch 297/300  loss: 0.0267  loss_ce: 0.0068  lr: 0.000159  elapsed: 22.23h
+[16:36:39.240] epoch 298/300  loss: 0.0240  loss_ce: 0.0068  lr: 0.000111  elapsed: 22.27h
+[16:38:55.176] epoch 299/300  loss: 0.0261  loss_ce: 0.0068  lr: 0.000060  elapsed: 22.31h
+[16:41:10.878] epoch 300/300  loss: 0.0242  loss_ce: 0.0069  lr: 0.000001  elapsed: 22.35h
+[16:41:11.484] save model to ../model/TU_Synapse224/TU_pretrain_R50-ViT-B_16_skip3_epo300_bs24_224/epoch_299.pth

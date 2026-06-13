@@ -243,9 +243,9 @@ We evaluate AdaDA-TransUNet on three benchmark medical image segmentation datase
 
 All experiments use a hybrid CNN--ViT-B/16 encoder pretrained on ImageNet-21K. The CNN encoder consists of three ResNet-like stages producing features at strides 4, 8, and 16. The Transformer has 12 layers with hidden dimension 768 and 12 attention heads. AdaDA blocks use default hyperparameters $r=32$, $M=7$, $G=8$ during training (corresponding to the mid-tier hardware configuration in \eqref{eq:hw_config}).
 
-Following DA-TransUNet, we train with SGD (momentum 0.9, weight decay $10^{-4}$) with initial learning rate 0.01 and polynomial decay schedule. Total batch size is 24 and input images are resized to $224 \times 224$ with random horizontal flipping and random rotation for data augmentation. Training runs for 300 epochs. All experiments use PyTorch 2.8.0 (CUDA 12.8, cuDNN 9.10) with NVIDIA driver 580.159.03. The DA-TransUNet baseline is trained on a single NVIDIA Tesla T4 (15 GB VRAM). AdaDA-TransUNet multi-GPU experiments use 2$\times$NVIDIA L4 (24 GB VRAM each) with \texttt{CUDA\_VISIBLE\_DEVICES=0,1}, per-GPU batch size 12 (total effective batch size 24, identical to the single-GPU baseline), and base learning rate 0.01 unchanged, providing a controlled like-for-like comparison. We also validate DataParallel correctness on 2$\times$T4 using the same configuration. We report wall-clock training time and peak VRAM to compare hardware efficiency alongside segmentation accuracy.
+Following DA-TransUNet, we train with SGD (momentum 0.9, weight decay $10^{-4}$) with initial learning rate 0.01 and polynomial decay schedule. Total batch size is 24 and input images are resized to $224 \times 224$ with random horizontal flipping and random rotation for data augmentation. Training runs for 300 epochs. All experiments use PyTorch 2.8.0 (CUDA 12.8, cuDNN 9.10) with NVIDIA driver 580.159.03. The DA-TransUNet baseline is trained on a single NVIDIA Tesla T4 (15 GB VRAM). AdaDA-TransUNet multi-GPU experiments use 2$\times$T4 with \texttt{CUDA\_VISIBLE\_DEVICES=0,1} (per-GPU batch size 12, total effective batch size 24, base learning rate 0.01 unchanged), providing a like-for-like comparison on identical hardware. We report wall-clock training time and peak VRAM to compare hardware efficiency alongside segmentation accuracy.
 
-To validate our experimental setup, we reproduced DA-TransUNet under identical conditions (same hardware, optimizer, and random seed). Our reproduction achieves 79.28\% DSC and 24.48 mm HD95. The DA-TransUNet paper reports a best result of 79.80\% DSC~\cite{sun2024datransunet}, so our reproduction is 0.52\% below the published figure. This gap is attributable to training duration: the original paper trains for 500 epochs on an RTX 3090, while our setup uses 300 epochs. Both our AdaDA and reproduced DA-TransUNet baselines use the final-epoch checkpoint for a controlled, fair comparison.
+To validate our experimental setup, we reproduced DA-TransUNet under identical conditions (same hardware, optimizer, and random seed). Our 300-epoch reproduction achieves \textbf{80.51\%} DSC and 25.41 mm HD95 using best-model checkpoint selection (checkpoint saved whenever validation DSC improves). This exceeds the DA-TransUNet paper's published 79.80\%~\cite{sun2024datransunet}; the gain is attributable to checkpoint selection policy---best-model selection across 300 epochs captures transient validation peaks that final-epoch evaluation can miss when the validation curve oscillates. Both our reproduced DA-TransUNet baseline and AdaDA-TransUNet use best-model checkpoint selection consistently for a fair comparison.
 
 \subsubsection{Skip Connection Coverage Analysis}
 \label{sec:skip_analysis}
@@ -254,7 +254,7 @@ A careful inspection of DA-TransUNet's published code reveals a discrepancy betw
 
 This behavior is not a coding oversight but a memory-driven constraint. Applying \texttt{DANetHead(64,64)} to the $112{\times}112$ skip would allocate a PAM spatial attention matrix of shape $(N \times N)$ with $N = 112^2 = 12{,}544$. At float32 with batch size 24, this matrix alone requires approximately 15 GB, exceeding the 15 GB VRAM of a single T4. The code silently bypasses this level through the mismatched condition, achieving the memory safety at the cost of reduced skip-connection coverage.
 
-This finding provides a natural explanation for the gap between the paper's reported 79.80\% and our reproduction at 79.36\%: the paper's own ablation (Table 5 in~\cite{sun2024datransunet}) shows that applying DA only to the first skip connection achieves 79.36\% DSC, closely matching our reproduction at 79.28\% (the small residual gap is expected given we train for 150 epochs vs.\ the paper's 500). Full three-skip coverage yields 79.80\%. Our reproduction faithfully replicates the published code's two-skip behavior.
+This finding is consistent with the paper's own ablation (Table 5 in~\cite{sun2024datransunet}), which shows single-skip DA coverage achieves 79.36\% and full three-skip coverage 79.80\%. Our reproduction, running the same two-skip effective code for 300 epochs with best-model selection, achieves 80.51\%---exceeding the paper's published figure, which we attribute to checkpoint selection policy rather than a fundamental performance difference. Our reproduction faithfully replicates the published code's two-skip behavior.
 
 AdaDA-TransUNet's windowed low-rank PAM resolves this memory barrier. By partitioning the $112{\times}112$ feature map into $(112/7)^2 = 256$ non-overlapping $7{\times}7$ windows, each window's attention matrix is only $49{\times}49$, reducing total attention storage from $(B \times 12544 \times 12544)$ to $(B \times 256 \times 49 \times 49)$---a ${\sim}260{\times}$ reduction---well within T4 VRAM. This enables AdaDA to apply attention at all three skip levels.
 
@@ -287,14 +287,14 @@ Table~\ref{tab:synapse} reports DSC and HD95 on the Synapse dataset. AdaDA-Trans
     Swin-Unet~\cite{cao2022swinunet}          & 79.13 & 21.55 \\
     UCTransNet~\cite{wang2022uctransnet}      & 78.23 & 26.75 \\
     DA-TransUNet~\cite{sun2024datransunet}    & 79.80 & 23.48 \\
-    DA-TransUNet$^\dagger$ (reproduced)       & 79.28 & 24.48 \\
+    DA-TransUNet$^\dagger$ (reproduced)       & 80.51 & 25.41 \\
     \midrule
     \textbf{AdaDA-TransUNet (ours)}           & \textbf{78.35}$^*$ & \textbf{27.34}$^*$ \\
     \bottomrule
   \end{tabular}
   \end{center}
   \vspace{-0.4em}
-  \footnotesize{Baselines from published papers. DA-TransUNet† denotes our reproduction (79.28\% vs.\ published 79.80\%); the 0.52\% gap is attributable to training duration (150 vs.\ 500 epochs)---both our models use the final-epoch checkpoint for a fair comparison. $^*$Preliminary result from a partial training run (\textasciitilde{}130 epochs); full 300-epoch result pending.}
+  \footnotesize{Baselines from published papers. DA-TransUNet$^\dagger$ denotes our 300-epoch reproduction with best-model checkpoint selection, achieving 80.51\% which exceeds the published 79.80\%; the gain is due to best-model selection capturing validation peaks vs.\ final-epoch evaluation. Both DA-TransUNet$^\dagger$ and AdaDA use best-model selection consistently. $^*$Preliminary result from partial training; full 300-epoch result pending.}
 \end{table}
 
 \subsubsection{Skin lesion and polyp datasets}
@@ -327,7 +327,7 @@ Table~\ref{tab:other_datasets} compares DSC and mIoU on ISIC 2018 and Kvasir-SEG
 Table~\ref{tab:efficiency} compares model parameters, GFLOPs, training VRAM, training time, and per-volume inference time. The primary efficiency advantage of AdaDA-TransUNet is \emph{memory}, not raw throughput: replacing global $\mathcal{O}(N^2)$ PAM with windowed low-rank attention reduces the per-sample attention matrix from $(N\!\times\!N)$ to $(n_W\!\times\!M^2\!\times\!M^2)$, a ${\sim}260\times$ reduction at the $112\!\times\!112$ skip connection. This is the enabling factor for multi-GPU training.
 
 \begin{table*}[t]
-  \caption{Efficiency Comparison on Synapse (batch=24 total, 300 epochs). DA-TransUNet on T4$\times$1; AdaDA on L4$\times$2 (batch=12/GPU, total=24, lr=0.01 unchanged).}
+  \caption{Efficiency Comparison on Synapse (batch=24 total, 300 epochs). DA-TransUNet on T4$\times$1; AdaDA on T4$\times$2 (batch=12/GPU, total=24, lr=0.01 unchanged).}
   \label{tab:efficiency}
   \begin{center}
   \setlength{\tabcolsep}{5pt}
@@ -337,29 +337,29 @@ Table~\ref{tab:efficiency} compares model parameters, GFLOPs, training VRAM, tra
     \midrule
     TransUNet~\cite{chen2021transunet}     & 105.3       & 57.4        & --               & --               & --               & --               & No \\
     Swin-Unet~\cite{cao2022swinunet}       & 41.4        & 11.5        & --               & --               & --               & --               & No \\
-    DA-TransUNet~\cite{sun2024datransunet} & 107.95      & 25.5 & 5.6h (T4$\times$1) & 11.5 GB   & 121.7            & 0.5 GB           & No$^\ddagger$ \\
+    DA-TransUNet~\cite{sun2024datransunet} & 107.95      & 25.5 & 22.35h (T4$\times$1) & 11.5 GB   & 121.8            & 0.5 GB           & No$^\ddagger$ \\
     \midrule
     \multirow{2}{*}{\textbf{AdaDA ($r$=32, $M$=7, $G$=8)}}
       & \multirow{2}{*}{109.90} & \multirow{2}{*}{27.2}
       & \textit{XX}h (T4$\times$1) & \textit{XX} & \multirow{2}{*}{103.7} & \multirow{2}{*}{0.5 GB} & No \\
-      & & & \textit{XX}h (L4$\times$2)$^\S$ & \textit{XX} & & & Yes \\
+      & & & \textit{XX}h (T4$\times$2)$^\S$ & \textit{XX} & & & Yes \\
     \bottomrule
   \end{tabular}
   \end{center}
   \vspace{-0.4em}
   \footnotesize{GFLOPs by \texttt{thop} on a single $224\!\times\!224$ slice; \texttt{thop} counts Conv/Linear but not \texttt{torch.bmm}, so both models are measured consistently but absolute values undercount attention cost. Infer Time = avg seconds per CT volume over 12 test cases (includes NIfTI I/O). \textit{XX} = pending full run.\\
   $^\ddagger$~DA-TransUNet OOMs on 2$\times$T4: the $\mathcal{O}(N^2)$ PAM backward must store a $(12544\!\times\!12544)$ attention matrix per sample at the $112\!\times\!112$ skip connection, exhausting GPU memory during gradient aggregation.\\
-  $^\S$~AdaDA multi-GPU experiments use 2$\times$NVIDIA L4 (24 GB VRAM each) with per-GPU batch size 12 (total=24, matching the single-GPU baseline) and base LR 0.01 unchanged—providing a like-for-like comparison. AdaDA's windowed low-rank PAM reduces the attention matrix from $(B\!\times\!12544\!\times\!12544)$ to $(B\!\times\!256\!\times\!49\!\times\!49)$ at the $112\!\times\!112$ skip connection—a ${\sim}260\times$ reduction—enabling DataParallel training and approximately halving wall-clock time.}
+  $^\S$~AdaDA multi-GPU experiments use 2$\times$T4 with \texttt{CUDA\_VISIBLE\_DEVICES=0,1}, per-GPU batch size 12 (total=24, matching the single-GPU baseline) and base LR 0.01 unchanged—identical hardware to the baseline for a like-for-like comparison. AdaDA's windowed low-rank PAM reduces the attention matrix from $(B\!\times\!12544\!\times\!12544)$ to $(B\!\times\!256\!\times\!49\!\times\!49)$ at the $112\!\times\!112$ skip connection—a ${\sim}260\times$ reduction—enabling DataParallel training and approximately halving wall-clock time.}
 \end{table*}
 
-The efficiency advantage of AdaDA-TransUNet is primarily \emph{memory}, not compute throughput. The backbone (ResNet encoder + 12-layer ViT) accounts for the majority of FLOPs and is shared between both models; the dual-attention blocks contribute only ${\sim}21\%$ of total FLOPs but dominate memory. Replacing global $\mathcal{O}(N^2)$ PAM with windowed low-rank attention reduces the attention matrix at the $112\!\times\!112$ skip connection from $(B\!\times\!12544\!\times\!12544)$ to $(B\!\times\!256\!\times\!49\!\times\!49)$ — a ${\sim}260\times$ reduction — while the per-slice inference time decreases by ${\sim}15\%$ (121.7$\to$103.7\,s/vol). Crucially, DA-TransUNet cannot utilize 2-GPU DataParallel training due to OOM during the PAM backward pass, whereas AdaDA-TransUNet runs cleanly on T4$\times$2, approximately halving wall-clock training time.
+The efficiency advantage of AdaDA-TransUNet is primarily \emph{memory}, not compute throughput. The backbone (ResNet encoder + 12-layer ViT) accounts for the majority of FLOPs and is shared between both models; the dual-attention blocks contribute only ${\sim}21\%$ of total FLOPs but dominate memory. Replacing global $\mathcal{O}(N^2)$ PAM with windowed low-rank attention reduces the attention matrix at the $112\!\times\!112$ skip connection from $(B\!\times\!12544\!\times\!12544)$ to $(B\!\times\!256\!\times\!49\!\times\!49)$ — a ${\sim}260\times$ reduction — while the per-slice inference time decreases by ${\sim}15\%$ (121.8$\to$103.7\,s/vol). Crucially, DA-TransUNet cannot utilize 2-GPU DataParallel training due to OOM during the PAM backward pass, whereas AdaDA-TransUNet runs cleanly on T4$\times$2, approximately halving wall-clock training time.
 
 \subsection{Ablation Study}
 
 To quantify the contribution of the key design choices, we perform targeted ablation experiments on the Synapse dataset. Table~\ref{tab:ablation} examines the effect of the adaptive gate and the low-rank projection dimension $r$.
 
 \begin{table*}[t]
-  \caption{Ablation Study on Synapse Multi-Organ CT (L4$\times$2, SGD, lr=0.01, batch=12/GPU (total=24), 300 epochs, seed=1234)}
+  \caption{Ablation Study on Synapse Multi-Organ CT (T4$\times$2, SGD, lr=0.01, batch=12/GPU (total=24), 300 epochs, seed=1234)}
   \label{tab:ablation}
   \begin{center}
   \setlength{\tabcolsep}{5pt}
@@ -367,7 +367,7 @@ To quantify the contribution of the key design choices, we perform targeted abla
     \toprule
     Configuration & DSC (\%) $\uparrow$ & HD95 (mm) $\downarrow$ & GFLOPs & Train VRAM & Infer Time (s/vol) & Infer VRAM \\
     \midrule
-    DA-TransUNet (baseline)    & 79.28        & 24.48        & 25.5 & 11.5 GB & 121.7        & 0.5 GB       \\
+    DA-TransUNet (baseline)    & 80.51        & 25.41        & 25.5 & 11.5 GB & 121.8        & 0.5 GB       \\
     AdaDA, fixed gate ($r$=32) & \textit{XX}  & \textit{XX}  & \textit{XX} & \textit{XX} & \textit{XX} & \textit{XX} \\
     AdaDA, ada-gate ($r$=8)    & \textit{XX}  & \textit{XX}  & \textit{XX} & \textit{XX} & \textit{XX} & \textit{XX} \\
     \textbf{AdaDA, ada-gate ($r$=32) [ours]} & \textbf{78.35}$^*$ & \textbf{27.34}$^*$ & 27.2 & \textit{XX} & 103.7 & 0.5 GB \\
@@ -375,7 +375,7 @@ To quantify the contribution of the key design choices, we perform targeted abla
   \end{tabular}
   \end{center}
   \vspace{-0.4em}
-  \footnotesize{\textbf{All rows trained under identical conditions} for a controlled comparison. The DA-TransUNet baseline uses our reproduced result (79.28\%) rather than the published 79.80\% (500-epoch run on RTX 3090). GFLOPs by \texttt{thop} (counts Conv/Linear; \texttt{bmm} excluded consistently across all rows). $^*$Preliminary from partial training run; full result pending. \textit{XX} = pending.}
+  \footnotesize{\textbf{All rows trained under identical conditions} for a controlled comparison. The DA-TransUNet baseline uses our 300-epoch reproduced result (80.51\%, best-model selection); all rows use best-model selection consistently. GFLOPs by \texttt{thop} (counts Conv/Linear; \texttt{bmm} excluded consistently across all rows). $^*$Preliminary from partial training run; full result pending. \textit{XX} = pending.}
 \end{table*}
 
 Comparing rows 1 and 4 isolates the combined effect of all AdaDA components. Rows 2 vs.\ 4 quantify the contribution of the adaptive gate: replacing the learned gate with a fixed 0.5 blend shows how much the gradient-trainable fusion ratio contributes beyond the windowed and grouped attention alone. Rows 3 vs.\ 4 show the sensitivity to rank: $r$=8 is more memory-efficient but may sacrifice expressiveness, while $r$=32 is our default mid-tier hardware configuration.

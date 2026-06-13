@@ -21,7 +21,7 @@ Both DA-TransUNet (baseline) and AdaDA-TransUNet are run under identical conditi
 
 | Dataset | DA-TransUNet Train | DA-TransUNet Test | AdaDA Train | AdaDA Test |
 |---------|-------------------|-------------------|-------------|------------|
-| Synapse | ✅ Done (6.3h) | ✅ Done (DSC 79.36%, HD95 26.64mm, Params 107.95M, Infer 112.4s/vol, VRAM 0.5GB) — GFLOPs missing (thop failed) | ⏳ Pending | ⏳ Pending |
+| Synapse | ✅ Done (22.35h, T4×1, 300ep) | ✅ Done (DSC 80.51%, HD95 25.41mm, GFLOPs 25.5, Params 107.95M, Infer 121.8s/vol, VRAM 0.5GB, best_model.pth) | ⏳ In Progress (T4×2, 300ep, val_interval=15) | ⏳ Pending |
 | Kvasir-SEG | ⏳ Pending | ⏳ Pending | ⏳ Pending | ⏳ Pending |
 | ISIC 2018 | ⏳ Pending | ⏳ Pending | ⏳ Pending | ⏳ Pending |
 
@@ -29,15 +29,19 @@ Both DA-TransUNet (baseline) and AdaDA-TransUNet are run under identical conditi
 
 ## Hardware & Training Settings
 
-All runs on **single NVIDIA Tesla T4 (15 GB VRAM)** via Kaggle free tier.
-AdaDA-TransUNet also tested with **T4 x2** to demonstrate multi-GPU scalability.
+All runs on **Lightning AI** (persistent studio, not Kaggle).
+- DA-TransUNet baseline: single **NVIDIA Tesla T4 (15 GB VRAM)**
+- AdaDA multi-GPU: **T4 × 2** (`CUDA_VISIBLE_DEVICES=0,1`, per-GPU batch=12, total=24, same LR)
+- DA-TransUNet also validated on T4 × 2 to confirm OOM (expected; used for paper narrative)
 
 | Setting | Value |
 |---------|-------|
 | Optimizer | SGD (momentum=0.9, weight_decay=1e-4) |
 | Learning rate | 0.01 with polynomial decay |
-| Batch size | 24 |
-| Epochs | 150 |
+| Batch size | 24 (per-GPU 12 for AdaDA 2-GPU) |
+| Epochs | 300 |
+| val_interval | 15 |
+| Checkpoint | best_model.pth (saved when val DSC improves) |
 | Seed | 1234 |
 | Image size | 224×224 |
 | AdaDA config | window=7, rank=32, groups=8 |
@@ -125,7 +129,7 @@ Weekly quota: 30h. Week 1 uses ~23h, Week 2 uses ~8h — both within limit.
 
 ### Week 1 (main results)
 ```
-Night 1:  DA-TransUNet  Synapse  (T4 x1, ~20min)  ✅ DONE — Params=107.95M, Infer=112.4s/vol, VRAM=0.5GB; GFLOPs still missing (thop failed, need re-run with explicit thop pip install)
+Night 1:  DA-TransUNet  Synapse  (T4 x1, 22.35h, 300ep)  ✅ DONE — DSC 80.51%, HD95 25.41mm, GFLOPs 25.5, Params=107.95M, Infer=121.8s/vol, VRAM=0.5GB (best_model.pth at epoch 270)
 Night 2:  AdaDA         Synapse  (T4 x1, ~7h)    ← apples-to-apples efficiency row
 Night 3:  AdaDA         Synapse  (T4 x2, ~4h)    back-to-back with
           DA-TransUNet  Kvasir   (T4 x1, ~3h)    ← ~7h total, within 9h limit
@@ -154,7 +158,7 @@ Night 6:  AdaDA rank=8   Synapse  (T4 x2, ~4h)   --rank 8
 | TransUNet | 77.48 | 31.69 |
 | Swin-Unet | 79.13 | 21.55 |
 | DA-TransUNet (paper) | 81.03 | 17.84 |
-| DA-TransUNet (ours) | 79.36 | 26.64 |
+| DA-TransUNet (ours, 300ep best_model) | 80.51 | 25.41 |
 | **AdaDA-TransUNet (ours)** | **XX** | **XX** |
 
 ### Kvasir-SEG Polyp
@@ -175,7 +179,7 @@ Night 6:  AdaDA rank=8   Synapse  (T4 x2, ~4h)   --rank 8
 
 | Method | Params (M) | GFLOPs | Train Time | Train VRAM | Infer Time (s/vol) | Infer VRAM | Multi-GPU |
 |--------|-----------|--------|-----------|-----------|-------------------|-----------|-----------|
-| DA-TransUNet | 107.95 | XX | 6.3h | XX GB | 112.4 | 0.5 GB | No (OOM on T4 x2) |
+| DA-TransUNet | 107.95 | 25.5 | 22.35h (T4×1, 300ep) | ~11.5 GB | 121.8 | 0.5 GB | No (OOM on T4×2) |
 | AdaDA (r=32, M=7, G=8) | XX | XX | XX h | XX GB | XX | XX GB | Yes (~4h on T4 x2) |
 
 > Params and inference metrics are logged by test.py. Train VRAM is logged at end of train.py.
@@ -184,7 +188,7 @@ Night 6:  AdaDA rank=8   Synapse  (T4 x2, ~4h)   --rank 8
 
 | Config | DSC (%) | HD95 (mm) | Notes |
 |--------|---------|-----------|-------|
-| DA-TransUNet (full PAM, no gate) | 79.36 | 26.64 | Baseline — confirmed (epoch_149.pth from da-transunet-checkpoints) |
+| DA-TransUNet (full PAM, no gate) | 80.51 | 25.41 | Baseline — 300ep, T4×1, best_model.pth (epoch 270) |
 | AdaDA, r=32, fixed gate (0.5) | XX | XX | `--disable_gate` — gate contribution |
 | AdaDA, r=8, learned gate | XX | XX | `--rank 8` — rank sensitivity |
 | **AdaDA, r=32, learned gate** | **XX** | **XX** | **Full model (ours)** |
