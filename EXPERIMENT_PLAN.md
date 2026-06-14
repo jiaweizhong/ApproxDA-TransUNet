@@ -1,4 +1,4 @@
-# AdaDA-TransUNet Experiment Plan
+﻿# AdaDA-TransUNet Experiment Plan
 
 ## Goal
 
@@ -31,8 +31,10 @@ Both DA-TransUNet (baseline) and AdaDA-TransUNet are run under identical conditi
 
 All runs on **Lightning AI** (persistent studio, not Kaggle).
 - DA-TransUNet baseline: single **NVIDIA Tesla T4 (15 GB VRAM)**
-- AdaDA multi-GPU: **T4 × 2** (`CUDA_VISIBLE_DEVICES=0,1`, per-GPU batch=12, total=24, same LR)
-- Multi-GPU failure: BOTH 2-skip and 3-skip DA-TransUNet fail on T4×2. Root cause: `DANetHead(64,64)` always instantiated in `__init__`, creating `query_conv = Conv2d(4, 0, 1)` with weight `[0,4,1,1]`. DataParallel's `BroadcastBackward` fails on this zero-element tensor during `loss.backward()` even though the module is never called in forward. **Empirically confirmed: `RuntimeError: BroadcastBackward got [0] but expected [0,4,1,1]`**. Secondary: if patched, PAM at 112×112 would need ~15 GB/GPU for attention matrix → OOM. See `experiments/oom_test_pam.py`.
+- AdaDA multi-GPU: **T4 × 2** via `torchrun --nproc_per_node=2` (DDP, NCCL, per-GPU batch=12, total=24, LR 0.01 unchanged)
+- AdaDA 4×GPU: `torchrun --nproc_per_node=4 train.py --batch_size 6 --n_gpu 4 ...` (per-GPU batch=6, total=24)
+- DA-TransUNet multi-GPU failure: DataParallel `BroadcastBackward` fails on `DANetHead(64,64)` zero-element `query_conv` weight `[0,4,1,1]` even if never called in forward. **Confirmed: `BroadcastBackward got [0] but expected [0,4,1,1]`**. If patched, full PAM at 112x112 needs ~15 GB/GPU -> OOM. See `experiments/oom_test_pam.py`.
+- AdaDA DDP rationale: NCCL all-reduce avoids `BroadcastBackward`; `LowRankWindowedPAM` has no zero-channel collapse; ~390x memory reduction enables the 112x112 skip.
 
 | Setting | Value |
 |---------|-------|
@@ -213,6 +215,8 @@ Night 6:  AdaDA rank=8   Synapse  (T4 x2, ~4h)   --rank 8
 | 1 | **ACCV** ⭐ | B | ~28% | Osaka, Japan 🇯🇵 | **Jul 5, 2026** | **Our target** — strong general CV, Asia |
 | 2 | **PRICAI** | C | ~30-35% | Guangzhou, China | Jun–Jul | Pacific Rim AI |
 | 3 | **BIBM 2026** | B | ~19-22% | Dallas, Tx | Jul–Aug | Signal/image processing |
+| 4 | **ACPR 2026** | B | ~30% | Asian Pacific | Sep-Oct | Asian Conference on Pattern Recognition |
+| 5 | **SPIE Medical Imaging 2027** | C | ~19-22% | Vancouver, CA | August 5 | https://spie.org/MI27/conferencedetails/medical-image-processing |
 
 **Prestige note:** MICCAI ranks higher than ACCV for medical imaging work specifically (it is the dedicated specialist venue, widely cited in clinical AI). Both are CORE A. ACCV is the right target now because:
 - MICCAI 2027 deadline has not opened yet

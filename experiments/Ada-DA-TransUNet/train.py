@@ -98,9 +98,7 @@ def trainer_synapse(args, model, snapshot_path):
     logging.info(str(args))
     base_lr = args.base_lr
     num_classes = args.num_classes
-    # DDP: each process handles one GPU with batch_size samples; DistributedSampler partitions dataset
-    # DataParallel (fallback): one process drives n_gpu GPUs, DataLoader batch = batch_size * n_gpu
-    batch_size = args.batch_size if use_ddp else args.batch_size * args.n_gpu
+    batch_size = args.batch_size
     db_train = Synapse_dataset(base_dir=args.root_path, list_dir=args.list_dir, split="train",
                                transform=transforms.Compose(
                                    [RandomGenerator(output_size=[args.img_size, args.img_size])]))
@@ -119,8 +117,6 @@ def trainer_synapse(args, model, snapshot_path):
     else:
         trainloader = DataLoader(db_train, batch_size=batch_size, shuffle=True, num_workers=8, pin_memory=True,
                                  worker_init_fn=worker_init_fn)
-        if args.n_gpu > 1:
-            model = nn.DataParallel(model)
     model.train()
     ce_loss = CrossEntropyLoss()
     dice_loss = DiceLoss(num_classes)
