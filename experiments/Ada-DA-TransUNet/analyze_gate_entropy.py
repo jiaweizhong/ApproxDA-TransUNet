@@ -4,7 +4,13 @@ in AdaDABlock. Uses register_forward_hook on an existing checkpoint —
 no changes to block.py or AdaDATransUNet.py.
 
 Usage (from experiments/Ada-DA-TransUNet/):
+  # Synapse (default)
   python analyze_gate_entropy.py \\
+    --vit_name R50-ViT-B_16 --n_skip 3 --max_epochs 300 --batch_size 24 \\
+    --window_size 7 --rank 32 --groups 8
+
+  # Kvasir-SEG or ISIC 2018 (once those checkpoints exist)
+  python analyze_gate_entropy.py --dataset Kvasir \\
     --vit_name R50-ViT-B_16 --n_skip 3 --max_epochs 300 --batch_size 24 \\
     --window_size 7 --rank 32 --groups 8
 
@@ -12,6 +18,14 @@ Decision threshold (from plan):
   |r| > 0.3 and p < 0.01  -> proceed to Phase 2 (entropy gate implementation)
   |r| < 0.1               -> gate ignores entropy; narrative revision needed
   r < 0                   -> revise claim (channel attention stronger at high entropy)
+
+Per-class outputs (Synapse):
+  Fig E  — per-organ normalised mean H and mean g (shows which organs drive entropy)
+  Fig F  — per-organ Spearman r_s (H vs g, slices containing that organ only)
+
+Per-category outputs (binary datasets):
+  Fig E  — foreground-fraction quartile mean H and mean g
+  Fig F  — per-quartile Spearman r_s
 """
 
 import argparse
@@ -20,16 +34,26 @@ import sys
 import numpy as np
 import torch
 import torch.nn.functional as F
-from torch.utils.data import DataLoader
 from scipy import stats
+from scipy.ndimage import zoom as nd_zoom
+from torch.utils.data import DataLoader
 
 from Architecture.AdaDATransUNet import AdaDATransUNet
 from Architecture.AdaDATransUNet import CONFIGS as CONFIGS_ViT_seg
 from Architecture.block import AdaDABlock
 from datasets.dataset_synapse import Synapse_dataset
-from utils import test_single_volume
+
+# ── organ map (Synapse) ────────────────────────────────────────────────────────
+SYNAPSE_ORGANS = {
+    1: 'Aorta', 2: 'Gallbladder', 3: 'Kidney(L)',
+    4: 'Kidney(R)', 5: 'Liver', 6: 'Pancreas',
+    7: 'Spleen', 8: 'Stomach',
+}
 
 parser = argparse.ArgumentParser()
+parser.add_argument('--dataset', type=str, default='Synapse',
+                    choices=['Synapse', 'Kvasir', 'ISIC'],
+                    help='which dataset checkpoint to analyse')
 parser.add_argument('--volume_path', type=str, default='../data/Synapse/test_vol_h5')
 parser.add_argument('--list_dir', type=str, default='./lists/lists_Synapse')
 parser.add_argument('--num_classes', type=int, default=9)
@@ -50,7 +74,8 @@ args = parser.parse_args()
 
 
 # ---------- build snapshot path (mirrors test.py logic) ----------
-args.exp = 'AdaDA_Synapse' + str(args.img_size)
+dataset_tag = {'Synapse': 'Synapse224', 'Kvasir': 'Kvasir224', 'ISIC': 'ISIC224'}[args.dataset]
+args.exp = 'AdaDA_' + dataset_tag
 snapshot_path = '../model/{}/{}'.format(args.exp, 'AdaDA')
 snapshot_path += '_pretrain'
 snapshot_path += '_' + args.vit_name
@@ -100,12 +125,9 @@ records = {i: {'H': [], 'Var': [], 'g': []} for i in range(len(adada_blocks))}
 def make_hook(idx, blk):
     def hook(module, inp, out):
         x = inp[0].detach()
-        # entropy: softmax over spatial dim, mean over channels -> (B,)
         prob = F.softmax(x.flatten(2), dim=-1)
         H = (-prob * torch.log(prob + 1e-6)).sum(-1).mean(-1).cpu()
-        # variance: spatial variance per channel, mean over channels -> (B,)
         Var = x.var(dim=[2, 3]).mean(dim=1).cpu()
-        # gate value: recompute with no grad -> (B,)
         with torch.no_grad():
             gap = module.pool(x).view(x.shape[0], -1)
             g = torch.sigmoid(module.gate_fc(gap)).mean(dim=1).cpu()
@@ -118,27 +140,91 @@ hooks = []
 for i, (name, blk) in enumerate(adada_blocks):
     hooks.append(blk.register_forward_hook(make_hook(i, blk)))
 
-# ---------- run inference through test volumes ----------
-db = Synapse_dataset(base_dir=args.volume_path, split='test_vol', list_dir=args.list_dir)
-loader = DataLoader(db, batch_size=1, shuffle=False, num_workers=1)
-print("Running inference on {} volumes …".format(len(db)))
+# ---------- run inference slice-by-slice, recording organ context ----------
+# We iterate manually (not via test_single_volume) so we can capture per-slice
+# ground truth class composition alongside the hook-recorded H/g values.
 
-with torch.no_grad():
+slice_contexts = []  # one dict per forward pass (per 2-D slice)
+
+def _infer_volume(image_vol, label_vol, num_fg_classes):
+    """Iterate slices of one volume, fire model forward, record slice_contexts."""
+    if image_vol.ndim == 2:
+        image_vol = image_vol[np.newaxis]
+        label_vol = label_vol[np.newaxis]
+    for s in range(image_vol.shape[0]):
+        slice_img = image_vol[s].astype(np.float32)
+        slice_lbl = label_vol[s]
+        # resize to model input
+        h, w = slice_img.shape
+        if h != args.img_size or w != args.img_size:
+            slice_img = nd_zoom(slice_img, (args.img_size / h, args.img_size / w), order=3)
+        # record class context
+        organs_in_slice = {
+            c: int((slice_lbl == c).sum())
+            for c in range(1, num_fg_classes + 1)
+            if (slice_lbl == c).any()
+        }
+        fg_frac = float((slice_lbl > 0).mean())
+        slice_contexts.append({'organs': organs_in_slice, 'fg_fraction': fg_frac})
+        # forward pass — hooks fire here
+        img_t = torch.from_numpy(slice_img.copy()).unsqueeze(0).unsqueeze(0)
+        img_t = img_t.repeat(1, 3, 1, 1)
+        if torch.cuda.is_available():
+            img_t = img_t.cuda()
+        with torch.no_grad():
+            net(img_t)
+
+
+if args.dataset == 'Synapse':
+    db = Synapse_dataset(base_dir=args.volume_path, split='test_vol', list_dir=args.list_dir)
+    loader = DataLoader(db, batch_size=1, shuffle=False, num_workers=1)
+    print("Running inference on {} Synapse volumes …".format(len(db)))
     for sample in loader:
-        image = sample['image']   # (1, slices, H, W) or (1, 1, H, W)
-        label = sample['label']
-        # test_single_volume handles slice-by-slice inference; hooks fire per slice
-        test_single_volume(
-            image, label, net,
-            classes=args.num_classes,
-            patch_size=[args.img_size, args.img_size],
-        )
+        img_vol = sample['image'].squeeze(0).cpu().numpy()
+        lbl_vol = sample['label'].squeeze(0).cpu().numpy()
+        _infer_volume(img_vol, lbl_vol, num_fg_classes=8)
+
+elif args.dataset in ('Kvasir', 'ISIC'):
+    # ── binary datasets: add dataset_kvasir / dataset_isic when available ───
+    # Until those loaders exist, load from a flat image+mask directory.
+    # Expected layout:
+    #   Kvasir: ../data/Kvasir/images/*.png, ../data/Kvasir/masks/*.png
+    #   ISIC:   ../data/ISIC/images/*.jpg,   ../data/ISIC/masks/*_segmentation.png
+    import glob
+    from PIL import Image
+    dataset_root = args.volume_path.replace('Synapse/test_vol_h5', args.dataset)
+    img_paths = sorted(glob.glob(os.path.join(dataset_root, 'images', '*')))
+    msk_paths = sorted(glob.glob(os.path.join(dataset_root, 'masks', '*')))
+    if not img_paths:
+        sys.exit("No images found under: " + dataset_root + "/images/  — run Synapse first.")
+    print("Running inference on {} {} images …".format(len(img_paths), args.dataset))
+    for ip, mp in zip(img_paths, msk_paths):
+        img = np.array(Image.open(ip).convert('L').resize(
+            (args.img_size, args.img_size))).astype(np.float32) / 255.0
+        msk = (np.array(Image.open(mp).resize(
+            (args.img_size, args.img_size))) > 0).astype(np.uint8)
+        # binary: class 1 = foreground
+        img_vol = img[np.newaxis]
+        lbl_vol = msk[np.newaxis]
+        _infer_volume(img_vol, lbl_vol, num_fg_classes=1)
 
 for h in hooks:
     h.remove()
 
+# ---------- aggregate per-slice averages across all blocks ----------
+n_slices = len(slice_contexts)
+H_avg = np.zeros(n_slices)
+g_avg = np.zeros(n_slices)
+for i in range(len(adada_blocks)):
+    H_all_i = torch.cat(records[i]['H']).numpy()
+    g_all_i = torch.cat(records[i]['g']).numpy()
+    H_avg += H_all_i
+    g_avg += g_all_i
+H_avg /= len(adada_blocks)
+g_avg /= len(adada_blocks)
+
 # ---------- compute Spearman correlations per block ----------
-print("\n=== Spearman correlation: H(F) vs gate g ===")
+print("\n=== Spearman correlation: H(F) vs gate g (per block) ===")
 spearman_results = []
 for i, (name, _) in enumerate(adada_blocks):
     H_all   = torch.cat(records[i]['H']).numpy()
@@ -163,6 +249,56 @@ for i, (name, r_H, p_H, r_Var, p_Var, H_all, Var_all, g_all) in enumerate(spearm
     print(f"  Block {i:2d}  high-H mean_g={g_hi.mean():.4f}  "
           f"low-H mean_g={g_lo.mean():.4f}  delta={delta:+.4f}")
 
+# ---------- per-class / per-category analysis ----------
+print(f"\n=== Per-class analysis ({args.dataset}) ===")
+
+if args.dataset == 'Synapse':
+    cat_names = []
+    cat_H_vals = []
+    cat_g_vals = []
+    cat_r = []
+
+    for cls_id, organ_name in SYNAPSE_ORGANS.items():
+        mask = np.array([cls_id in ctx['organs'] for ctx in slice_contexts])
+        if mask.sum() < 10:
+            continue
+        h_sub = H_avg[mask]
+        g_sub = g_avg[mask]
+        r, p = stats.spearmanr(h_sub, g_sub) if len(h_sub) > 5 else (float('nan'), float('nan'))
+        cat_names.append(organ_name)
+        cat_H_vals.append(h_sub)
+        cat_g_vals.append(g_sub)
+        cat_r.append((r, p))
+        print(f"  {organ_name:15s}  n={mask.sum():4d}  "
+              f"mean_H={h_sub.mean():.4f}  mean_g={g_sub.mean():.4f}  "
+              f"r_s={r:+.4f}  p={p:.2e}")
+
+else:
+    # Binary dataset: group by foreground-fraction quartile
+    fg_fracs = np.array([ctx['fg_fraction'] for ctx in slice_contexts])
+    q25, q50, q75 = np.percentile(fg_fracs, [25, 50, 75])
+    boundaries = [0, q25, q50, q75, 1.01]
+    raw_names = ['Q1 small/absent', 'Q2 small-med', 'Q3 med-large', 'Q4 large']
+    cat_names = []
+    cat_H_vals = []
+    cat_g_vals = []
+    cat_r = []
+
+    for qi in range(4):
+        mask = (fg_fracs >= boundaries[qi]) & (fg_fracs < boundaries[qi + 1])
+        if mask.sum() < 5:
+            continue
+        h_sub = H_avg[mask]
+        g_sub = g_avg[mask]
+        r, p = stats.spearmanr(h_sub, g_sub) if len(h_sub) > 5 else (float('nan'), float('nan'))
+        cat_names.append(raw_names[qi])
+        cat_H_vals.append(h_sub)
+        cat_g_vals.append(g_sub)
+        cat_r.append((r, p))
+        print(f"  {raw_names[qi]:20s}  n={mask.sum():4d}  FG<={boundaries[qi+1]:.3f}  "
+              f"mean_H={h_sub.mean():.4f}  mean_g={g_sub.mean():.4f}  "
+              f"r_s={r:+.4f}  p={p:.2e}")
+
 # ---------- save separate paper figures ----------
 try:
     import matplotlib
@@ -171,14 +307,15 @@ try:
 
     os.makedirs(args.out_dir, exist_ok=True)
     DPI = 300
-    FS  = 11   # base font size
+    FS  = 11
 
     n      = len(spearman_results)
     cols   = min(n, 4)
     rows   = (n + cols - 1) // cols
-    # short block labels: last two path components
     labels = ['.'.join(name.split('.')[-2:]) if '.' in name else name
               for name, *_ in spearman_results]
+    w = 0.35
+    x = np.arange(n)
 
     # ── Figure A: gate distribution boxplot per block ──────────────────────
     fig, ax = plt.subplots(figsize=(max(4, n * 1.4), 3.5))
@@ -232,16 +369,14 @@ try:
     print(f"Fig B2 saved: {path_B2}")
 
     # ── Figure C: Spearman r bar chart (H and Var side by side) ───────────
-    x = np.arange(n)
-    w = 0.35
     r_H_vals   = [r_H   for _, r_H, p_H, r_Var, p_Var, *_ in spearman_results]
     r_Var_vals = [r_Var for _, r_H, p_H, r_Var, p_Var, *_ in spearman_results]
     fig, ax = plt.subplots(figsize=(max(5, n * 1.6), 3.5))
     ax.bar(x - w/2, r_H_vals,   w, label='Entropy $H(F)$',    color='steelblue')
     ax.bar(x + w/2, r_Var_vals, w, label='Variance $\\mathrm{Var}(F)$', color='darkorange')
-    ax.axhline(0,   color='black', linewidth=0.8)
-    ax.axhline( 0.3, color='green',  linewidth=1.0, linestyle='--', alpha=0.7, label='$r$=0.3 threshold')
-    ax.axhline(-0.3, color='green',  linewidth=1.0, linestyle='--', alpha=0.7)
+    ax.axhline(0,    color='black', linewidth=0.8)
+    ax.axhline( 0.3, color='green', linewidth=1.0, linestyle='--', alpha=0.7, label='$r$=0.3 threshold')
+    ax.axhline(-0.3, color='green', linewidth=1.0, linestyle='--', alpha=0.7)
     ax.set_xticks(x)
     ax.set_xticklabels(labels, rotation=25, ha='right', fontsize=FS - 1)
     ax.set_ylabel('Spearman $r_s$', fontsize=FS)
@@ -264,7 +399,6 @@ try:
     ax.set_ylabel('Mean gate value $g$', fontsize=FS)
     ax.set_xlabel('AdaDA block', fontsize=FS)
     ax.legend(fontsize=FS - 1)
-    # annotate delta on each pair
     for xi, (g_hi, g_lo, delta) in zip(x, figD_data):
         ymax = max(g_hi, g_lo)
         ax.annotate(f'Δ={delta:+.3f}', xy=(xi, ymax + 0.01),
@@ -275,16 +409,75 @@ try:
     plt.close(fig)
     print(f"Fig D saved: {path_D}")
 
+    # ── Figures E and F: per-class / per-category analysis ────────────────
+    if cat_names:
+        n_cats = len(cat_names)
+        x_cat  = np.arange(n_cats)
+        label_suffix = args.dataset
+
+        mean_H_cat = np.array([np.mean(v) for v in cat_H_vals])
+        mean_g_cat = np.array([np.mean(v) for v in cat_g_vals])
+
+        # normalise to [0,1] for visual comparison on same axis
+        def _norm(arr):
+            lo, hi = arr.min(), arr.max()
+            return (arr - lo) / (hi - lo + 1e-8)
+
+        H_norm = _norm(mean_H_cat)
+        g_norm = _norm(mean_g_cat)
+
+        # Figure E: normalised mean H vs mean g per class/category
+        fig, ax = plt.subplots(figsize=(max(6, n_cats * 1.3), 4))
+        ax.bar(x_cat - w/2, H_norm, w, label='Normalised mean $H(F)$', color='steelblue')
+        ax.bar(x_cat + w/2, g_norm, w, label='Normalised mean $g$',     color='#d62728')
+        ax.set_xticks(x_cat)
+        ax.set_xticklabels(cat_names, rotation=30, ha='right', fontsize=FS - 1)
+        ax.set_ylabel('Normalised value (0–1)', fontsize=FS)
+        ax.set_xlabel(f'Class / category ({label_suffix})', fontsize=FS)
+        ax.legend(fontsize=FS - 1)
+        ax.set_title('Per-class: feature entropy vs gate activation (block avg)', fontsize=FS)
+        fig.tight_layout()
+        path_E = os.path.join(args.out_dir, f'fig_E_{label_suffix}_per_class.png')
+        fig.savefig(path_E, dpi=DPI)
+        plt.close(fig)
+        print(f"Fig E saved: {path_E}")
+
+        # Figure F: per-class Spearman r_s (H vs g, subset of slices)
+        r_cat  = [v[0] for v in cat_r]
+        p_cat  = [v[1] for v in cat_r]
+        colors_r = ['#d62728' if r < 0 else 'steelblue' for r in r_cat]
+        fig, ax = plt.subplots(figsize=(max(6, n_cats * 1.3), 4))
+        ax.bar(x_cat, r_cat, color=colors_r, alpha=0.85)
+        for xi, (r, p) in zip(x_cat, zip(r_cat, p_cat)):
+            if not np.isnan(r):
+                sig = '***' if p < 0.001 else ('**' if p < 0.01 else ('*' if p < 0.05 else ''))
+                ax.text(xi, r + (0.02 if r >= 0 else -0.05), sig,
+                        ha='center', fontsize=FS - 1)
+        ax.axhline(0,    color='black', linewidth=0.8)
+        ax.axhline( 0.3, color='green', linewidth=1.0, linestyle='--', alpha=0.7, label='$r$=0.3')
+        ax.axhline(-0.3, color='green', linewidth=1.0, linestyle='--', alpha=0.7)
+        ax.set_xticks(x_cat)
+        ax.set_xticklabels(cat_names, rotation=30, ha='right', fontsize=FS - 1)
+        ax.set_ylabel('Spearman $r_s$ (H vs g, class subset)', fontsize=FS)
+        ax.set_xlabel(f'Class / category ({label_suffix})', fontsize=FS)
+        ax.legend(fontsize=FS - 1)
+        ax.set_title('Per-class entropy–gate correlation', fontsize=FS)
+        fig.tight_layout()
+        path_F = os.path.join(args.out_dir, f'fig_F_{label_suffix}_per_class_spearman.png')
+        fig.savefig(path_F, dpi=DPI)
+        plt.close(fig)
+        print(f"Fig F saved: {path_F}")
+
     print(f"\nAll figures written to: {args.out_dir}/")
 
 except ImportError:
-    print("\nmatplotlib not available — skipping figures (Spearman results and group stats above are still valid)")
+    print("\nmatplotlib not available — skipping figures (Spearman results above are still valid)")
 
 # ---------- summary decision ----------
 print("\n=== Decision summary ===")
 max_r_H   = max(abs(r_H)   for _, r_H, p_H, r_Var, p_Var, *_ in spearman_results)
 max_r_Var = max(abs(r_Var) for _, r_H, p_H, r_Var, p_Var, *_ in spearman_results)
-best_p_H  = min((p_H  for _, r_H, p_H, *_ in spearman_results if abs(r_H)   > 0.3), default=1.0)
+best_p_H  = min((p_H  for _, r_H, p_H, *_ in spearman_results if abs(r_H) > 0.3), default=1.0)
 
 if max_r_H > 0.5 and best_p_H < 0.01:
     print("Case 1 — STRONG H correlation: gate already tracks entropy implicitly.")
@@ -308,4 +501,13 @@ else:
         print("     Revise narrative: 'uncertain boundaries prefer channel disambiguation'.")
     else:
         print("Case 2/3 mixed — check per-block plots to decide.")
+
 print(f"\n  max |r_H| = {max_r_H:.3f}  |  max |r_Var| = {max_r_Var:.3f}")
+
+if cat_names:
+    print("\n=== Per-class decision hints ===")
+    for cname, (r, p) in zip(cat_names, cat_r):
+        if np.isnan(r):
+            continue
+        flag = "STRONG" if abs(r) > 0.3 and p < 0.01 else ("weak" if abs(r) > 0.1 else "none")
+        print(f"  {cname:20s}  r_s={r:+.4f}  p={p:.2e}  [{flag}]")

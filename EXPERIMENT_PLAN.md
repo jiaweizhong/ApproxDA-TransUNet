@@ -148,12 +148,28 @@ Night 5:  AdaDA         ISIC     (T4 x2, ~2.5h)
 
 **Step 0 (morning after T4×1 finishes):** run `analyze_gate_entropy.py` on `best_model.pth` — see `AdaDA-TransUNet.md §10–11` for the 4-case decision tree and backup plans.
 
+The script now outputs **7 figures** (saved to `figures/`):
+
+| Figure | Content | Dataset |
+|--------|---------|---------|
+| Fig A | Gate distribution boxplot per AdaDA block | All |
+| Fig B | H(F) vs g scatter per block (with Spearman r) | All |
+| Fig B2 | Var(F) vs g scatter per block | All |
+| Fig C | Spearman r bar chart (H and Var side-by-side) | All |
+| Fig D | Mean g: high-H vs low-H groups (top/bottom 20%) | All |
+| **Fig E** | **Per-organ normalised mean H and g** — shows which organs drive entropy (expected: Pancreas, Gallbladder highest) | **Synapse only** |
+| **Fig F** | **Per-organ Spearman r** — entropy-gate correlation within each organ's slice subset | **Synapse only** |
+
+For binary datasets (Kvasir, ISIC), Fig E and F use **foreground-fraction quartiles** (Q1=small/absent lesion → Q4=large lesion) as the category axis instead of organ names. Run with `--dataset Kvasir` or `--dataset ISIC` once those checkpoints exist.
+
+> **Early-read insight from Fig E/F:** if Pancreas and Gallbladder (hardest organs, smallest structures) show higher mean H AND higher mean g than Liver/Spleen, this strongly supports the narrative that the gate implicitly learns uncertainty-aware routing even without explicit entropy input — the Case 1 / Case 2 argument for Phase 2.
+
 | Phase 1 result | Week 2 path |
 |---------------|-------------|
-| `|r_H| > 0.3`, `p < 0.01` | Phase 2: entropy gate (`Linear(C+1,C)`) → Nights 5–7 below |
+| `|r_H| > 0.3`, `p < 0.01` (globally or in hard organs) | Phase 2: entropy gate (`Linear(C+1,C)`) → Nights 5–7 below |
 | `0 < r_H < 0.2`, `r_Var > 0.2` | Plan B1: variance gate (`Linear(C+1,C)` with var input) — same run schedule |
 | `r_H ≈ 0`, `r_Var ≈ 0` | Plan B3: multi-statistic gate (`Linear(C+2,C)`) — same run schedule |
-| `r_H < 0` | Investigate per-block; revise narrative; use Plan B1 or B3 |
+| `r_H < 0` in hard organs (Pancreas, Gallbladder) | Case 4: high entropy → more CAM; revise narrative; investigate per-organ Fig F |
 
 ```
 Night 5:  AdaDA no-gate      Synapse  (T4 x2, ~4h)   --disable_gate
