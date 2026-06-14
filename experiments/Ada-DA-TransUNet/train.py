@@ -181,8 +181,13 @@ def trainer_synapse(args, model, snapshot_path):
                 torch.save(model.state_dict(), save_mode_path)
                 logging.info("save model to {}".format(save_mode_path))
 
-        if is_main and args.val_interval > 0 and (
-                (epoch_num + 1) % args.val_interval == 0 or epoch_num >= max_epoch - 1):
+        should_val = args.val_interval > 0 and (
+            (epoch_num + 1) % args.val_interval == 0 or epoch_num >= max_epoch - 1)
+        # Rank 1 must not race into the next epoch while rank 0 runs validation.
+        # Both ranks barrier-sync before and after so DDP all-reduces stay in lockstep.
+        if use_ddp and should_val:
+            dist.barrier()
+        if is_main and should_val:
             _val_t0 = time.time()
             val_dice = _validate_synapse(args, model)
             val_time_s += time.time() - _val_t0
@@ -193,6 +198,8 @@ def trainer_synapse(args, model, snapshot_path):
                 net = model.module if hasattr(model, 'module') else model
                 torch.save(net.state_dict(), os.path.join(snapshot_path, 'best_model.pth'))
                 logging.info("=> best model saved (DSC %.4f)" % best_performance)
+        if use_ddp and should_val:
+            dist.barrier()
 
         if epoch_num >= max_epoch - 1:
             if is_main:
