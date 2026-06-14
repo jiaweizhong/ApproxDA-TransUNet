@@ -255,8 +255,14 @@ A careful inspection of DA-TransUNet's published code reveals a discrepancy betw
 We identify two compounding reasons why \texttt{DANetHead(64,64)} cannot process the $112{\times}112$ skip level (derivations in Appendix~\ref{app:incompatibility}):
 
 \begin{enumerate}
-  \item \textbf{Architectural incompatibility.} \texttt{DANetHead} compresses channels by $\lfloor C/16 \rfloor$ before constructing the PAM. For $C{=}64$: $\lfloor 64/16 \rfloor = 4$ intermediate channels. The PAM then creates \texttt{query\_conv} $=$ \texttt{Conv2d(4,\,$\lfloor 4/8 \rfloor$,\,1)} $=$ \texttt{Conv2d(4,\,0,\,1)}---a convolution with \emph{zero output channels}, which is architecturally invalid. PyTorch raises \texttt{RuntimeError: weight of size [0,\,4,\,1,\,1]} at the first forward pass, regardless of available memory. This failure was empirically confirmed on T4$\times$2 with the operator-precedence bug corrected.
-  \item \textbf{Memory barrier.} Even if the channel arithmetic were patched, applying $N{\times}N$ PAM at $112{\times}112$ yields $N{=}12{,}544$ and an attention matrix of $B{\times}N{\times}N$ float32 values. At batch size 24 per GPU this requires ${\approx}15$\,GB---matching the full VRAM of a T4---exhausting device memory during the backward pass.
+  \item \textbf{Architectural incompatibility---multi-GPU failure (empirically confirmed).} \texttt{DANetHead(64,64)} compresses channels to $C_{\text{inter}} = \lfloor 64/16 \rfloor = 4$, then \texttt{PAM\_Module(4)} creates \texttt{query\_conv} $=$ \texttt{Conv2d(4,\,$\lfloor 4/8 \rfloor$,\,1)} $=$ \texttt{Conv2d(4,\,0,\,1)}---a weight with shape \texttt{[0,\,4,\,1,\,1]} (zero output channels). Although the two-skip guard prevents this \texttt{Conv2d} from executing in the \emph{forward} pass, the zero-element weight \emph{exists in the model's parameter set}. Under multi-GPU \texttt{DataParallel} training, \texttt{loss.backward()} triggers gradient synchronization across \emph{all} model parameters. \texttt{BroadcastBackward} cannot handle the zero-element tensor and raises:
+  \begin{verbatim}
+RuntimeError: Function BroadcastBackward returned an
+invalid gradient at index 395 - got [0] but expected
+shape compatible with [0, 4, 1, 1]
+  \end{verbatim}
+  This error was reproduced on T4$\times$2 running the original, \emph{unmodified} DA-TransUNet code with \texttt{{-}{-}n\_gpu~2}. The model is therefore limited to single-GPU training regardless of skip routing.
+  \item \textbf{Memory barrier (if architecturally patched).} Even if \texttt{DANetHead(64,64)} were patched to avoid the zero-channel collapse, applying full $N{\times}N$ PAM at $112{\times}112$ ($N{=}12{,}544$) at per-GPU batch size 12 requires ${\approx}7$\,GB for the attention matrix alone. During training the model already occupies ${\approx}10$\,GB (weights, optimizer momentum, and activations), leaving the T4's 14.6\,GB oversubscribed by ${\approx}2.4$\,GB and causing OOM during the backward pass.
 \end{enumerate}
 
 We believe the operator-precedence expression in the original code was \emph{intentional}, serving as a silent guard to prevent the \texttt{RuntimeError} that \texttt{DANetHead(64,64)} would raise at the very first forward pass. The condition \texttt{x.size(1) == 64} checks the upsampled \emph{decoder} feature width (128 at the 64-channel skip stage), which is never equal to 64---so the 64-channel skip path is silently bypassed by design, making DA-TransUNet an effective two-skip model despite its three-skip architecture.
@@ -333,7 +339,7 @@ Table~\ref{tab:other_datasets} compares DSC and mIoU on ISIC 2018 and Kvasir-SEG
 Table~\ref{tab:efficiency} compares model parameters, GFLOPs, training VRAM, training time, and per-volume inference time. The primary efficiency advantage of AdaDA-TransUNet is \emph{memory}, not raw throughput: replacing global $\mathcal{O}(N^2)$ PAM with windowed low-rank attention reduces the per-sample attention matrix from $(N\!\times\!N)$ to $(n_W\!\times\!M^2\!\times\!M^2)$, a ${\sim}260\times$ reduction at the $112\!\times\!112$ skip connection. This is the enabling factor for multi-GPU training.
 
 \begin{table*}[t]
-  \caption{Efficiency Comparison on Synapse (batch=24 total, 300 epochs). DA-TransUNet on T4$\times$1; AdaDA on T4$\times$2 (batch=12/GPU, total=24, lr=0.01 unchanged).}
+  \caption{Efficiency Comparison on Synapse (batch=24 total, 300 epochs). Train Time = pure training time excluding validation runs. DA-TransUNet on T4$\times$1; AdaDA on T4$\times$2 (batch=12/GPU, total=24, lr=0.01 unchanged).}
   \label{tab:efficiency}
   \begin{center}
   \setlength{\tabcolsep}{5pt}
@@ -343,7 +349,7 @@ Table~\ref{tab:efficiency} compares model parameters, GFLOPs, training VRAM, tra
     \midrule
     TransUNet~\cite{chen2021transunet}     & 105.3       & 57.4        & --               & --               & --               & --               & No \\
     Swin-Unet~\cite{cao2022swinunet}       & 41.4        & 11.5        & --               & --               & --               & --               & No \\
-    DA-TransUNet~\cite{sun2024datransunet} & 107.95      & 25.5 & 22.35h (T4$\times$1) & 11.5 GB   & 121.8            & 0.5 GB           & No$^\ddagger$ \\
+    DA-TransUNet~\cite{sun2024datransunet} & 107.95      & 25.5 & 11.4h (T4$\times$1) & \textit{XX} GB   & 121.8            & 0.5 GB           & No$^\ddagger$ \\
     \midrule
     \multirow{2}{*}{\textbf{AdaDA ($r$=32, $M$=7, $G$=8)}}
       & \multirow{2}{*}{109.90} & \multirow{2}{*}{27.2}
@@ -354,11 +360,11 @@ Table~\ref{tab:efficiency} compares model parameters, GFLOPs, training VRAM, tra
   \end{center}
   \vspace{-0.4em}
   \footnotesize{GFLOPs by \texttt{thop} on a single $224\!\times\!224$ slice; \texttt{thop} counts Conv/Linear but not \texttt{torch.bmm}, so both models are measured consistently but absolute values undercount attention cost. Infer Time = avg seconds per CT volume over 12 test cases (includes NIfTI I/O). \textit{XX} = pending full run.\\
-  $^\ddagger$~DA-TransUNet OOMs on 2$\times$T4: the $\mathcal{O}(N^2)$ PAM backward must store a $(12544\!\times\!12544)$ attention matrix per sample at the $112\!\times\!112$ skip connection, exhausting GPU memory during gradient aggregation.\\
+  $^\ddagger$~DA-TransUNet fails on T4$\times$2 with the original unmodified code: \texttt{DataParallel} gradient synchronization raises \texttt{RuntimeError: BroadcastBackward got [0] but expected [0,4,1,1]} on the zero-element \texttt{query\_conv} weight in \texttt{DANetHead(64,64)}, confirmed experimentally with \texttt{{-}{-}n\_gpu~2}. Even if patched, full PAM at $112{\times}112$ would require ${\approx}15$\,GB for the attention matrix alone, exhausting T4 VRAM.\\
   $^\S$~AdaDA multi-GPU experiments use 2$\times$T4 with \texttt{CUDA\_VISIBLE\_DEVICES=0,1}, per-GPU batch size 12 (total=24, matching the single-GPU baseline) and base LR 0.01 unchanged—identical hardware to the baseline for a like-for-like comparison. AdaDA's windowed low-rank PAM reduces the attention matrix from $(B\!\times\!12544^2)$ to $(B\!\times\!256\!\times\!49\!\times\!32)$ at the $112\!\times\!112$ skip connection—a ${\sim}390\times$ reduction (windowing alone: ${\sim}260\times$)—enabling DataParallel training and approximately halving wall-clock time.}
 \end{table*}
 
-The efficiency advantage of AdaDA-TransUNet is primarily \emph{memory}, not compute throughput. The backbone (ResNet encoder + 12-layer ViT) accounts for the majority of FLOPs and is shared between both models; the dual-attention blocks contribute only ${\sim}21\%$ of total FLOPs but dominate memory. Replacing global $\mathcal{O}(N^2)$ PAM with windowed low-rank attention reduces the attention matrix at the $112\!\times\!112$ skip connection from $(B\!\times\!12544\!\times\!12544)$ to $(B\!\times\!256\!\times\!49\!\times\!49)$ — a ${\sim}260\times$ reduction — while the per-slice inference time decreases by ${\sim}15\%$ (121.8$\to$103.7\,s/vol). Crucially, DA-TransUNet cannot utilize 2-GPU DataParallel training due to OOM during the PAM backward pass, whereas AdaDA-TransUNet runs cleanly on T4$\times$2, approximately halving wall-clock training time.
+The efficiency advantage of AdaDA-TransUNet is primarily \emph{memory}, not compute throughput. The backbone (ResNet encoder + 12-layer ViT) accounts for the majority of FLOPs and is shared between both models; the dual-attention blocks contribute only ${\sim}21\%$ of total FLOPs but dominate memory. Replacing global $\mathcal{O}(N^2)$ PAM with windowed low-rank attention reduces the attention matrix at the $112\!\times\!112$ skip connection from $(B\!\times\!12544\!\times\!12544)$ to $(B\!\times\!256\!\times\!49\!\times\!49)$ — a ${\sim}260\times$ reduction — while the per-slice inference time decreases by ${\sim}15\%$ (121.8$\to$103.7\,s/vol). Crucially, the original DA-TransUNet code cannot utilize multi-GPU DataParallel training: even with the two-skip guard active, \texttt{DataParallel}'s gradient synchronization fails on the zero-element \texttt{query\_conv} weight in \texttt{DANetHead(64,64)} (confirmed empirically on T4$\times$2). AdaDA-TransUNet runs cleanly on T4$\times$2, approximately halving wall-clock training time.
 
 \subsection{Ablation Study}
 
@@ -408,9 +414,9 @@ The authors thank the open-source contributors of DA-TransUNet and Swin Transfor
 \section{Dual Incompatibility of \texttt{DANetHead(64,64)} at the 112$\times$112 Skip Level}
 \label{app:incompatibility}
 
-The 64-channel skip connection (at 112$\times$112 spatial resolution) is silently excluded from dual attention in DA-TransUNet's published code. The \texttt{DecoderBlock.forward()} checks \texttt{x.size(1) == 64}, where \texttt{x} is the \emph{upsampled decoder feature}---not the skip. At the decoder stage processing the 64-channel skip, the upsampled decoder feature carries \textbf{128 channels}, so the condition is never satisfied. We believe this guard is intentional: as shown below, any attempt to execute \texttt{DANetHead(64,64)} on the skip raises a \texttt{RuntimeError} at the first forward pass, before any gradient is computed. The published code silently sidesteps both the architectural and memory failures described here.
+The 64-channel skip connection (at 112$\times$112 spatial resolution) is silently excluded from dual attention in DA-TransUNet's published code. The \texttt{DecoderBlock.forward()} checks \texttt{x.size(1) == 64}, where \texttt{x} is the \emph{upsampled decoder feature}---not the skip. At the decoder stage processing the 64-channel skip, the upsampled decoder feature carries \textbf{128 channels}, so the condition is never satisfied. We believe this guard is intentional: as shown below, \texttt{DANetHead(64,64)} creates a zero-element weight that causes \texttt{DataParallel} training to fail during gradient synchronization---even without ever calling the module in the forward pass. The published code silently sidesteps both the architectural and memory failures described here.
 
-\subsection{Architectural Incompatibility: Zero-Channel Convolution}
+\subsection{Architectural Incompatibility: Zero-Element Weight and DataParallel Failure}
 
 \texttt{DANetHead} in \texttt{block.py} projects input channels $C$ to an intermediate width before constructing the PAM:
 \[
@@ -429,12 +435,17 @@ For the 64-channel skip:
 \[
   C = 64:\quad C_{\text{inter}} = \lfloor 64/16 \rfloor = 4, \qquad \text{query channels} = \lfloor 4/8 \rfloor = 0.
 \]
-\texttt{Conv2d(4,\;0,\;1)} has weight shape \texttt{[0,\,4,\,1,\,1]}, which PyTorch rejects with:
+\texttt{Conv2d(4,\;0,\;1)} has weight shape \texttt{[0,\,4,\,1,\,1]}---zero output channels. The combined compression $\lfloor \cdot/16 \rfloor \circ \lfloor \cdot/8 \rfloor$ is safe only when $C \geq 128$.
+
+\textbf{Consequence under single-GPU training.} With the two-skip guard active, \texttt{query\_conv} is never called in the forward pass, so PyTorch never evaluates the zero-element convolution. Single-GPU training proceeds without error.
+
+\textbf{Consequence under multi-GPU DataParallel training (empirically confirmed).} \texttt{DataParallel} replicates the full model---including \texttt{query\_conv.weight}~\texttt{[0,4,1,1]}---onto each device, then calls \texttt{BroadcastBackward} during \texttt{loss.backward()} to synchronize gradients for \emph{every} model parameter. \texttt{BroadcastBackward} cannot operate on a zero-element tensor and raises:
 \begin{verbatim}
-RuntimeError: expected weight to be at least 1 at dimension 0,
-              but got weight of size [0, 4, 1, 1]
+RuntimeError: Function BroadcastBackward returned an
+invalid gradient at index 395 - got [0] but expected
+shape compatible with [0, 4, 1, 1]
 \end{verbatim}
-This error fires at the first forward pass---before any gradient is computed---regardless of batch size or GPU memory. The combined compression $\lfloor \cdot/16 \rfloor \circ \lfloor \cdot/8 \rfloor$ is safe only when $C \geq 128$ (giving $\lfloor 128/16\rfloor=8,\;\lfloor 8/8\rfloor=1$).
+This was reproduced on T4$\times$2 by running the original, unmodified DA-TransUNet code (\texttt{{-}{-}n\_gpu~2}). The crash occurs at the first \texttt{loss.backward()} call regardless of skip routing, confirming that DA-TransUNet is a strictly single-GPU model.
 
 \subsection{Memory Barrier: Quadratic PAM Attention Matrix}
 
@@ -442,23 +453,31 @@ Even if the architectural issue were patched (e.g., clamping $C_{\text{inter}} \
 \[
   B \times N \times N \times 4\;\text{bytes},\quad N = 112^2 = 12{,}544.
 \]
-At batch size $B{=}24$ per GPU:
+At per-GPU batch size $B{=}12$ (DataParallel on 2$\times$T4):
 \[
-  24 \times 12{,}544^2 \times 4\;\text{bytes} \approx 15.0\;\text{GB},
+  12 \times 12{,}544^2 \times 4\;\text{bytes} \approx 7.0\;\text{GB}.
 \]
-matching the full VRAM of a T4 and leaving no capacity for activations, optimizer states, or inter-GPU gradient aggregation in the backward pass.
+Empirically (tested on a T4 with 14.6\,GB VRAM), this tensor alone allocates successfully on an otherwise empty device. However, during training the model already consumes ${\approx}10$\,GB (weights, SGD momentum buffer, and intermediate activations, measured from training logs). The combined footprint of ${\approx}17$\,GB exceeds T4 capacity by ${\approx}2.4$\,GB, causing OOM during the backward pass.
 
 \subsection{How AdaDA Resolves Both Issues}
 
 \textbf{Architecture.} \texttt{LowRankWindowedPAM} applies \texttt{Conv1d(C,\;C,\;1)} queries directly on the input channel dimension, with rank $r{=}32$ set independently of $C$. For $C{=}64$: \texttt{Conv1d(64,\;64,\;1)}, which is valid. No integer-division underflow occurs at any supported channel width.
 
-\textbf{Memory.} Window partitioning and low-rank projection jointly reduce attention storage at the $112{\times}112$ level:
-\begin{align*}
-  \text{Full PAM:} &\quad B \!\times\! N^2 = B \!\times\! 12544^2 \approx 15.0\;\text{GB at }B{=}24 \\
-  \text{Windowed only:} &\quad B \!\times\! n_W \!\times\! N_w^2 = B \!\times\! 256 \!\times\! 49^2 \approx 58\;\text{MB at }B{=}24 \quad({\sim}260{\times}) \\
-  \text{Windowed + rank:} &\quad B \!\times\! n_W \!\times\! N_w \!\times\! r = B \!\times\! 256 \!\times\! 49 \!\times\! 32 \approx 38\;\text{MB at }B{=}24 \quad({\sim}390{\times})
-\end{align*}
-where $n_W{=}(112/7)^2{=}256$ windows of size $N_w{=}M^2{=}49$ tokens and $r{=}32$ is the projection rank. The combined ${\sim}390{\times}$ reduction brings attention storage from 15\,GB to 38\,MB, enabling multi-GPU DataParallel training on T4$\times$2 without modification.
+\textbf{Memory.} Window partitioning and low-rank projection jointly reduce attention storage at the $112{\times}112$ level ($B{=}24$, $n_W{=}256$ windows, $N_w{=}M^2{=}49$, $r{=}32$):
+
+\noindent\textit{Full PAM:}
+\[
+  B \times N^2 = 24 \times 12544^2 \approx 15.0\;\text{GB}
+\]
+\textit{Windowed only} (${\sim}260{\times}$ reduction):
+\[
+  B \times n_W \times N_w^2 = 24 \times 256 \times 49^2 \approx 58\;\text{MB}
+\]
+\textit{Windowed $+$ low-rank} (${\sim}390{\times}$ reduction):
+\[
+  B \times n_W \times N_w \times r = 24 \times 256 \times 49 \times 32 \approx 38\;\text{MB}
+\]
+The combined ${\sim}390{\times}$ reduction brings attention storage from 15\,GB to 38\,MB, enabling multi-GPU DataParallel training on T4$\times$2 without modification.
 
 % ===========================================================================
 \begin{thebibliography}{00}

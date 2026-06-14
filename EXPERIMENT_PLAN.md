@@ -21,7 +21,7 @@ Both DA-TransUNet (baseline) and AdaDA-TransUNet are run under identical conditi
 
 | Dataset | DA-TransUNet Train | DA-TransUNet Test | AdaDA Train | AdaDA Test |
 |---------|-------------------|-------------------|-------------|------------|
-| Synapse | ✅ Done (~11.4h pure train, 22.35h wall-clock, T4×1, 300ep) — peak train VRAM pending next run | ✅ Done (DSC ~79.8%, GFLOPs 25.5, Params 107.95M, Infer 121.8s/vol, Infer VRAM 0.5GB, best_model.pth) | ⏳ In Progress (T4×2, 300ep, val_interval=15) | ⏳ Pending |
+| Synapse | ✅ Done (~11.4h pure train, 22.35h wall-clock, T4×1, 300ep, peak VRAM pending) | ✅ Done (DSC 80.51%, HD95 25.41mm, GFLOPs 25.5, Params 107.95M, Infer 121.8s/vol, Infer VRAM 0.5GB) | ✅ Done (T4×1, 300ep, 11.86h pure train, Peak VRAM 9.8 GB, 2-skip bug) | ✅ Done (DSC 78.02%, HD95 35.67mm, Params 114.90M, GFLOPs 26.9, Infer VRAM 0.5GB) |
 | Kvasir-SEG | ⏳ Pending | ⏳ Pending | ⏳ Pending | ⏳ Pending |
 | ISIC 2018 | ⏳ Pending | ⏳ Pending | ⏳ Pending | ⏳ Pending |
 
@@ -32,7 +32,7 @@ Both DA-TransUNet (baseline) and AdaDA-TransUNet are run under identical conditi
 All runs on **Lightning AI** (persistent studio, not Kaggle).
 - DA-TransUNet baseline: single **NVIDIA Tesla T4 (15 GB VRAM)**
 - AdaDA multi-GPU: **T4 × 2** (`CUDA_VISIBLE_DEVICES=0,1`, per-GPU batch=12, total=24, same LR)
-- DA-TransUNet also validated on T4 × 2 to confirm OOM (expected; used for paper narrative)
+- Multi-GPU failure: BOTH 2-skip and 3-skip DA-TransUNet fail on T4×2. Root cause: `DANetHead(64,64)` always instantiated in `__init__`, creating `query_conv = Conv2d(4, 0, 1)` with weight `[0,4,1,1]`. DataParallel's `BroadcastBackward` fails on this zero-element tensor during `loss.backward()` even though the module is never called in forward. **Empirically confirmed: `RuntimeError: BroadcastBackward got [0] but expected [0,4,1,1]`**. Secondary: if patched, PAM at 112×112 would need ~15 GB/GPU for attention matrix → OOM. See `experiments/oom_test_pam.py`.
 
 | Setting | Value |
 |---------|-------|
