@@ -329,7 +329,7 @@ try:
 
     # ── Figure A: gate distribution boxplot per block ──────────────────────
     fig, ax = plt.subplots(figsize=(max(4, n * 1.4), 3.5))
-    g_data = [torch.cat(records[i]['g']).numpy() for i in range(n)]
+    g_data = [torch.cat(records[i]['g']).numpy() for i in active_idx]
     bp = ax.boxplot(g_data, labels=labels, patch_artist=True, notch=False)
     for patch in bp['boxes']:
         patch.set_facecolor('#a8c8e8')
