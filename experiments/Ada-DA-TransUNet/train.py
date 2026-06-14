@@ -70,9 +70,14 @@ def _validate_synapse(args, model):
     from utils import test_single_volume
     vol_path = os.path.join(os.path.dirname(args.root_path), 'test_vol_h5')
     db_val = Synapse_dataset(base_dir=vol_path, split="test_vol", list_dir=args.list_dir)
-    val_loader = DataLoader(db_val, batch_size=1, shuffle=False, num_workers=1)
+    # num_workers=0: torchrun already runs inside a subprocess; spawning DataLoader
+    # worker sub-subprocesses causes nested multiprocessing deadlocks on Linux.
+    val_loader = DataLoader(db_val, batch_size=1, shuffle=False, num_workers=0)
     net = model.module if hasattr(model, 'module') else model
-    model.eval()
+    # eval/train on the unwrapped net — calling model.eval() on the DDP wrapper
+    # triggers an internal all-reduce (find_unused_parameters bookkeeping) that
+    # non-validating ranks aren't participating in, causing NCCL ALLREDUCE timeout.
+    net.eval()
     metric_list = 0.0
     with torch.no_grad():
         for sample in val_loader:
@@ -80,7 +85,7 @@ def _validate_synapse(args, model):
                 sample["image"], sample["label"], net,
                 classes=args.num_classes, patch_size=[args.img_size, args.img_size])
             metric_list += np.array(metric_i)
-    model.train()
+    net.train()
     return float(np.mean(metric_list / len(db_val), axis=0)[0])
 
 
@@ -188,7 +193,7 @@ def trainer_synapse(args, model, snapshot_path):
         # Rank 1 must not race into the next epoch while rank 0 runs validation.
         # Both ranks barrier-sync before and after so DDP all-reduces stay in lockstep.
         if use_ddp and should_val:
-            dist.barrier()
+            dist.barrier(device_ids=[local_rank])
         if is_main and should_val:
             _val_t0 = time.time()
             val_dice = _validate_synapse(args, model)
@@ -201,7 +206,7 @@ def trainer_synapse(args, model, snapshot_path):
                 torch.save(net.state_dict(), os.path.join(snapshot_path, 'best_model.pth'))
                 logging.info("=> best model saved (DSC %.4f)" % best_performance)
         if use_ddp and should_val:
-            dist.barrier()
+            dist.barrier(device_ids=[local_rank])
 
         if epoch_num >= max_epoch - 1:
             if is_main:
