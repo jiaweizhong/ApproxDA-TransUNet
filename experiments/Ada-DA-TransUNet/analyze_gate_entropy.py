@@ -44,7 +44,8 @@ parser.add_argument('--seed', type=int, default=1234)
 parser.add_argument('--window_size', type=int, default=7)
 parser.add_argument('--rank', type=int, default=32)
 parser.add_argument('--groups', type=int, default=8)
-parser.add_argument('--out', type=str, default='gate_entropy_scatter.png')
+parser.add_argument('--out_dir', type=str, default='figures',
+                    help='directory to save paper figures (created if absent)')
 args = parser.parse_args()
 
 
@@ -149,41 +150,135 @@ for i, (name, _) in enumerate(adada_blocks):
     flag = "PROCEED" if abs(r_H) > 0.3 and p_H < 0.01 else ("WEAK" if abs(r_H) < 0.1 else "CHECK")
     print(f"  Block {i:2d} ({name:40s})  H: r={r_H:+.4f} p={p_H:.2e}  [{flag}]  |  Var: r={r_Var:+.4f} p={p_Var:.2e}")
 
-# ---------- scatter plots ----------
+# ---------- Figure D stats: high vs low entropy group comparison ----------
+print("\n=== Figure D: high-H vs low-H gate comparison (top/bottom 20%) ===")
+figD_data = []
+for i, (name, r_H, p_H, r_Var, p_Var, H_all, Var_all, g_all) in enumerate(spearman_results):
+    thresh_hi = np.percentile(H_all, 80)
+    thresh_lo = np.percentile(H_all, 20)
+    g_hi = g_all[H_all >= thresh_hi]
+    g_lo = g_all[H_all <= thresh_lo]
+    delta = g_hi.mean() - g_lo.mean()
+    figD_data.append((g_hi.mean(), g_lo.mean(), delta))
+    print(f"  Block {i:2d}  high-H mean_g={g_hi.mean():.4f}  "
+          f"low-H mean_g={g_lo.mean():.4f}  delta={delta:+.4f}")
+
+# ---------- save separate paper figures ----------
 try:
     import matplotlib
     matplotlib.use('Agg')
     import matplotlib.pyplot as plt
 
-    n = len(spearman_results)
-    cols = min(n, 4)
-    rows_H   = (n + cols - 1) // cols
-    rows_Var = (n + cols - 1) // cols
-    fig, all_axes = plt.subplots(rows_H + rows_Var, cols,
-                                 figsize=(4 * cols, 4 * (rows_H + rows_Var)))
-    all_axes = np.array(all_axes).reshape(-1, cols)
-    axes_H   = all_axes[:rows_H].flatten()
-    axes_Var = all_axes[rows_H:].flatten()
+    os.makedirs(args.out_dir, exist_ok=True)
+    DPI = 300
+    FS  = 11   # base font size
 
-    for i, (name, r_H, p_H, r_Var, p_Var, H_all, Var_all, g_all) in enumerate(spearman_results):
-        short = name.split('.')[-2] + '.' + name.split('.')[-1] if '.' in name else name
-        for ax, x_vals, x_label, r, p in [
-            (axes_H[i],   H_all,   'Entropy H(F)',   r_H,   p_H),
-            (axes_Var[i], Var_all, 'Variance Var(F)', r_Var, p_Var),
-        ]:
-            ax.scatter(x_vals, g_all, alpha=0.3, s=4)
-            ax.set_xlabel(x_label)
-            ax.set_ylabel('Mean gate g')
-            ax.set_title(f'{short}\nr={r:+.3f} p={p:.1e}')
+    n      = len(spearman_results)
+    cols   = min(n, 4)
+    rows   = (n + cols - 1) // cols
+    # short block labels: last two path components
+    labels = ['.'.join(name.split('.')[-2:]) if '.' in name else name
+              for name, *_ in spearman_results]
 
-    for ax in list(axes_H[n:]) + list(axes_Var[n:]):
-        ax.set_visible(False)
-
+    # ── Figure A: gate distribution boxplot per block ──────────────────────
+    fig, ax = plt.subplots(figsize=(max(4, n * 1.4), 3.5))
+    g_data = [torch.cat(records[i]['g']).numpy() for i in range(n)]
+    bp = ax.boxplot(g_data, labels=labels, patch_artist=True, notch=False)
+    for patch in bp['boxes']:
+        patch.set_facecolor('#a8c8e8')
+    ax.set_ylabel('Mean gate value $g$', fontsize=FS)
+    ax.set_xlabel('AdaDA block', fontsize=FS)
+    ax.tick_params(axis='x', rotation=25, labelsize=FS - 1)
     fig.tight_layout()
-    fig.savefig(args.out, dpi=120)
-    print(f"\nScatter plot saved to: {args.out}")
+    path_A = os.path.join(args.out_dir, 'fig_A_gate_distribution.png')
+    fig.savefig(path_A, dpi=DPI)
+    plt.close(fig)
+    print(f"\nFig A saved: {path_A}")
+
+    # ── Figure B: entropy H(F) vs gate g scatter ───────────────────────────
+    fig, axes = plt.subplots(rows, cols, figsize=(4 * cols, 3.5 * rows))
+    axes = np.array(axes).flatten() if n > 1 else [axes]
+    for i, (name, r_H, p_H, r_Var, p_Var, H_all, Var_all, g_all) in enumerate(spearman_results):
+        ax = axes[i]
+        ax.scatter(H_all, g_all, alpha=0.25, s=5, color='steelblue', rasterized=True)
+        ax.set_xlabel('Feature entropy $H(F)$', fontsize=FS)
+        ax.set_ylabel('Mean gate $g$', fontsize=FS)
+        sig = '***' if p_H < 0.001 else ('**' if p_H < 0.01 else ('*' if p_H < 0.05 else 'n.s.'))
+        ax.set_title(f'{labels[i]}\n$r_s$={r_H:+.3f} {sig}', fontsize=FS)
+    for ax in axes[n:]:
+        ax.set_visible(False)
+    fig.tight_layout()
+    path_B = os.path.join(args.out_dir, 'fig_B_entropy_scatter.png')
+    fig.savefig(path_B, dpi=DPI)
+    plt.close(fig)
+    print(f"Fig B saved: {path_B}")
+
+    # ── Figure B2: variance Var(F) vs gate g scatter ───────────────────────
+    fig, axes = plt.subplots(rows, cols, figsize=(4 * cols, 3.5 * rows))
+    axes = np.array(axes).flatten() if n > 1 else [axes]
+    for i, (name, r_H, p_H, r_Var, p_Var, H_all, Var_all, g_all) in enumerate(spearman_results):
+        ax = axes[i]
+        ax.scatter(Var_all, g_all, alpha=0.25, s=5, color='darkorange', rasterized=True)
+        ax.set_xlabel('Feature variance $\\mathrm{Var}(F)$', fontsize=FS)
+        ax.set_ylabel('Mean gate $g$', fontsize=FS)
+        sig = '***' if p_Var < 0.001 else ('**' if p_Var < 0.01 else ('*' if p_Var < 0.05 else 'n.s.'))
+        ax.set_title(f'{labels[i]}\n$r_s$={r_Var:+.3f} {sig}', fontsize=FS)
+    for ax in axes[n:]:
+        ax.set_visible(False)
+    fig.tight_layout()
+    path_B2 = os.path.join(args.out_dir, 'fig_B2_variance_scatter.png')
+    fig.savefig(path_B2, dpi=DPI)
+    plt.close(fig)
+    print(f"Fig B2 saved: {path_B2}")
+
+    # ── Figure C: Spearman r bar chart (H and Var side by side) ───────────
+    x = np.arange(n)
+    w = 0.35
+    r_H_vals   = [r_H   for _, r_H, p_H, r_Var, p_Var, *_ in spearman_results]
+    r_Var_vals = [r_Var for _, r_H, p_H, r_Var, p_Var, *_ in spearman_results]
+    fig, ax = plt.subplots(figsize=(max(5, n * 1.6), 3.5))
+    ax.bar(x - w/2, r_H_vals,   w, label='Entropy $H(F)$',    color='steelblue')
+    ax.bar(x + w/2, r_Var_vals, w, label='Variance $\\mathrm{Var}(F)$', color='darkorange')
+    ax.axhline(0,   color='black', linewidth=0.8)
+    ax.axhline( 0.3, color='green',  linewidth=1.0, linestyle='--', alpha=0.7, label='$r$=0.3 threshold')
+    ax.axhline(-0.3, color='green',  linewidth=1.0, linestyle='--', alpha=0.7)
+    ax.set_xticks(x)
+    ax.set_xticklabels(labels, rotation=25, ha='right', fontsize=FS - 1)
+    ax.set_ylabel('Spearman $r_s$', fontsize=FS)
+    ax.set_xlabel('AdaDA block', fontsize=FS)
+    ax.legend(fontsize=FS - 1)
+    fig.tight_layout()
+    path_C = os.path.join(args.out_dir, 'fig_C_spearman_bars.png')
+    fig.savefig(path_C, dpi=DPI)
+    plt.close(fig)
+    print(f"Fig C saved: {path_C}")
+
+    # ── Figure D: mean gate g — high-H vs low-H groups per block ──────────
+    g_hi_vals = [d[0] for d in figD_data]
+    g_lo_vals = [d[1] for d in figD_data]
+    fig, ax = plt.subplots(figsize=(max(5, n * 1.6), 3.5))
+    ax.bar(x - w/2, g_hi_vals, w, label='High entropy (top 20%)',  color='#d62728')
+    ax.bar(x + w/2, g_lo_vals, w, label='Low entropy (bottom 20%)', color='#1f77b4')
+    ax.set_xticks(x)
+    ax.set_xticklabels(labels, rotation=25, ha='right', fontsize=FS - 1)
+    ax.set_ylabel('Mean gate value $g$', fontsize=FS)
+    ax.set_xlabel('AdaDA block', fontsize=FS)
+    ax.legend(fontsize=FS - 1)
+    # annotate delta on each pair
+    for xi, (g_hi, g_lo, delta) in zip(x, figD_data):
+        ymax = max(g_hi, g_lo)
+        ax.annotate(f'Δ={delta:+.3f}', xy=(xi, ymax + 0.01),
+                    ha='center', fontsize=FS - 2, color='dimgray')
+    fig.tight_layout()
+    path_D = os.path.join(args.out_dir, 'fig_D_group_comparison.png')
+    fig.savefig(path_D, dpi=DPI)
+    plt.close(fig)
+    print(f"Fig D saved: {path_D}")
+
+    print(f"\nAll figures written to: {args.out_dir}/")
+
 except ImportError:
-    print("\nmatplotlib not available — skipping scatter plot (Spearman results above are still valid)")
+    print("\nmatplotlib not available — skipping figures (Spearman results and group stats above are still valid)")
 
 # ---------- summary decision ----------
 print("\n=== Decision summary ===")

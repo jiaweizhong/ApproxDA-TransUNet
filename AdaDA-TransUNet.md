@@ -253,15 +253,19 @@ python analyze_gate_entropy.py \
 
 ### Case 1 — Strong positive correlation ($r > 0.5$, $p < 0.01$)
 
-Gate already tracks entropy implicitly. Narrative: *"Existing adaptive gate naturally correlates with feature uncertainty."* Adding $H(F)$ as explicit input formalises what the network already discovered.
+The gate already tracks feature uncertainty implicitly through GAP alone.
 
-**Action:** Proceed directly to Phase 2. Paper claim is strong.
+**Paper narrative:** *"We explicitly provide the uncertainty signal that the network is already implicitly learning."* The entropy input is not adding a new objective — it is giving the gate direct access to information it was approximating indirectly.
+
+**Action:** Proceed directly to Phase 2. This is the strongest claim: the model validates its own design.
 
 ### Case 2 — Weak positive correlation ($0.2 < r < 0.5$, $p < 0.01$)
 
-Entropy signal has supplementary value but is not dominant. Most likely outcome (~50%).
+Gate has partial uncertainty awareness, but the signal is noisy via GAP alone.
 
-**Action:** Proceed to Phase 2 with entropy gate. Narrative: *"Explicit entropy input strengthens the uncertainty signal already weakly captured by GAP."*
+**Paper narrative:** *"The existing gate exhibits only weak uncertainty awareness. Entropy-enhanced routing transforms implicit awareness into explicit, principled uncertainty routing."* This "Implicit → Explicit" framing is a well-established pattern in interpretability literature and is easy for reviewers to accept.
+
+**Action:** Proceed to Phase 2. Most likely outcome (~50% probability).
 
 ### Case 3 — Near-zero correlation ($|r| < 0.1$)
 
@@ -329,10 +333,33 @@ Produces a clean 4-row ablation table:
 
 ## 12. Figure Plan (paper)
 
-1. **Gate–Entropy scatter**: $H(F)$ vs. mean $g$ per AdaDA block — Spearman $r$ annotated
-2. **Spatial entropy map**: CT slice with per-pixel $H$ heatmap overlaid — boundary pixels should be high-entropy
-3. **Gate distribution per depth**: boxplot of $g$ values at each decoder stage (Encoder, Skip3, Skip2, Skip1) — tests depth-dependence hypothesis from ESDA
-4. **Ablation bar chart**: DSC across gate configurations — visual summary of gate contribution
+The primary purpose of Figures A–D is to prove the gate is not a black box — this is what most attention papers fail to do and what ACCV/BIBM reviewers specifically reward.
+
+**Figure A — Gate Distribution per Block**
+Boxplot of $g$ values across all test samples at each AdaDA block (Encoder 768ch, Skip 512ch, Skip 256ch, Skip 64ch). Shows whether gate behavior varies systematically with depth (deeper layers → lower $g$ = more CAM) or is approximately uniform.
+
+**Figure B — Entropy vs. Gate Scatter**
+Scatter of $H(F)$ vs. mean $g$ per sample, one panel per block. Spearman $r$ and $p$ annotated. This is the primary quantitative evidence for or against the hypothesis.
+
+**Figure C — Spearman Correlation Summary**
+Bar chart of $r$ values per block. Compact, easy to read in two columns. Example:
+```
+Block     r
+Enc-768  0.61
+Skip-512 0.47
+Skip-256 0.31
+Skip-64  0.29
+```
+
+**Figure D — Case Visualization** (highest paper value per reviewer)
+Two-panel comparison on real CT slices:
+- Top row: high-entropy sample (blurry boundary / lesion border) → entropy heatmap → gate activation map → higher mean $g$
+- Bottom row: low-entropy sample (homogeneous organ interior) → entropy heatmap → gate activation map → lower mean $g$
+
+This turns the scatter correlation into something a reviewer can see directly. Produced by running `analyze_gate_entropy.py` which saves the top/bottom entropy sample indices, then manually overlaying on the CT volume.
+
+**Figure E — Ablation Bar Chart**
+DSC comparison across gate configurations (no-gate / GAP-only / GAP+entropy). Produced after Week 2 runs complete.
 
 ---
 
