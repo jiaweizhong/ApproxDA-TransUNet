@@ -134,7 +134,7 @@ class Embeddings(nn.Module):
         self.config = config
         img_size = _pair(img_size)
         
-        self.ada_block = AdaDABlock(768, window_size=config.window_size, rank=config.rank, groups=config.groups, disable_gate=config.disable_gate)
+        self.ada_block = AdaDABlock(768, window_size=config.window_size, rank=config.rank, groups=config.groups, gate_mode=config.gate_mode)
 
         if config.patches.get("grid") is not None:   # ResNet
             grid_size = config.patches["grid"]
@@ -302,7 +302,7 @@ class DecoderBlock(nn.Module):
             window_size=7,
             rank=32,
             groups=8,
-            disable_gate=False,
+            gate_mode='learn',
     ):
         super().__init__()
         self.conv1 = Conv2dReLU(
@@ -320,9 +320,9 @@ class DecoderBlock(nn.Module):
             use_batchnorm=use_batchnorm,
         )
         self.up = nn.UpsamplingBilinear2d(scale_factor=2)
-        self.da  = AdaDABlock(64,  window_size=window_size, rank=rank, groups=groups, disable_gate=disable_gate)
-        self.da2 = AdaDABlock(256, window_size=window_size, rank=rank, groups=groups, disable_gate=disable_gate)
-        self.da3 = AdaDABlock(512, window_size=window_size, rank=rank, groups=groups, disable_gate=disable_gate)
+        self.da  = AdaDABlock(64,  window_size=window_size, rank=rank, groups=groups, gate_mode=gate_mode)
+        self.da2 = AdaDABlock(256, window_size=window_size, rank=rank, groups=groups, gate_mode=gate_mode)
+        self.da3 = AdaDABlock(512, window_size=window_size, rank=rank, groups=groups, gate_mode=gate_mode)
 
     def forward(self, x, skip=None):
         x = self.up(x)
@@ -378,7 +378,7 @@ class DecoderCup(nn.Module):
                          window_size=config.window_size,
                          rank=config.rank,
                          groups=config.groups,
-                         disable_gate=config.disable_gate)
+                         gate_mode=config.gate_mode)
             for in_ch, out_ch, sk_ch in zip(in_channels, out_channels, skip_channels)
         ]
         self.blocks = nn.ModuleList(blocks)

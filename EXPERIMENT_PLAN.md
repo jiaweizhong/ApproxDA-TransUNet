@@ -21,7 +21,7 @@ Both DA-TransUNet (baseline) and AdaDA-TransUNet are run under identical conditi
 
 | Dataset | DA-TransUNet Train | DA-TransUNet Test | AdaDA Train | AdaDA Test |
 |---------|-------------------|-------------------|-------------|------------|
-| Synapse | ✅ Done (~11.4h pure train, 22.35h wall-clock, T4×1, 300ep, peak VRAM pending) | ✅ Done (DSC 80.51%, HD95 25.41mm, GFLOPs 25.5, Params 107.95M, Infer 121.8s/vol, Infer VRAM 0.5GB) | ✅ Done (T4×1, 300ep, 11.86h pure train, Peak VRAM 9.8 GB, 2-skip bug) | ✅ Done (DSC 78.02%, HD95 35.67mm, Params 114.90M, GFLOPs 26.9, Infer VRAM 0.5GB) |
+| Synapse | ✅ Done (~11.4h pure train, 22.35h wall-clock, T4×1, 300ep, peak VRAM pending) | ✅ Done (DSC 80.51%, HD95 25.41mm, GFLOPs 25.5, Params 107.95M, Infer 121.8s/vol, Infer VRAM 0.5GB) | ✅ Done (T4×1, 3-skip, 300ep, 11.51h pure train, Peak VRAM 10.6 GB, best val epoch 45) | ✅ Done (DSC 77.93%, HD95 33.96mm, Params 114.90M, GFLOPs 27.2, Infer 118.4s/vol, Infer VRAM 0.5GB) |
 | Kvasir-SEG | ⏳ Pending | ⏳ Pending | ⏳ Pending | ⏳ Pending |
 | ISIC 2018 | ⏳ Pending | ⏳ Pending | ⏳ Pending | ⏳ Pending |
 
@@ -46,7 +46,8 @@ All runs on **Lightning AI** (persistent studio, not Kaggle).
 | Checkpoint | best_model.pth (saved when val DSC improves) |
 | Seed | 1234 |
 | Image size | 224×224 |
-| AdaDA config | window=7, rank=32, groups=8 |
+| AdaDA baseline config | window=7, rank=32, groups=8 |
+| AdaDA recovery config | window=14, rank=64, groups=8 |
 
 ---
 
@@ -67,18 +68,28 @@ All runs on **Lightning AI** (persistent studio, not Kaggle).
 
 ### Week 2 — Ablation Runs (Synapse only, T4 x2)
 
+Strategy: **recover PAM capability first, then run gate ablation, then decide on gate redesign.**
+
+Gate collapse analysis showed g ≈ 0.5 throughout inference (Δg = 0.0000). Root cause is ambiguous:
+- M=7 window → 0.4% spatial coverage → PAM ≈ local filter ≈ CAM → PAM−CAM ≈ 0 → gate gradient ≈ 0
+- OR gate architecture is fundamentally broken regardless of PAM quality
+
+Run order: M=14 first (cheapest test, highest expected gain), then gate ablation.
+
 | Run | GPU | Est. Time | Config | Purpose |
 |-----|-----|-----------|--------|---------|
-| AdaDA, no gate | T4 x2 | ~4h | `--disable_gate` | gate contribution |
-| AdaDA, entropy gate (r=32) | T4 x2 | ~4h | Phase 2 full model | entropy routing contribution |
-| AdaDA, entropy gate (r=8) | T4 x2 | ~4h | `--rank 8` on new model | rank sensitivity |
-| **Week 2 Total** | | **~12h** | | |
+| AdaDA, M=14, r=64 | T4 x2 | ~4h | `--window_size 14 --rank 64` | Recover global PAM context |
+| AdaDA, gate=fixed | T4 x2 | ~4h | `--gate_mode fixed` | Gate ablation: fixed 0.5 |
+| AdaDA, gate=pam | T4 x2 | ~4h | `--gate_mode pam` | Gate ablation: PAM only |
+| AdaDA, gate=cam | T4 x2 | ~4h | `--gate_mode cam` | Gate ablation: CAM only |
+| **Week 2 Total** | | **~16h** | | |
 
-> The GAP-only gate checkpoint (currently training, T4×1 and T4×2) becomes the "gate input ablation" row — no extra run needed for it.
->
-> Week 2 is contingent on Phase 1 verification (analyze_gate_entropy.py) confirming |r| > 0.3, p < 0.01.
+**Decision after gate ablation:**
+- If `fixed ≈ pam ≈ cam ≈ learn` (within ~0.2%) → gate contributes nothing → remove in next version
+- If gate=learn >> fixed/pam/cam after M=14 → gate works when PAM/CAM are truly different → keep and study entropy routing
+- Entropy gate / diversity loss only if gate ablation confirms gate has value
 
-Weekly quota: 30h. Week 1 uses ~23h, Week 2 uses ~12h — both within limit.
+Weekly quota: 30h. Week 1 uses ~23h, Week 2 uses ~16h — both within limit.
 
 ---
 
@@ -144,39 +155,25 @@ Night 5:  AdaDA         ISIC     (T4 x2, ~2.5h)
 > Night 3 pairs AdaDA T4×2 Synapse (~4h) with DA-TransUNet Kvasir (~3h) in one session.
 > Night 4 pairs DA-TransUNet ISIC (~4h) with AdaDA Kvasir (~2h).
 
-### Week 2 (ablation, Synapse only) — contingent on Phase 1 verification
+### Week 2 (ablation, Synapse only)
 
-**Step 0 (morning after T4×1 finishes):** run `analyze_gate_entropy.py` on `best_model.pth` — see `AdaDA-TransUNet.md §10–11` for the 4-case decision tree and backup plans.
-
-The script now outputs **7 figures** (saved to `figures/`):
-
-| Figure | Content | Dataset |
-|--------|---------|---------|
-| Fig A | Gate distribution boxplot per AdaDA block | All |
-| Fig B | H(F) vs g scatter per block (with Spearman r) | All |
-| Fig B2 | Var(F) vs g scatter per block | All |
-| Fig C | Spearman r bar chart (H and Var side-by-side) | All |
-| Fig D | Mean g: high-H vs low-H groups (top/bottom 20%) | All |
-| **Fig E** | **Per-organ normalised mean H and g** — shows which organs drive entropy (expected: Pancreas, Gallbladder highest) | **Synapse only** |
-| **Fig F** | **Per-organ Spearman r** — entropy-gate correlation within each organ's slice subset | **Synapse only** |
-
-For binary datasets (Kvasir, ISIC), Fig E and F use **foreground-fraction quartiles** (Q1=small/absent lesion → Q4=large lesion) as the category axis instead of organ names. Run with `--dataset Kvasir` or `--dataset ISIC` once those checkpoints exist.
-
-> **Early-read insight from Fig E/F:** if Pancreas and Gallbladder (hardest organs, smallest structures) show higher mean H AND higher mean g than Liver/Spleen, this strongly supports the narrative that the gate implicitly learns uncertainty-aware routing even without explicit entropy input — the Case 1 / Case 2 argument for Phase 2.
-
-| Phase 1 result | Week 2 path |
-|---------------|-------------|
-| `|r_H| > 0.3`, `p < 0.01` (globally or in hard organs) | Phase 2: entropy gate (`Linear(C+1,C)`) → Nights 5–7 below |
-| `0 < r_H < 0.2`, `r_Var > 0.2` | Plan B1: variance gate (`Linear(C+1,C)` with var input) — same run schedule |
-| `r_H ≈ 0`, `r_Var ≈ 0` | Plan B3: multi-statistic gate (`Linear(C+2,C)`) — same run schedule |
-| `r_H < 0` in hard organs (Pancreas, Gallbladder) | Case 4: high entropy → more CAM; revise narrative; investigate per-organ Fig F |
+**Strategy:** Recover PAM capability first, then isolate gate contribution.
 
 ```
-Night 5:  AdaDA no-gate      Synapse  (T4 x2, ~4h)   --disable_gate
-Night 6:  AdaDA full model   Synapse  (T4 x2, ~4h)   Phase 2 / B1 / B3 (chosen from above)
-Night 7:  AdaDA rank=8       Synapse  (T4 x2, ~4h)   --rank 8 on chosen full model
+Night 5:  AdaDA M=14 r=64   Synapse  (T4 x2, ~4h)   --window_size 14 --rank 64
+Night 6:  AdaDA gate=fixed  Synapse  (T4 x2, ~4h)   --gate_mode fixed   (M=7, r=32)
+Night 7:  AdaDA gate=pam    Synapse  (T4 x2, ~4h)   --gate_mode pam     (PAM only)
+          AdaDA gate=cam    Synapse  (T4 x2, ~4h)   --gate_mode cam     (CAM only)
 ```
-> GAP-only gate results (T4×1 and T4×2, currently running) fill the "gate input ablation" row automatically — no extra run needed.
+
+**Decision tree after Week 2:**
+
+| Result | Next action |
+|--------|-------------|
+| M=14 DSC >> 77.93% (closes gap to ~80%) | Window size was the root cause. Gate ablation still needed to understand gate contribution. |
+| gate=fixed ≈ gate=pam ≈ gate=cam ≈ gate=learn | Gate contributes nothing → remove gate in paper, simplify model. |
+| gate=learn >> others (after M=14) | Gate works when PAM/CAM truly differ. Consider entropy gate Phase 2. |
+| M=14 still << 80.51% | Both window and gate are problems. Investigate rank=128 or deeper redesign. |
 
 ---
 
@@ -191,7 +188,7 @@ Night 7:  AdaDA rank=8       Synapse  (T4 x2, ~4h)   --rank 8 on chosen full mod
 | Swin-Unet | 79.13 | 21.55 |
 | DA-TransUNet (paper) | 79.80 | 23.48 |
 | DA-TransUNet (ours, 300ep best_model) | 80.51 | 25.41 |
-| **AdaDA-TransUNet (ours)** | **XX** | **XX** |
+| **AdaDA-TransUNet (ours, 3-skip, T4×1, 300ep)** | **77.93** | **33.96** |
 
 ### Kvasir-SEG Polyp
 
@@ -212,24 +209,32 @@ Night 7:  AdaDA rank=8       Synapse  (T4 x2, ~4h)   --rank 8 on chosen full mod
 | Method | Params (M) | GFLOPs | Train Time | Train VRAM | Infer Time (s/vol) | Infer VRAM | Multi-GPU |
 |--------|-----------|--------|-----------|-----------|-------------------|-----------|-----------|
 | DA-TransUNet | 107.95 | 25.5 | 22.35h (T4×1, 300ep) | ~11.5 GB | 121.8 | 0.5 GB | No (OOM on T4×2) |
-| AdaDA (r=32, M=7, G=8) | XX | XX | XX h | XX GB | XX | XX GB | Yes (~4h on T4 x2) |
+| AdaDA (r=32, M=7, G=8) | 114.90 | 27.2 | 11.51h (T4×1, 300ep) | 10.6 GB | 118.4 | 0.5 GB | Yes (T4×2 pending) |
 
 > Params and inference metrics are logged by test.py. Train VRAM is logged at end of train.py.
 
-### Ablation Study (Synapse, T4 x2)
+### Ablation Study (Synapse)
 
-| Config | Gate input | DSC (%) | HD95 (mm) | Notes |
-|--------|-----------|---------|-----------|-------|
-| DA-TransUNet baseline | — | 80.51 | 25.41 | Full PAM+CAM, no gate, 300ep T4×1 |
-| AdaDA, `--disable_gate` | fixed 0.5 | XX | XX | gate contribution — Week 2 |
-| AdaDA, GAP-only gate (r=32) | GAP(F) | XX | XX | **currently training** T4×1 + T4×2 |
-| AdaDA, GAP-only gate (r=32, 2GPU) | GAP(F) | XX | XX | **currently training** T4×2 (multi-GPU efficiency row) |
-| **AdaDA, GAP+entropy gate (r=32)** | GAP(F) + H(F) | **XX** | **XX** | **Full model — Phase 2, contingent on verification** |
-| AdaDA, GAP+entropy gate (r=8) | GAP(F) + H(F) | XX | XX | rank sensitivity — Week 2 |
+**Axis 1: Window size / rank** — recover PAM global context
 
-> Phase 1 verification step: run `analyze_gate_entropy.py` on GAP-only `best_model.pth` tomorrow morning.
-> If Spearman |r| > 0.3 and p < 0.01 → implement entropy gate (block.py: `gate_fc = Linear(C+1, C)`) and retrain.
-> Existing GAP-only checkpoint becomes the "gate input ablation" row automatically.
+| Config | Window | Rank | DSC (%) | HD95 (mm) | Notes |
+|--------|--------|------|---------|-----------|-------|
+| DA-TransUNet baseline | — (global) | — | 80.51 | 25.41 | Full PAM+CAM, no gate, T4×1 |
+| AdaDA, `--gate_mode learn` | M=7 | r=32 | 77.93 | 33.96 | ✅ T4×1 done (best epoch 45) |
+| AdaDA, `--gate_mode learn` | M=14 | r=64 | XX | XX | Week 2 Night 5 — expected main gain |
+
+**Axis 2: Gate mode** — isolate gate contribution (M=7, r=32 baseline)
+
+| Config | `--gate_mode` | DSC (%) | HD95 (mm) | Notes |
+|--------|--------------|---------|-----------|-------|
+| AdaDA, PAM only | `pam` (g=1) | XX | XX | Week 2 |
+| AdaDA, CAM only | `cam` (g=0) | XX | XX | Week 2 |
+| AdaDA, fixed blend | `fixed` (g=0.5) | XX | XX | Week 2 |
+| AdaDA, learnable gate | `learn` | 77.93 | 33.96 | ✅ Done — gate collapsed (g≈0.5, Δg=0.0000) |
+
+> Gate analysis (analyze_gate_entropy.py): Spearman r=0.787, but gate range [0.4976, 0.5003] (Δ=0.0027%).
+> Gate is inert — confirmed collapse. Ablation Axis 2 will quantify whether this matters for accuracy.
+> Entropy gate / redesign only considered after gate ablation results show gate has nonzero contribution.
 
 ---
 

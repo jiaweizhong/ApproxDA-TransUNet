@@ -99,7 +99,7 @@ config_vit.n_skip = args.n_skip
 config_vit.window_size = args.window_size
 config_vit.rank = args.rank
 config_vit.groups = args.groups
-config_vit.disable_gate = False
+config_vit.gate_mode = 'learn'
 if args.vit_name.find('R50') != -1:
     config_vit.patches.grid = (
         args.img_size // args.vit_patches_size,
@@ -505,7 +505,7 @@ if gate_collapsed:
     print("  The gate_fc learned near-zero weights → σ(0) ≈ 0.5 for all inputs.")
     print("  -> Phase 2 entropy gate will NOT help — the gate itself is the problem.")
     print("  -> Accuracy gap is from windowed attention losing global context, not from gating.")
-    print("  -> Recommended ablation: --disable_gate to confirm gate is inert,")
+    print("  -> Recommended ablation: --gate_mode fixed to confirm gate is inert,")
     print("     then investigate larger window (M=14) or higher rank (r=64).")
 elif max_r_H > 0.5 and best_p_H < 0.01:
     print("Case 1 — STRONG H correlation: gate already tracks entropy implicitly.")

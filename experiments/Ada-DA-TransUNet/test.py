@@ -48,6 +48,9 @@ parser.add_argument('--vit_patches_size', type=int, default=16, help='vit_patche
 parser.add_argument('--window_size', type=int, default=7, help='window size — must match training')
 parser.add_argument('--rank', type=int, default=32, help='low-rank dim — must match training')
 parser.add_argument('--groups', type=int, default=8, help='channel groups — must match training')
+parser.add_argument('--gate_mode', type=str, default='learn',
+                    choices=['learn', 'fixed', 'pam', 'cam'],
+                    help='Must match training gate_mode')
 args = parser.parse_args()
 
 
@@ -153,6 +156,7 @@ if __name__ == "__main__":
     config_vit.window_size = args.window_size
     config_vit.rank = args.rank
     config_vit.groups = args.groups
+    config_vit.gate_mode = args.gate_mode
     config_vit.patches.size = (args.vit_patches_size, args.vit_patches_size)
     if args.vit_name.find('R50') !=-1:
         config_vit.patches.grid = (int(args.img_size/args.vit_patches_size), int(args.img_size/args.vit_patches_size))

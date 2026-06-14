@@ -240,25 +240,32 @@ class GroupedCAM(nn.Module):
 class AdaDABlock(nn.Module):
     """
     Adaptive Dual Attention Block: LowRankWindowedPAM + GroupedCAM blended
-    via a differentiable per-channel soft gate (learnable compression ratio).
-    disable_gate=True replaces the learned gate with a fixed 0.5 blend (ablation).
+    via a soft gate. gate_mode controls routing for ablation:
+      'learn' — per-channel learned gate (default)
+      'fixed' — fixed 0.5 blend
+      'pam'   — PAM only (g=1)
+      'cam'   — CAM only (g=0)
     """
-    def __init__(self, channels, window_size=7, rank=32, groups=8, disable_gate=False):
+    def __init__(self, channels, window_size=7, rank=32, groups=8, gate_mode='learn'):
         super().__init__()
-        self.disable_gate = disable_gate
+        self.gate_mode = gate_mode
         self.pam     = LowRankWindowedPAM(channels, window_size, rank)
         self.cam     = GroupedCAM(channels, groups)
         self.pool    = nn.AdaptiveAvgPool2d(1)
-        if not disable_gate:
+        if gate_mode == 'learn':
             self.gate_fc = nn.Linear(channels, channels)
         self.fusion  = nn.Conv2d(channels, channels, kernel_size=1)
 
     def forward(self, x):
         pam_out = self.pam(x)
         cam_out = self.cam(x)
-        if self.disable_gate:
+        if self.gate_mode == 'pam':
+            g = 1.0
+        elif self.gate_mode == 'cam':
+            g = 0.0
+        elif self.gate_mode == 'fixed':
             g = 0.5
-        else:
+        else:  # 'learn'
             g = torch.sigmoid(
                 self.gate_fc(self.pool(x).view(x.shape[0], -1))
             ).view(x.shape[0], -1, 1, 1)           # (B, C, 1, 1)
