@@ -92,35 +92,47 @@ touch $REPO/Ada-DA-TransUNet/datasets/__init__.py
 
 ## Running Experiments
 
-All training commands use `nohup … &` so they survive browser disconnects. Logs are written to a `.log` file in the experiment directory.
+> **CRITICAL — use tmux for ALL training runs.** `nohup ... &` does NOT protect `torchrun` from SIGHUP: when the Lightning AI browser disconnects, `torchrun`'s own signal handler catches the hangup and kills all workers. The only reliable fix is to run inside a tmux session and detach with `Ctrl+B, D`.
 
-Check GPU availability first:
+### Session lifecycle (do this every time)
+
+```bash
+# Create session if it doesn't exist, or attach to it if it does
+tmux new-session -A -s adada
+
+# To detach (training keeps running):  Ctrl+B, then D
+# To reattach later:                   tmux attach -t adada
+# To list sessions:                    tmux ls
+```
+
+Check GPU availability before starting:
 
 ```bash
 nvidia-smi --query-gpu=name,memory.total,memory.free --format=csv,noheader
 ```
+
+> All commands below must be run **inside the tmux session**. Run them in the foreground with `| tee logfile.log` — do NOT add `&` at the end.
 
 ---
 
 ### DA-TransUNet — Synapse (single T4, baseline)
 
 ```bash
+# Inside tmux:
 cd /teamspace/studios/this_studio/AdaDA-TransUNet/experiments/DA-TransUNet
 
-cat > run_da.sh << 'EOF'
 python -u train.py \
   --dataset Synapse --vit_name R50-ViT-B_16 \
   --max_epochs 300 --batch_size 24 --n_gpu 1 \
   --base_lr 0.01 --n_skip 3 --img_size 224 \
   --seed 1234 --val_interval 15 \
-&& \
+2>&1 | tee run_da.log && \
 python -u test.py \
   --dataset Synapse --vit_name R50-ViT-B_16 \
-  --num_classes 9 --max_epochs 300 --img_size 224 --is_savenii
-EOF
+  --num_classes 9 --max_epochs 300 --img_size 224 --is_savenii \
+2>&1 | tee -a run_da.log
 
-nohup bash run_da.sh > run_da.log 2>&1 &
-echo "DA PID: $!"
+# Detach: Ctrl+B, D
 ```
 
 ---
@@ -128,24 +140,23 @@ echo "DA PID: $!"
 ### AdaDA-TransUNet — Synapse, single T4 (apples-to-apples efficiency row)
 
 ```bash
+# Inside tmux:
 cd /teamspace/studios/this_studio/AdaDA-TransUNet/experiments/Ada-DA-TransUNet
 
-cat > run_adada_1gpu.sh << 'EOF'
 python -u train.py \
   --dataset Synapse --vit_name R50-ViT-B_16 \
   --max_epochs 300 --batch_size 24 --n_gpu 1 \
   --base_lr 0.01 --n_skip 3 --img_size 224 \
   --window_size 7 --rank 32 --groups 8 \
   --seed 1234 --val_interval 15 \
-&& \
+2>&1 | tee run_adada_1gpu.log && \
 python -u test.py \
   --dataset Synapse --vit_name R50-ViT-B_16 \
   --num_classes 9 --max_epochs 300 --img_size 224 \
-  --window_size 7 --rank 32 --groups 8 --is_savenii
-EOF
+  --window_size 7 --rank 32 --groups 8 --is_savenii \
+2>&1 | tee -a run_adada_1gpu.log
 
-nohup bash run_adada_1gpu.sh > run_adada_1gpu.log 2>&1 &
-echo "AdaDA 1GPU PID: $!"
+# Detach: Ctrl+B, D
 ```
 
 ---
@@ -153,24 +164,23 @@ echo "AdaDA 1GPU PID: $!"
 ### AdaDA-TransUNet — Synapse, 2×T4 DDP (multi-GPU efficiency row)
 
 ```bash
+# Inside tmux:
 cd /teamspace/studios/this_studio/AdaDA-TransUNet/experiments/Ada-DA-TransUNet
 
-cat > run_adada_2gpu.sh << 'EOF'
 CUDA_VISIBLE_DEVICES=0,1 torchrun --nproc_per_node=2 train.py \
   --dataset Synapse --vit_name R50-ViT-B_16 \
   --max_epochs 300 --batch_size 12 --n_gpu 2 \
   --base_lr 0.01 --n_skip 3 --img_size 224 \
   --window_size 7 --rank 32 --groups 8 \
   --seed 1234 --val_interval 15 \
-&& \
+2>&1 | tee run_adada_2gpu.log && \
 python -u test.py \
   --dataset Synapse --vit_name R50-ViT-B_16 \
   --num_classes 9 --max_epochs 300 --batch_size 12 --img_size 224 \
-  --window_size 7 --rank 32 --groups 8 --is_savenii
-EOF
+  --window_size 7 --rank 32 --groups 8 --is_savenii \
+2>&1 | tee -a run_adada_2gpu.log
 
-nohup bash run_adada_2gpu.sh > run_adada_2gpu.log 2>&1 &
-echo "AdaDA 2GPU PID: $!"
+# Detach: Ctrl+B, D
 ```
 
 > Per-GPU batch=12, total=24 — same as single-GPU baseline, LR unchanged.
@@ -201,24 +211,23 @@ See `AdaDA-TransUNet.md §10–11` for the 4-case decision table and backup plan
 ### No-gate ablation (`--disable_gate`, fixed g=0.5)
 
 ```bash
+# Inside tmux:
 cd /teamspace/studios/this_studio/AdaDA-TransUNet/experiments/Ada-DA-TransUNet
 
-cat > run_nogate.sh << 'EOF'
-python -u train.py \
+CUDA_VISIBLE_DEVICES=0,1 torchrun --nproc_per_node=2 train.py \
   --dataset Synapse --vit_name R50-ViT-B_16 \
   --max_epochs 300 --batch_size 12 --n_gpu 2 \
   --base_lr 0.01 --n_skip 3 --img_size 224 \
   --window_size 7 --rank 32 --groups 8 \
   --disable_gate --seed 1234 --val_interval 15 \
-&& \
-CUDA_VISIBLE_DEVICES=0,1 python -u test.py \
+2>&1 | tee run_nogate.log && \
+python -u test.py \
   --dataset Synapse --vit_name R50-ViT-B_16 \
   --num_classes 9 --max_epochs 300 --batch_size 12 --img_size 224 \
-  --window_size 7 --rank 32 --groups 8 --is_savenii
-EOF
+  --window_size 7 --rank 32 --groups 8 --is_savenii \
+2>&1 | tee -a run_nogate.log
 
-CUDA_VISIBLE_DEVICES=0,1 nohup bash run_nogate.sh > run_nogate.log 2>&1 &
-echo "No-gate PID: $!"
+# Detach: Ctrl+B, D
 ```
 
 ### Full model — entropy gate (Phase 2, after code change to block.py)
@@ -227,43 +236,45 @@ echo "No-gate PID: $!"
 # Implement Phase 2 first: gate_fc = Linear(channels+1, channels) in block.py
 # Then retrain from scratch (checkpoint incompatible with GAP-only checkpoint)
 
-cat > run_entropy_gate.sh << 'EOF'
+# Inside tmux:
+cd /teamspace/studios/this_studio/AdaDA-TransUNet/experiments/Ada-DA-TransUNet
+
 CUDA_VISIBLE_DEVICES=0,1 torchrun --nproc_per_node=2 train.py \
   --dataset Synapse --vit_name R50-ViT-B_16 \
   --max_epochs 300 --batch_size 12 --n_gpu 2 \
   --base_lr 0.01 --n_skip 3 --img_size 224 \
   --window_size 7 --rank 32 --groups 8 \
   --seed 1234 --val_interval 15 \
-&& \
+2>&1 | tee run_entropy_gate.log && \
 python -u test.py \
   --dataset Synapse --vit_name R50-ViT-B_16 \
   --num_classes 9 --max_epochs 300 --batch_size 12 --img_size 224 \
-  --window_size 7 --rank 32 --groups 8 --is_savenii
-EOF
+  --window_size 7 --rank 32 --groups 8 --is_savenii \
+2>&1 | tee -a run_entropy_gate.log
 
-nohup bash run_entropy_gate.sh > run_entropy_gate.log 2>&1 &
-echo "Entropy gate PID: $!"
+# Detach: Ctrl+B, D
 ```
 
 ### Rank sensitivity (`--rank 8` on full model)
 
 ```bash
-cat > run_rank8.sh << 'EOF'
+# Inside tmux:
+cd /teamspace/studios/this_studio/AdaDA-TransUNet/experiments/Ada-DA-TransUNet
+
 CUDA_VISIBLE_DEVICES=0,1 torchrun --nproc_per_node=2 train.py \
   --dataset Synapse --vit_name R50-ViT-B_16 \
   --max_epochs 300 --batch_size 12 --n_gpu 2 \
   --base_lr 0.01 --n_skip 3 --img_size 224 \
   --window_size 7 --rank 8 --groups 8 \
   --seed 1234 --val_interval 15 \
-&& \
+2>&1 | tee run_rank8.log && \
 python -u test.py \
   --dataset Synapse --vit_name R50-ViT-B_16 \
   --num_classes 9 --max_epochs 300 --batch_size 12 --img_size 224 \
-  --window_size 7 --rank 8 --groups 8 --is_savenii
-EOF
+  --window_size 7 --rank 8 --groups 8 --is_savenii \
+2>&1 | tee -a run_rank8.log
 
-nohup bash run_rank8.sh > run_rank8.log 2>&1 &
-echo "Rank-8 PID: $!"
+# Detach: Ctrl+B, D
 ```
 
 ---
