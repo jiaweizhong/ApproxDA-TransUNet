@@ -2,202 +2,141 @@
 
 ## 1. Title
 
-**AdaDA-TransUNet: Hardware-Aware Adaptive Dual Attention Transformer UNet for Efficient and Precise Medical Image Segmentation**
+**AdaDA-TransUNet: Entropy-Informed Adaptive Dual Attention Transformer UNet for Efficient Medical Image Segmentation**
 
 ---
 
-## 2. Dual Attention Network (DANet)
+## 2. Background: Dual Attention Network (DANet)
 
-DANet [1] was proposed by Fu et al. for natural scene image segmentation. Its core idea is to simultaneously model **spatial dependencies** (position attention) and **channel dependencies** (channel attention) via two self-attention modules, jointly enhancing semantic consistency and discriminability.
+DANet [1] models **spatial dependencies** (Position Attention Module, PAM) and **channel dependencies** (Channel Attention Module, CAM) via two self-attention branches, jointly enhancing semantic consistency.
 
 ### 2.1 Position Attention Module (PAM)
 
-- Input feature map $A \in \mathbb{R}^{C \times H \times W}$
-- Convolutional projections produce $B, C \in \mathbb{R}^{C \times H \times W}$, reshaped to $\mathbb{R}^{C \times N}$ where $N = H \times W$
-- Spatial attention map:
-
-$$S_{ji} = \frac{\exp(B_i \cdot C_j)}{\sum_{i=1}^{N} \exp(B_i \cdot C_j)}$$
-
-- Final output:
-
-$$E_j = \alpha \sum_{i=1}^{N} S_{ji} D_i + A_j$$
-
-- Provides **global receptive field** — captures long-range correlations between similar regions regardless of spatial distance.
+- Input $A \in \mathbb{R}^{C \times H \times W}$; projections produce $B, C, D \in \mathbb{R}^{C \times N}$ where $N = HW$
+- Spatial attention: $S_{ji} = \frac{\exp(B_i \cdot C_j)}{\sum_i \exp(B_i \cdot C_j)}$
+- Output: $E_j = \alpha \sum_i S_{ji} D_i + A_j$ — global receptive field, $\mathcal{O}(N^2 C)$
 
 ### 2.2 Channel Attention Module (CAM)
 
-- Input feature map $A \in \mathbb{R}^{C \times H \times W}$, reshaped to $A^{C \times N}$
-- Channel attention map:
-
-$$X_{ji} = \frac{\exp(A_i \cdot A_j)}{\sum_{i=1}^{C} \exp(A_i \cdot A_j)}$$
-
-- Output:
-
-$$E_j = \beta \sum_{i=1}^{C} X_{ji} A_i + A_j$$
-
-- Goal: capture cross-channel inter-correlations among semantic feature maps, strengthening channel expressiveness.
+- Channel attention: $X_{ji} = \frac{\exp(A_i \cdot A_j)}{\sum_i \exp(A_i \cdot A_j)}$
+- Output: $E_j = \beta \sum_i X_{ji} A_i + A_j$ — cross-channel correlations, $\mathcal{O}(C^2 N)$
 
 ---
 
 ## 3. DA-TransUNet and Its Limitations
 
-DA-TransUNet [2, 3] incorporates DA blocks into a Transformer U-Net. Its limitations are:
-
 | Limitation | Description |
 |---|---|
 | High computational complexity | PAM: $\mathcal{O}(N^2)$, CAM: $\mathcal{O}(C^2)$ |
-| Fixed compression ratio | Channel compression ratio is hardcoded at 1/4 |
-| No hardware-aware adaptation | Cannot adjust inference config based on available device memory |
+| Fixed equal weighting | PAM and CAM always contribute equally regardless of feature uncertainty or depth |
+| No hardware-aware adaptation | Cannot scale computation to available device memory |
 
 ---
 
-## 4. Our Optimizations (AdaDA-TransUNet)
+## 4. Our Contributions (AdaDA-TransUNet)
 
-AdaDA-TransUNet improves DA-TransUNet via four key innovations:
+### Contribution 1: Low-Rank Windowed PAM — $\mathcal{O}(N^2) \rightarrow \mathcal{O}(Nr)$
 
-### 4.1 Low-Rank + Local-Aware PAM (reduces $\mathcal{O}(N^2)$)
+Swin-style window partitioning restricts attention to local $M \times M$ patches; low-rank projection ($A \approx PQ$, rank $r \ll M^2$) further reduces per-window cost.
 
-- Original DANet PAM is full global self-attention: $\mathcal{O}(N^2)$
-- Improvement: **Swin-style window attention** [4] + **low-rank decomposition** ($A \approx PQ$)
-- Complexity reduced: $\mathcal{O}(N^2) \rightarrow \mathcal{O}(Nr)$
+$$\text{Complexity: } \mathcal{O}(N^2 C) \rightarrow \mathcal{O}(N r C)$$
 
-### 4.2 Grouped CAM (reduces $\mathcal{O}(C^2)$)
+### Contribution 2: Grouped CAM — $\mathcal{O}(C^2) \rightarrow \mathcal{O}(C^2/G)$
 
-- Original DANet CAM performs full cross-channel interaction: $\mathcal{O}(C^2)$
-- Improvement: split channels into $G$ groups, each performing independent attention (well-suited for multi-class channel representations in medical imaging)
-- Complexity reduced: $\mathcal{O}(C^2) \rightarrow \mathcal{O}(C^2/G)$
-
-### 4.3 Learnable Compression Ratio
-
-- DANet uses a fixed channel compression ratio of 1/4 for PAM/CAM computations
-- Improvement: introduce a **learnable ratio**:
-
-$$r = \sigma(W \cdot F)$$
-
-  Automatically adapts the channel compression level based on global features, improving adaptability and hardware friendliness.
-
-### 4.4 Hardware-Aware Configuration Module
-
-- Dynamically adjusts **window size / rank / number of groups** based on available device memory at inference time.
-
----
-
-## 5. Architecture Overview
-
-```
-Input Image
-    |
-[Encoder]  Conv → AdaDA Block → Transformer Layers
-    |
-[Skip Connections]  with DA Blocks at each scale
-    |
-[Decoder]  Upsampling → Feature Fusion → Segmentation Head
-    |
-Segmentation Mask
-```
-
----
-
-## 6. Methodology
-
-### 6.1 Low-Rank PAM
-
-The attention matrix $A$ is approximated via low-rank factorization:
-
-$$A \approx PQ, \quad P \in \mathbb{R}^{N \times r},\ Q \in \mathbb{R}^{r \times N}$$
-
-This reduces the $\mathcal{O}(N^2)$ cost to $\mathcal{O}(Nr)$ where $r \ll N$.
-
-### 6.2 Grouped CAM
+Split $C$ channels into $G$ groups; each group computes an independent $(C/G) \times (C/G)$ attention matrix. Well-suited to multi-class semantic representations in medical imaging.
 
 $$X_{ji}^{(g)} = \frac{\exp(A_i \cdot A_j)}{\sum_{k=1}^{C/G} \exp(A_i \cdot A_k)}$$
 
-Each group of $C/G$ channels computes attention independently.
+### Contribution 3: Entropy-Informed Adaptive Routing
 
-### 6.3 Learnable Channel Ratio
+The original DA-TransUNet assumes equal contribution of PAM and CAM:
 
-$$r = \sigma(W \cdot F), \quad W \in \mathbb{R}^{d \times 1}$$
+$$F_{\text{DA}} = \text{PAM}(F) + \text{CAM}(F)$$
 
-A sigmoid-activated linear projection over global average-pooled features produces a dynamic compression ratio clamped to $[0.0625,\ 0.5]$.
+AdaDA replaces this with a differentiable routing gate that takes **feature entropy** as an additional signal:
 
-### 6.4 Hardware-Aware Configuration
+$$F_{\text{AdaDA}} = g \cdot \text{PAM}(F) + (1 - g) \cdot \text{CAM}(F)$$
 
-```python
-def hardware_config(free_mem):
-    if free_mem > 8:
-        return {"rank": 64, "window": 14, "groups": 4}
-    elif free_mem > 4:
-        return {"rank": 32, "window": 7,  "groups": 8}
-    else:
-        return {"rank": 16, "window": 7,  "groups": 16}
+$$g = \sigma\!\left(W_g \cdot \left[\text{GAP}(F),\ H(F)\right]\right) \in \mathbb{R}^{B \times C}$$
+
+where:
+- $\text{GAP}(F) \in \mathbb{R}^{B \times C}$ — global average pooling (feature content signal)
+- $H(F) \in \mathbb{R}^{B \times 1}$ — per-sample feature entropy:
+
+$$p = \text{softmax}(F_{\text{flat}}),\quad H(F) = -\frac{1}{C}\sum_c \sum_i p_{c,i} \log p_{c,i}$$
+
+- $W_g \in \mathbb{R}^{C \times (C+1)}$ — learnable weight; one extra input dimension for the entropy scalar
+
+**Motivation:** High-entropy features (blurry boundaries, lesion borders, ambiguous transitions) carry high spatial uncertainty → gate should weight PAM more. Low-entropy features (homogeneous organs, stable anatomy) have confident semantics → gate should weight CAM more.
+
+**Parameter cost:** adds one column to $W_g$ (C extra parameters) plus $\mathcal{O}(CHW)$ entropy computation — negligible vs. PAM/CAM.
+
+---
+
+## 5. Architecture
+
+```
+Input Feature F
+       |
+  +----+----+
+  |         |
+PAM(F)    CAM(F)
+  |         |
+  +----+----+
+       |
+  [Entropy Gate]
+  GAP(F) ──┐
+  H(F)  ───┤──► Wg ──► sigmoid ──► g (B,C,1,1)
+            |
+  g·PAM + (1−g)·CAM
+       |
+  Conv1×1 fusion
+       |
+   + residual
+       |
+   Output
 ```
 
-Higher available memory → larger rank and window size (more expressive, more compute).  
-Lower available memory → smaller rank and more groups (leaner, hardware-friendly).
+---
 
-### 6.5 Module Implementations (Corrected PyTorch)
+## 6. Implementation
 
-#### 6.5.1 Low-Rank Windowed PAM
+### 6.1 Low-Rank Windowed PAM
 
 ```python
 class LowRankWindowedPAM(nn.Module):
-    """
-    Windowed PAM: O(N^2) -> O(N*M^2) via Swin-style windows,
-    then Low-rank within each window: O(N*M^2) -> O(N*r).
-    Key: keys are projected N -> r via self.proj_r,
-         so attention scores are (N, r) instead of (N, N).
-    """
     def __init__(self, channels, window_size=7, rank=32):
         super().__init__()
         self.M      = window_size
         N           = window_size ** 2
-        self.conv_B = nn.Conv1d(channels, channels, 1)   # query projection
-        self.conv_C = nn.Conv1d(channels, channels, 1)   # key projection
-        self.conv_D = nn.Conv1d(channels, channels, 1)   # value projection
-        self.proj_r = nn.Linear(N, rank, bias=False)     # low-rank: N -> r  (A ≈ PQ)
+        self.conv_B = nn.Conv1d(channels, channels, 1)
+        self.conv_C = nn.Conv1d(channels, channels, 1)
+        self.conv_D = nn.Conv1d(channels, channels, 1)
+        self.proj_r = nn.Linear(N, rank, bias=False)   # low-rank: N -> r
         self.alpha  = nn.Parameter(torch.zeros(1))
 
     def forward(self, x):
         B, C, H, W = x.shape
         M = self.M
-
-        # Step 1 — partition into non-overlapping M×M windows
-        x_w  = window_partition(x, M)           # (B·nW, C, M, M)
-        nBW  = x_w.shape[0]
-        x_n  = x_w.view(nBW, C, M * M)          # (B·nW, C, N),  N = M²
-
-        # Step 2 — project B (query), C (key), D (value)
-        feat_B = self.conv_B(x_n)               # (B·nW, C, N)
-        feat_C = self.conv_C(x_n)               # (B·nW, C, N) — full-rank keys
-        feat_D = self.conv_D(x_n)               # (B·nW, C, N)
-
-        # Step 3 — low-rank key/value projection: N -> r  (implements A ≈ PQ)
-        C_r = self.proj_r(feat_C)               # (B·nW, C, r)
-        D_r = self.proj_r(feat_D)               # (B·nW, C, r)
-
-        # Step 4 — attention scores: B^T @ C_r  →  (B·nW, N, r),  cost O(N·C·r)
-        scores = torch.bmm(feat_B.transpose(1, 2), C_r)     # (B·nW, N, r)
+        x_w   = window_partition(x, M)                        # (B*nW, C, M, M)
+        nBW   = x_w.shape[0]
+        x_n   = x_w.view(nBW, C, M * M)                      # (B*nW, C, N)
+        feat_B = self.conv_B(x_n)
+        feat_C = self.conv_C(x_n)
+        feat_D = self.conv_D(x_n)
+        C_r    = self.proj_r(feat_C)                          # (B*nW, C, r)
+        D_r    = self.proj_r(feat_D)
+        scores = torch.bmm(feat_B.transpose(1, 2), C_r)      # (B*nW, N, r)
         scores = F.softmax(scores, dim=-1)
-
-        # Step 5 — weighted value: scores @ D_r^T  →  (B·nW, N, C)
-        E_out = torch.bmm(scores, D_r.transpose(1, 2))      # (B·nW, N, C)
-
-        # Step 6 — residual and window reverse
-        E_n = self.alpha * E_out.transpose(1, 2) + x_n      # (B·nW, C, N)
+        E_out  = torch.bmm(scores, D_r.transpose(1, 2))      # (B*nW, N, C)
+        E_n    = self.alpha * E_out.transpose(1, 2) + x_n
         return window_reverse(E_n.view(nBW, C, M, M), M, H, W)
 ```
 
-> **Complexity:** standard PAM is $\mathcal{O}(N^2 C)$. With windowing $N_w = M^2 \ll N$, then low-rank projection: $\mathcal{O}(N \cdot r \cdot C)$ total, where $r \ll M^2$.
-
-#### 6.5.2 Grouped CAM
+### 6.2 Grouped CAM
 
 ```python
 class GroupedCAM(nn.Module):
-    """
-    Channel attention split into G independent groups: O(C^2) -> O(C^2 / G).
-    Each group computes its own Cg×Cg attention matrix (Cg = C // G),
-    matching the formula X^(g)_ji = softmax(A_i · A_j) over k=1..C/G.
-    """
     def __init__(self, channels, groups=8):
         super().__init__()
         self.G    = groups
@@ -206,151 +145,203 @@ class GroupedCAM(nn.Module):
     def forward(self, x):
         B, C, H, W = x.shape
         G, Cg = self.G, C // self.G
-
-        # Reshape: treat each group as an independent mini-CAM
-        x_g = x.view(B * G, Cg, H * W)          # (B·G, Cg, N)
-
-        # Per-group channel attention matrix: X^(g) ∈ R^(Cg × Cg)
-        X = torch.bmm(x_g, x_g.transpose(1, 2)) # (B·G, Cg, Cg)
-        X = F.softmax(X, dim=-1)
-
-        # Weighted channel update: E = beta * X^T A + A
-        E_g = torch.bmm(X.transpose(1, 2), x_g) # (B·G, Cg, N)
+        x_g = x.contiguous().view(B * G, Cg, H * W)
+        X   = torch.bmm(x_g, x_g.transpose(1, 2))
+        X   = F.softmax(X, dim=-1)
+        E_g = torch.bmm(X.transpose(1, 2), x_g)
         E   = self.beta * E_g + x_g
-
-        return E.view(B, C, H, W)
+        return E.contiguous().view(B, C, H, W)
 ```
 
-#### 6.5.3 AdaDA Block (full, corrected)
+### 6.3 AdaDABlock with Entropy Gate
 
 ```python
 class AdaDABlock(nn.Module):
-    """
-    Combines LowRankWindowedPAM + GroupedCAM with a differentiable
-    per-channel soft gate that implements the learnable compression ratio.
-
-    Key fix vs. original sketch:
-      - No .item() / discrete indexing — gate stays in the computation graph.
-      - PAM and CAM run in parallel; the gate blends their outputs adaptively.
-    """
-    def __init__(self, channels, window_size=7, rank=32, groups=8):
+    def __init__(self, channels, window_size=7, rank=32, groups=8, disable_gate=False):
         super().__init__()
-        self.pam     = LowRankWindowedPAM(channels, window_size, rank)
-        self.cam     = GroupedCAM(channels, groups)
-
-        # Learnable soft gate: r = sigmoid(W · F_global) ∈ (0,1)^C
-        # Differentiable — replaces hard channel truncation
-        self.pool    = nn.AdaptiveAvgPool2d(1)
-        self.gate_fc = nn.Linear(channels, channels)
-
-        self.fusion  = nn.Conv2d(channels, channels, kernel_size=1)
+        self.disable_gate = disable_gate
+        self.pam    = LowRankWindowedPAM(channels, window_size, rank)
+        self.cam    = GroupedCAM(channels, groups)
+        self.pool   = nn.AdaptiveAvgPool2d(1)
+        if not disable_gate:
+            self.gate_fc = nn.Linear(channels + 1, channels)  # +1 for entropy scalar
+        self.fusion = nn.Conv2d(channels, channels, kernel_size=1)
 
     def forward(self, x):
-        pam_out = self.pam(x)                             # (B, C, H, W)
-        cam_out = self.cam(x)                             # (B, C, H, W)
-
-        # Soft per-channel gate: g ∈ (0,1)^C — gradient flows through sigmoid
-        g = torch.sigmoid(
-            self.gate_fc(self.pool(x).view(x.shape[0], -1))
-        ).view(x.shape[0], -1, 1, 1)                     # (B, C, 1, 1)
-
-        # Adaptive blend: high gate → trust PAM (spatial); low gate → trust CAM (channel)
+        pam_out = self.pam(x)
+        cam_out = self.cam(x)
+        if self.disable_gate:
+            g = 0.5
+        else:
+            gap  = self.pool(x).view(x.shape[0], -1)           # (B, C)
+            prob = F.softmax(x.flatten(2), dim=-1)              # (B, C, N)
+            ent  = (-prob * torch.log(prob + 1e-6)).sum(-1).mean(1, keepdim=True)  # (B, 1)
+            g    = torch.sigmoid(
+                self.gate_fc(torch.cat([gap, ent], dim=1))
+            ).view(x.shape[0], -1, 1, 1)                       # (B, C, 1, 1)
         fused = self.fusion(g * pam_out + (1.0 - g) * cam_out)
-        return fused + x                                  # residual connection
+        return fused + x
 ```
 
-#### 6.5.4 Required Utilities (from Swin Transformer)
+### 6.4 Hardware-Aware Configuration (Implementation Detail)
+
+Adjusts rank / window size / groups at inference time based on free GPU memory. Not a claimed contribution — an engineering convenience for deployment on different hardware.
 
 ```python
-def window_partition(x, window_size):
-    """(B, C, H, W) -> (B*nW, C, M, M)"""
-    B, C, H, W = x.shape
-    M = window_size
-    x = x.view(B, C, H // M, M, W // M, M)
-    # (B, C, nH, M, nW, M) -> (B*nH*nW, C, M, M)
-    return x.permute(0, 2, 4, 1, 3, 5).contiguous().view(-1, C, M, M)
-
-def window_reverse(windows, window_size, H, W):
-    """(B*nW, C, M, M) -> (B, C, H, W)"""
-    M  = window_size
-    nW = (H // M) * (W // M)
-    B  = windows.shape[0] // nW
-    C  = windows.shape[1]
-    x  = windows.view(B, H // M, W // M, C, M, M)
-    return x.permute(0, 3, 1, 4, 2, 5).contiguous().view(B, C, H, W)
+def hardware_config(free_mem_gb):
+    if free_mem_gb > 8:
+        return {"rank": 64, "window_size": 14, "groups": 4}
+    elif free_mem_gb > 4:
+        return {"rank": 32, "window_size": 7,  "groups": 8}
+    else:
+        return {"rank": 16, "window_size": 7,  "groups": 16}
 ```
 
 ---
 
 ## 7. Loss Function
 
-Combined Dice + Cross-Entropy loss with equal weighting:
-
-$$\mathcal{L} = \frac{1}{2} \cdot \mathcal{L}_{\text{Dice}} + \frac{1}{2} \cdot \mathcal{L}_{\text{CE}}$$
+$$\mathcal{L} = \frac{1}{2} \mathcal{L}_{\text{Dice}} + \frac{1}{2} \mathcal{L}_{\text{CE}}$$
 
 ---
 
-## 8. Experiment Plan
+## 8. Ablation Study Design
 
-### 8.1 Datasets
+### Gate input ablation (primary)
 
-| Dataset | Type |
-|---|---|
-| Synapse | Multi-organ CT segmentation |
-| ISIC 2018 | Skin lesion segmentation |
-| Chest X-ray | Lung segmentation |
-| CVC-ClinicDB | Polyp segmentation (colonoscopy) |
-| Kvasir-Seg | Polyp segmentation (endoscopy) |
+| Config | Gate input | Purpose |
+|--------|-----------|---------|
+| `--disable_gate` | fixed 0.5 | remove gate entirely |
+| GAP-only gate | $\text{GAP}(F)$ | baseline learned gate (currently training) |
+| **GAP + entropy gate** | $[\text{GAP}(F),\ H(F)]$ | **full model (Phase 2)** |
 
-### 8.2 Evaluation Metrics
+### Efficiency ablation
 
-- **Dice** — overlap-based segmentation accuracy
-- **IoU** — intersection over union
-- **HD95** — 95th percentile Hausdorff distance (boundary accuracy)
-- **Params** — model parameter count
-- **FLOPs** — floating point operations (compute cost)
-- **FPS** — inference speed
+| Config | Purpose |
+|--------|---------|
+| `--rank 8` | rank sensitivity |
+| `--groups 4` | group count sensitivity |
 
-### 8.3 Ablation Studies
+### Visualization (paper figures)
 
-| Component | Variants |
-|---|---|
-| PAM | Global vs. Windowed vs. Low-rank |
-| CAM | Full cross-channel vs. Grouped |
-| Compression ratio | Fixed (1/4) vs. Learnable |
-| Hardware config | With vs. Without |
+1. **Scatter plot**: $H(F)$ vs. mean gate $g$ per AdaDA block — should show positive Spearman correlation
+2. **Spatial entropy map**: one CT slice with entropy heatmap — boundary pixels should have higher $H$ and higher $g$
+3. **Gate distribution per depth**: histogram of $g$ values at each decoder stage — should shift toward PAM (higher $g$) in shallow stages if entropy is informative
 
 ---
 
-## 9. Key Contributions
+## 9. Key Contributions (for paper submission)
 
-1. **First adaptive DA Transformer UNet with hardware-aware configuration** — dynamically scales computation to device constraints at inference time.
-2. **Better accuracy-efficiency trade-off** — low-rank PAM and grouped CAM drastically reduce complexity while preserving representational power.
-3. **Plug-and-play modules** — AdaDA blocks can be integrated into modern segmentation architectures beyond TransUNet.
+1. **Low-Rank Windowed PAM**: reduces $\mathcal{O}(N^2 C)$ to $\mathcal{O}(NrC)$ via Swin-style windowing + low-rank key/value projection — first application to DA-block in medical segmentation.
+2. **Grouped CAM**: reduces $\mathcal{O}(C^2)$ to $\mathcal{O}(C^2/G)$ — preserves multi-class channel structure.
+3. **Entropy-Informed Adaptive Routing**: adds feature entropy $H(F)$ to the attention routing gate, making PAM/CAM allocation uncertainty-aware — high-entropy boundaries get more spatial attention, high-confidence regions get more channel attention.
 
-### Novelty Map (vs. baselines)
+**Why this matters for ACCV reviewers:** The windowed + low-rank PAM directly enables multi-GPU DDP training (no `BroadcastBackward` on zero-element weights); the entropy gate adds interpretable, principled uncertainty-awareness with ~$C$ extra parameters.
 
+---
+
+## 10. Verification Protocol (before Phase 2)
+
+Run `analyze_gate_entropy.py` on the GAP-only checkpoint (`best_model.pth`).
+The script computes **both** Spearman($H$, $g$) and Spearman($\text{Var}$, $g$) so all backup plans are covered in one pass.
+
+```bash
+python analyze_gate_entropy.py \
+  --vit_name R50-ViT-B_16 --n_skip 3 --max_epochs 300 --batch_size 24 \
+  --window_size 7 --rank 32 --groups 8
 ```
-DANet (CVPR 2019)
-  ├─ PAM: O(N²) global spatial attention  ──► AdaDA: Windowed + Low-rank PAM → O(Nr)   [novel in DA context]
-  └─ CAM: O(C²) full channel attention    ──► AdaDA: Grouped CAM → O(C²/G)             [novel in DA context]
 
-DA-TransUNet (2024)
-  ├─ Fixed 1/16 compression ratio         ──► AdaDA: Learnable gate r = σ(W·F)         [novel]
-  ├─ No hardware adaptation               ──► AdaDA: Hardware-aware config              [engineering contribution]
-  └─ No efficiency optimization           ──► AdaDA: All of the above combined          [combined novelty]
+### Case 1 — Strong positive correlation ($r > 0.5$, $p < 0.01$)
+
+Gate already tracks entropy implicitly. Narrative: *"Existing adaptive gate naturally correlates with feature uncertainty."* Adding $H(F)$ as explicit input formalises what the network already discovered.
+
+**Action:** Proceed directly to Phase 2. Paper claim is strong.
+
+### Case 2 — Weak positive correlation ($0.2 < r < 0.5$, $p < 0.01$)
+
+Entropy signal has supplementary value but is not dominant. Most likely outcome (~50%).
+
+**Action:** Proceed to Phase 2 with entropy gate. Narrative: *"Explicit entropy input strengthens the uncertainty signal already weakly captured by GAP."*
+
+### Case 3 — Near-zero correlation ($|r| < 0.1$)
+
+Gate does not track entropy. Two sub-cases:
+- Entropy is the wrong proxy for what matters
+- Gate has not learned a meaningful uncertainty signal at all
+
+**Action:** Do **not** add entropy gate. Run variance correlation from the same script output. If Var($F$) correlates ($r > 0.2$), switch to Plan B1. Otherwise Plan B3.
+
+### Case 4 — Negative correlation ($r < 0$)
+
+High-entropy features produce **lower** gate values → CAM is weighted more at uncertain boundaries, not PAM. This inverts the hypothesis but is scientifically interesting.
+
+**Action:** Investigate per-block. If consistent across blocks, revise Contribution 3 to: *"High-uncertainty regions preferentially activate channel attention for semantic disambiguation"* — still a publishable finding. Then implement with the same gate architecture (the gate learns the correct direction regardless of our prior).
+
+---
+
+## 11. Backup Plans (if entropy correlation is weak)
+
+### Plan B1 — Feature Variance Gate (recommended first fallback)
+
+Replace $H(F)$ with per-sample mean spatial variance, which is cheaper ($\mathcal{O}(CN)$, no softmax) and often more stable in medical images:
+
+$$\text{Var}(F) = \frac{1}{C} \sum_c \text{Var}_{\text{spatial}}(F_c) \in \mathbb{R}^{B \times 1}$$
+
+$$g = \sigma\!\left(W_g \cdot \left[\text{GAP}(F),\ \text{Var}(F)\right]\right)$$
+
+Code change is identical to Phase 2 — swap `ent` computation:
+```python
+var = x.var(dim=[2, 3]).mean(dim=1, keepdim=True)   # (B, 1)
+g = torch.sigmoid(self.gate_fc(torch.cat([gap, var], dim=1))).view(...)
 ```
 
-> **Core novelty claim:** Swin-style and low-rank optimizations are well-studied on vanilla Transformer, but have not been applied specifically to the DA-block in a medical segmentation context. This gap is confirmed by the DA-TransUNet review notes: *"一般的Swin优化都在vanilla Transformer，很少专门针对DA-block做"*.
+### Plan B2 — Boundary-Aware Gate
+
+Use Laplacian edge energy as the routing signal — directly meaningful for boundary-sensitive segmentation (Synapse, ISIC, Kvasir):
+
+```python
+lap_kernel = torch.tensor([[0,1,0],[1,-4,1],[0,1,0]], dtype=x.dtype, device=x.device)
+lap_kernel = lap_kernel.view(1,1,3,3).expand(C,-1,-1,-1)
+edge = F.conv2d(x, lap_kernel, groups=C, padding=1).abs().mean(dim=[2,3])  # (B, C)
+# concat with GAP: gate_fc = Linear(2*C, C)
+```
+
+Higher parameter cost ($2C$ input); best suited if boundary-specific ablations are needed.
+
+### Plan B3 — Multi-Statistic Gate (most robust, best for ablation story)
+
+Concatenate GAP + entropy + variance; let the network learn which signals matter:
+
+$$g = \sigma\!\left(W_g \cdot \left[\text{GAP}(F),\ H(F),\ \text{Var}(F)\right]\right), \quad W_g \in \mathbb{R}^{C \times (C+2)}$$
+
+Produces a clean 4-row ablation table:
+
+| Gate input | Params added | Purpose |
+|-----------|-------------|---------|
+| GAP only | 0 | current baseline |
+| GAP + $H$ | $C$ | entropy contribution |
+| GAP + Var | $C$ | variance contribution |
+| GAP + $H$ + Var | $2C$ | full uncertainty gate |
+
+**Recommended path:** run Phase 1 script → if $r_H > 0.3$ use Plan (Phase 2 entropy); else if $r_{\text{Var}} > 0.2$ use Plan B1; otherwise go Plan B3 and let ablation data speak.
+
+---
+
+## 12. Figure Plan (paper)
+
+1. **Gate–Entropy scatter**: $H(F)$ vs. mean $g$ per AdaDA block — Spearman $r$ annotated
+2. **Spatial entropy map**: CT slice with per-pixel $H$ heatmap overlaid — boundary pixels should be high-entropy
+3. **Gate distribution per depth**: boxplot of $g$ values at each decoder stage (Encoder, Skip3, Skip2, Skip1) — tests depth-dependence hypothesis from ESDA
+4. **Ablation bar chart**: DSC across gate configurations — visual summary of gate contribution
 
 ---
 
 ## References
 
-[1] J. Fu, J. Liu, H. Tian, Y. Li, Y. Bao, Z. Fang, and H. Lu, "Dual attention network for scene segmentation," *CVPR*, 2019, pp. 3146–3154.
+[1] J. Fu et al., "Dual attention network for scene segmentation," *CVPR*, 2019.
 
-[2] G. Sun et al., "DA-TransUNet: integrating spatial and channel dual attention with transformer U-Net for medical image segmentation," *Frontiers in Bioengineering and Biotechnology*, vol. 12, p. 1398237, 2024.
+[2] G. Sun et al., "DA-TransUNet: integrating spatial and channel dual attention with transformer U-Net for medical image segmentation," *Frontiers in Bioengineering and Biotechnology*, vol. 12, 2024.
 
-[3] A. Dosovitskiy et al., "An image is worth 16x16 words: Transformers for image recognition at scale," *arXiv:2010.11929*, 2020.
+[3] A. Dosovitskiy et al., "An image is worth 16x16 words," *arXiv:2010.11929*, 2020.
 
-[4] Z. Liu et al., "Swin Transformer: Hierarchical vision transformer using shifted windows," *ICCV*, 2021, pp. 10012–10022.
+[4] Z. Liu et al., "Swin Transformer: Hierarchical vision transformer using shifted windows," *ICCV*, 2021.

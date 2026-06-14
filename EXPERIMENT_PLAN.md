@@ -67,13 +67,18 @@ All runs on **Lightning AI** (persistent studio, not Kaggle).
 
 ### Week 2 — Ablation Runs (Synapse only, T4 x2)
 
-| Run | GPU | Est. Time | Config |
-|-----|-----|-----------|--------|
-| AdaDA, no gate | T4 x2 | ~4h | `--disable_gate` |
-| AdaDA, rank=8 | T4 x2 | ~4h | `--rank 8` |
-| **Week 2 Total** | | **~8h** | |
+| Run | GPU | Est. Time | Config | Purpose |
+|-----|-----|-----------|--------|---------|
+| AdaDA, no gate | T4 x2 | ~4h | `--disable_gate` | gate contribution |
+| AdaDA, entropy gate (r=32) | T4 x2 | ~4h | Phase 2 full model | entropy routing contribution |
+| AdaDA, entropy gate (r=8) | T4 x2 | ~4h | `--rank 8` on new model | rank sensitivity |
+| **Week 2 Total** | | **~12h** | | |
 
-Weekly quota: 30h. Week 1 uses ~23h, Week 2 uses ~8h — both within limit.
+> The GAP-only gate checkpoint (currently training, T4×1 and T4×2) becomes the "gate input ablation" row — no extra run needed for it.
+>
+> Week 2 is contingent on Phase 1 verification (analyze_gate_entropy.py) confirming |r| > 0.3, p < 0.01.
+
+Weekly quota: 30h. Week 1 uses ~23h, Week 2 uses ~12h — both within limit.
 
 ---
 
@@ -114,16 +119,13 @@ Weekly quota: 30h. Week 1 uses ~23h, Week 2 uses ~8h — both within limit.
 
 ---
 
-## Notebooks
+## Run Guide
 
-| Notebook file | Purpose |
-|--------------|---------|
-| `ada-da-transunet.ipynb` | DA-TransUNet: Synapse train + test |
-| `adada-transunet.ipynb` | AdaDA-TransUNet: Synapse train + test |
-| `da-transunet-kvasir.ipynb` | DA-TransUNet: Kvasir-SEG train + test |
-| `adada-transunet-kvasir.ipynb` | AdaDA-TransUNet: Kvasir-SEG train + test |
-| `da-transunet-isic.ipynb` | DA-TransUNet: ISIC 2018 train + test |
-| `adada-transunet-isic.ipynb` | AdaDA-TransUNet: ISIC 2018 train + test |
+All experiments run from the Lightning AI Studio **terminal** (not Jupyter notebooks).
+
+| File | Purpose |
+|------|---------|
+| `notebooks/lightning-ai-setup.md` | Step-by-step terminal commands: one-time setup, all training/test/ablation runs, monitoring |
 
 ---
 
@@ -142,11 +144,23 @@ Night 5:  AdaDA         ISIC     (T4 x2, ~2.5h)
 > Night 3 pairs AdaDA T4×2 Synapse (~4h) with DA-TransUNet Kvasir (~3h) in one session.
 > Night 4 pairs DA-TransUNet ISIC (~4h) with AdaDA Kvasir (~2h).
 
-### Week 2 (ablation, Synapse only)
+### Week 2 (ablation, Synapse only) — contingent on Phase 1 verification
+
+**Step 0 (morning after T4×1 finishes):** run `analyze_gate_entropy.py` on `best_model.pth` — see `AdaDA-TransUNet.md §10–11` for the 4-case decision tree and backup plans.
+
+| Phase 1 result | Week 2 path |
+|---------------|-------------|
+| `|r_H| > 0.3`, `p < 0.01` | Phase 2: entropy gate (`Linear(C+1,C)`) → Nights 5–7 below |
+| `0 < r_H < 0.2`, `r_Var > 0.2` | Plan B1: variance gate (`Linear(C+1,C)` with var input) — same run schedule |
+| `r_H ≈ 0`, `r_Var ≈ 0` | Plan B3: multi-statistic gate (`Linear(C+2,C)`) — same run schedule |
+| `r_H < 0` | Investigate per-block; revise narrative; use Plan B1 or B3 |
+
 ```
-Night 5:  AdaDA no-gate  Synapse  (T4 x2, ~4h)   --disable_gate
-Night 6:  AdaDA rank=8   Synapse  (T4 x2, ~4h)   --rank 8
+Night 5:  AdaDA no-gate      Synapse  (T4 x2, ~4h)   --disable_gate
+Night 6:  AdaDA full model   Synapse  (T4 x2, ~4h)   Phase 2 / B1 / B3 (chosen from above)
+Night 7:  AdaDA rank=8       Synapse  (T4 x2, ~4h)   --rank 8 on chosen full model
 ```
+> GAP-only gate results (T4×1 and T4×2, currently running) fill the "gate input ablation" row automatically — no extra run needed.
 
 ---
 
@@ -188,12 +202,18 @@ Night 6:  AdaDA rank=8   Synapse  (T4 x2, ~4h)   --rank 8
 
 ### Ablation Study (Synapse, T4 x2)
 
-| Config | DSC (%) | HD95 (mm) | Notes |
-|--------|---------|-----------|-------|
-| DA-TransUNet (full PAM, no gate) | 80.51 | 25.41 | Baseline — 300ep, T4×1, best_model.pth (epoch 270) |
-| AdaDA, r=32, fixed gate (0.5) | XX | XX | `--disable_gate` — gate contribution |
-| AdaDA, r=8, learned gate | XX | XX | `--rank 8` — rank sensitivity |
-| **AdaDA, r=32, learned gate** | **XX** | **XX** | **Full model (ours)** |
+| Config | Gate input | DSC (%) | HD95 (mm) | Notes |
+|--------|-----------|---------|-----------|-------|
+| DA-TransUNet baseline | — | 80.51 | 25.41 | Full PAM+CAM, no gate, 300ep T4×1 |
+| AdaDA, `--disable_gate` | fixed 0.5 | XX | XX | gate contribution — Week 2 |
+| AdaDA, GAP-only gate (r=32) | GAP(F) | XX | XX | **currently training** T4×1 + T4×2 |
+| AdaDA, GAP-only gate (r=32, 2GPU) | GAP(F) | XX | XX | **currently training** T4×2 (multi-GPU efficiency row) |
+| **AdaDA, GAP+entropy gate (r=32)** | GAP(F) + H(F) | **XX** | **XX** | **Full model — Phase 2, contingent on verification** |
+| AdaDA, GAP+entropy gate (r=8) | GAP(F) + H(F) | XX | XX | rank sensitivity — Week 2 |
+
+> Phase 1 verification step: run `analyze_gate_entropy.py` on GAP-only `best_model.pth` tomorrow morning.
+> If Spearman |r| > 0.3 and p < 0.01 → implement entropy gate (block.py: `gate_fc = Linear(C+1, C)`) and retrain.
+> Existing GAP-only checkpoint becomes the "gate input ablation" row automatically.
 
 ---
 
