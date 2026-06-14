@@ -33,7 +33,7 @@ All runs on **Lightning AI** (persistent studio, not Kaggle).
 - DA-TransUNet baseline: single **NVIDIA Tesla T4 (15 GB VRAM)**
 - AdaDA multi-GPU: **T4 × 2** via `torchrun --nproc_per_node=2` (DDP, NCCL, per-GPU batch=12, total=24, LR 0.01 unchanged)
 - AdaDA 4×GPU: `torchrun --nproc_per_node=4 train.py --batch_size 6 --n_gpu 4 ...` (per-GPU batch=6, total=24)
-- DA-TransUNet multi-GPU failure: DataParallel `BroadcastBackward` fails on `DANetHead(64,64)` zero-element `query_conv` weight `[0,4,1,1]` even if never called in forward. **Confirmed: `BroadcastBackward got [0] but expected [0,4,1,1]`**. If patched, full PAM at 112x112 needs ~15 GB/GPU -> OOM. See `experiments/oom_test_pam.py`.
+- DA-TransUNet multi-GPU failure: **Primary cause is a code bug, not OOM.** `DataParallel` replicates the full model onto each device including the zero-element `query_conv.weight [0,4,1,1]` in `DANetHead(64,64)`, then `BroadcastBackward` during `loss.backward()` fails to synchronize gradients on a zero-element tensor: `RuntimeError: BroadcastBackward got [0] but expected [0,4,1,1]`. Crash occurs at the first backward call regardless of skip routing — confirmed on T4×2 with unmodified code. Even if this architectural issue were patched (clamping C_inter ≥ 8), full PAM at 112×112 would require ~7 GB for the attention matrix alone; combined with the ~10 GB already used by weights + buffers + activations, total ~17 GB exceeds T4 capacity (14.6 GB) by ~2.4 GB. Both issues are documented in the paper appendix.
 - AdaDA DDP rationale: NCCL all-reduce avoids `BroadcastBackward`; `LowRankWindowedPAM` has no zero-channel collapse; ~390x memory reduction enables the 112x112 skip.
 
 | Setting | Value |
@@ -173,7 +173,7 @@ Night 7:  AdaDA rank=8       Synapse  (T4 x2, ~4h)   --rank 8 on chosen full mod
 | U-Net | 74.68 | 36.87 |
 | TransUNet | 77.48 | 31.69 |
 | Swin-Unet | 79.13 | 21.55 |
-| DA-TransUNet (paper) | 81.03 | 17.84 |
+| DA-TransUNet (paper) | 79.80 | 23.48 |
 | DA-TransUNet (ours, 300ep best_model) | 80.51 | 25.41 |
 | **AdaDA-TransUNet (ours)** | **XX** | **XX** |
 
