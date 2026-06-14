@@ -489,7 +489,25 @@ max_r_H   = max(abs(r_H)   for _, r_H, p_H, r_Var, p_Var, *_ in spearman_results
 max_r_Var = max(abs(r_Var) for _, r_H, p_H, r_Var, p_Var, *_ in spearman_results)
 best_p_H  = min((p_H  for _, r_H, p_H, *_ in spearman_results if abs(r_H) > 0.3), default=1.0)
 
-if max_r_H > 0.5 and best_p_H < 0.01:
+# Gate collapse check: if high-H vs low-H delta is negligible across all blocks,
+# the gate is not actually adapting regardless of Spearman r value.
+# Spearman r can be high on a collapsed gate because rank ordering exists even
+# within a [0.497, 0.500] range — the MAGNITUDE of adaptation is what matters.
+max_delta = max(abs(d[2]) for d in figD_data)
+gate_collapsed = max_delta < 0.005   # less than 0.5% absolute gate swing
+
+print(f"  Gate collapse check: max |delta| across blocks = {max_delta:.4f}  "
+      f"({'COLLAPSED — gate is inert' if gate_collapsed else 'OK — gate is adapting'})")
+
+if gate_collapsed:
+    print("\nCase 0 — GATE COLLAPSED (g ≈ 0.5 regardless of entropy, delta ≈ 0).")
+    print("  Spearman r may look high but reflects rank ordering on negligible magnitude variation.")
+    print("  The gate_fc learned near-zero weights → σ(0) ≈ 0.5 for all inputs.")
+    print("  -> Phase 2 entropy gate will NOT help — the gate itself is the problem.")
+    print("  -> Accuracy gap is from windowed attention losing global context, not from gating.")
+    print("  -> Recommended ablation: --disable_gate to confirm gate is inert,")
+    print("     then investigate larger window (M=14) or higher rank (r=64).")
+elif max_r_H > 0.5 and best_p_H < 0.01:
     print("Case 1 — STRONG H correlation: gate already tracks entropy implicitly.")
     print("  -> Proceed to Phase 2 (entropy gate). Paper narrative is strong.")
 elif max_r_H > 0.2 and best_p_H < 0.01:
@@ -498,21 +516,19 @@ elif max_r_H > 0.2 and best_p_H < 0.01:
 elif max_r_H < 0.1:
     if max_r_Var > 0.2:
         print("Case 3 — H near zero, but Var correlates.")
-        print("  -> Skip entropy gate. Implement Plan B1 (variance gate): gate_fc = Linear(C+1, C) with var input.")
+        print("  -> Implement Plan B1 (variance gate): gate_fc = Linear(C+1, C) with var input.")
     else:
         print("Case 3 — H near zero, Var also weak.")
-        print("  -> Implement Plan B3 (multi-statistic gate): gate_fc = Linear(C+2, C) with [GAP, H, Var].")
-        print("     Let ablation table determine which signal contributes.")
+        print("  -> Implement Plan B3 (multi-statistic gate): gate_fc = Linear(C+2, C).")
 else:
     neg_blocks = [name for name, r_H, *_ in spearman_results if r_H < -0.2]
     if neg_blocks:
         print("Case 4 — NEGATIVE H correlation in:", neg_blocks)
-        print("  -> High entropy -> more CAM (inverts prior). Investigate per block.")
-        print("     Revise narrative: 'uncertain boundaries prefer channel disambiguation'.")
+        print("  -> High entropy -> more CAM (inverts prior). Revise narrative.")
     else:
         print("Case 2/3 mixed — check per-block plots to decide.")
 
-print(f"\n  max |r_H| = {max_r_H:.3f}  |  max |r_Var| = {max_r_Var:.3f}")
+print(f"\n  max |r_H| = {max_r_H:.3f}  |  max |r_Var| = {max_r_Var:.3f}  |  max gate |delta| = {max_delta:.4f}")
 
 if cat_names:
     print("\n=== Per-class decision hints ===")
