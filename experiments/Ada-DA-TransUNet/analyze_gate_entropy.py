@@ -211,22 +211,32 @@ elif args.dataset in ('Kvasir', 'ISIC'):
 for h in hooks:
     h.remove()
 
-# ---------- aggregate per-slice averages across all blocks ----------
+# ---------- filter to only blocks actually called during forward ----------
+# DecoderBlock.forward routes skip to da/da2/da3 based on channel count, so
+# only 1 of the 3 DA blocks per DecoderBlock fires per forward pass.
+active_idx = [i for i in range(len(adada_blocks)) if len(records[i]['H']) > 0]
+print(f"\n{len(active_idx)} of {len(adada_blocks)} blocks active during inference:")
+for i in active_idx:
+    print(f"  [{i}] {adada_blocks[i][0]}")
+
+if not active_idx:
+    import sys; sys.exit("No hooks fired — check that best_model.pth loaded correctly.")
+
+# ---------- aggregate per-slice averages across active blocks ----------
 n_slices = len(slice_contexts)
 H_avg = np.zeros(n_slices)
 g_avg = np.zeros(n_slices)
-for i in range(len(adada_blocks)):
-    H_all_i = torch.cat(records[i]['H']).numpy()
-    g_all_i = torch.cat(records[i]['g']).numpy()
-    H_avg += H_all_i
-    g_avg += g_all_i
-H_avg /= len(adada_blocks)
-g_avg /= len(adada_blocks)
+for i in active_idx:
+    H_avg += torch.cat(records[i]['H']).numpy()
+    g_avg += torch.cat(records[i]['g']).numpy()
+H_avg /= len(active_idx)
+g_avg /= len(active_idx)
 
-# ---------- compute Spearman correlations per block ----------
+# ---------- compute Spearman correlations per active block ----------
 print("\n=== Spearman correlation: H(F) vs gate g (per block) ===")
 spearman_results = []
-for i, (name, _) in enumerate(adada_blocks):
+for i in active_idx:
+    name = adada_blocks[i][0]
     H_all   = torch.cat(records[i]['H']).numpy()
     Var_all = torch.cat(records[i]['Var']).numpy()
     g_all   = torch.cat(records[i]['g']).numpy()
@@ -234,7 +244,7 @@ for i, (name, _) in enumerate(adada_blocks):
     r_Var, p_Var = stats.spearmanr(Var_all,  g_all)
     spearman_results.append((name, r_H, p_H, r_Var, p_Var, H_all, Var_all, g_all))
     flag = "PROCEED" if abs(r_H) > 0.3 and p_H < 0.01 else ("WEAK" if abs(r_H) < 0.1 else "CHECK")
-    print(f"  Block {i:2d} ({name:40s})  H: r={r_H:+.4f} p={p_H:.2e}  [{flag}]  |  Var: r={r_Var:+.4f} p={p_Var:.2e}")
+    print(f"  {name:50s}  H: r={r_H:+.4f} p={p_H:.2e}  [{flag}]  |  Var: r={r_Var:+.4f} p={p_Var:.2e}")
 
 # ---------- Figure D stats: high vs low entropy group comparison ----------
 print("\n=== Figure D: high-H vs low-H gate comparison (top/bottom 20%) ===")
