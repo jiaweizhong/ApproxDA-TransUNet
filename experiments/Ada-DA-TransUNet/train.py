@@ -12,6 +12,9 @@ import sys
 import time
 import torch.nn as nn
 import torch.optim as optim
+import torch.distributed as dist
+from torch.nn.parallel import DistributedDataParallel as DDP
+from torch.utils.data.distributed import DistributedSampler
 from tensorboardX import SummaryWriter
 from torch.nn.modules.loss import CrossEntropyLoss
 from torch.utils.data import DataLoader
@@ -83,37 +86,53 @@ def _validate_synapse(args, model):
 
 def trainer_synapse(args, model, snapshot_path):
     from datasets.dataset_synapse import Synapse_dataset, RandomGenerator
-    logging.basicConfig(filename=snapshot_path + "/log.txt", level=logging.INFO,
-                        format='[%(asctime)s.%(msecs)03d] %(message)s', datefmt='%H:%M:%S')
-    logging.getLogger().addHandler(logging.StreamHandler(sys.stdout))
+
+    local_rank = int(os.environ.get('LOCAL_RANK', -1))
+    use_ddp = local_rank >= 0 and args.n_gpu > 1
+    is_main = not use_ddp or local_rank == 0
+
+    if is_main:
+        logging.basicConfig(filename=snapshot_path + "/log.txt", level=logging.INFO,
+                            format='[%(asctime)s.%(msecs)03d] %(message)s', datefmt='%H:%M:%S')
+        logging.getLogger().addHandler(logging.StreamHandler(sys.stdout))
     logging.info(str(args))
     base_lr = args.base_lr
     num_classes = args.num_classes
-    batch_size = args.batch_size * args.n_gpu
-    # max_iterations = args.max_iterations
+    # DDP: each process handles one GPU with batch_size samples; DistributedSampler partitions dataset
+    # DataParallel (fallback): one process drives n_gpu GPUs, DataLoader batch = batch_size * n_gpu
+    batch_size = args.batch_size if use_ddp else args.batch_size * args.n_gpu
     db_train = Synapse_dataset(base_dir=args.root_path, list_dir=args.list_dir, split="train",
                                transform=transforms.Compose(
                                    [RandomGenerator(output_size=[args.img_size, args.img_size])]))
-    print("The length of train set is: {}".format(len(db_train)))
+    if is_main:
+        print("The length of train set is: {}".format(len(db_train)))
 
     def worker_init_fn(worker_id):
         random.seed(args.seed + worker_id)
 
-    trainloader = DataLoader(db_train, batch_size=batch_size, shuffle=True, num_workers=8, pin_memory=True,
-                             worker_init_fn=worker_init_fn)
-    if args.n_gpu > 1:
-        model = nn.DataParallel(model)
+    if use_ddp:
+        sampler = DistributedSampler(db_train, shuffle=True)
+        trainloader = DataLoader(db_train, batch_size=batch_size, sampler=sampler,
+                                 shuffle=False, num_workers=4, pin_memory=True,
+                                 worker_init_fn=worker_init_fn)
+        model = DDP(model, device_ids=[local_rank])
+    else:
+        trainloader = DataLoader(db_train, batch_size=batch_size, shuffle=True, num_workers=8, pin_memory=True,
+                                 worker_init_fn=worker_init_fn)
+        if args.n_gpu > 1:
+            model = nn.DataParallel(model)
     model.train()
     ce_loss = CrossEntropyLoss()
     dice_loss = DiceLoss(num_classes)
     optimizer = optim.SGD(model.parameters(), lr=base_lr, momentum=0.9, weight_decay=0.0001)
-    writer = SummaryWriter(snapshot_path + '/log')
+    writer = SummaryWriter(snapshot_path + '/log') if is_main else None
     iter_num = 0
     max_epoch = args.max_epochs
     max_iterations = args.max_epochs * len(trainloader)  # max_epoch = max_iterations // len(trainloader) + 1
-    logging.info("{} iterations per epoch. {} max iterations ".format(len(trainloader), max_iterations))
+    if is_main:
+        logging.info("{} iterations per epoch. {} max iterations ".format(len(trainloader), max_iterations))
     best_performance = 0.0
-    iterator = tqdm(range(max_epoch), ncols=70)
+    iterator = tqdm(range(max_epoch), ncols=70, disable=not is_main)
     train_start = time.time()
     val_time_s = 0.0
     if torch.cuda.is_available():
@@ -140,32 +159,33 @@ def trainer_synapse(args, model, snapshot_path):
             epoch_loss_sum += loss.item()
             epoch_loss_ce_sum += loss_ce.item()
             epoch_batches += 1
-            writer.add_scalar('info/lr', lr_, iter_num)
-            writer.add_scalar('info/total_loss', loss, iter_num)
-            writer.add_scalar('info/loss_ce', loss_ce, iter_num)
+            if writer is not None:
+                writer.add_scalar('info/lr', lr_, iter_num)
+                writer.add_scalar('info/total_loss', loss, iter_num)
+                writer.add_scalar('info/loss_ce', loss_ce, iter_num)
+                if iter_num % 20 == 0:
+                    image = image_batch[1, 0:1, :, :]
+                    image = (image - image.min()) / (image.max() - image.min())
+                    writer.add_image('train/Image', image, iter_num)
+                    outputs_vis = torch.argmax(torch.softmax(outputs, dim=1), dim=1, keepdim=True)
+                    writer.add_image('train/Prediction', outputs_vis[1, ...] * 50, iter_num)
+                    labs = label_batch[1, ...].unsqueeze(0) * 50
+                    writer.add_image('train/GroundTruth', labs, iter_num)
 
-            if iter_num % 20 == 0:
-                image = image_batch[1, 0:1, :, :]
-                image = (image - image.min()) / (image.max() - image.min())
-                writer.add_image('train/Image', image, iter_num)
-                outputs = torch.argmax(torch.softmax(outputs, dim=1), dim=1, keepdim=True)
-                writer.add_image('train/Prediction', outputs[1, ...] * 50, iter_num)
-                labs = label_batch[1, ...].unsqueeze(0) * 50
-                writer.add_image('train/GroundTruth', labs, iter_num)
+        if is_main:
+            elapsed_h = (time.time() - train_start - val_time_s) / 3600
+            avg_loss = epoch_loss_sum / epoch_batches
+            avg_loss_ce = epoch_loss_ce_sum / epoch_batches
+            logging.info("epoch %d/%d  loss: %.4f  loss_ce: %.4f  lr: %.6f  elapsed: %.2fh" % (
+                epoch_num + 1, max_epoch, avg_loss, avg_loss_ce, lr_, elapsed_h))
 
-        elapsed_h = (time.time() - train_start - val_time_s) / 3600
-        avg_loss = epoch_loss_sum / epoch_batches
-        avg_loss_ce = epoch_loss_ce_sum / epoch_batches
-        logging.info("epoch %d/%d  loss: %.4f  loss_ce: %.4f  lr: %.6f  elapsed: %.2fh" % (
-            epoch_num + 1, max_epoch, avg_loss, avg_loss_ce, lr_, elapsed_h))
+            save_interval = 50  # int(max_epoch/6)
+            if epoch_num > int(max_epoch / 2) and (epoch_num + 1) % save_interval == 0:
+                save_mode_path = os.path.join(snapshot_path, 'epoch_' + str(epoch_num) + '.pth')
+                torch.save(model.state_dict(), save_mode_path)
+                logging.info("save model to {}".format(save_mode_path))
 
-        save_interval = 50  # int(max_epoch/6)
-        if epoch_num > int(max_epoch / 2) and (epoch_num + 1) % save_interval == 0:
-            save_mode_path = os.path.join(snapshot_path, 'epoch_' + str(epoch_num) + '.pth')
-            torch.save(model.state_dict(), save_mode_path)
-            logging.info("save model to {}".format(save_mode_path))
-
-        if args.val_interval > 0 and (
+        if is_main and args.val_interval > 0 and (
                 (epoch_num + 1) % args.val_interval == 0 or epoch_num >= max_epoch - 1):
             _val_t0 = time.time()
             val_dice = _validate_synapse(args, model)
@@ -179,23 +199,34 @@ def trainer_synapse(args, model, snapshot_path):
                 logging.info("=> best model saved (DSC %.4f)" % best_performance)
 
         if epoch_num >= max_epoch - 1:
-            save_mode_path = os.path.join(snapshot_path, 'epoch_' + str(epoch_num) + '.pth')
-            torch.save(model.state_dict(), save_mode_path)
-            logging.info("save model to {}".format(save_mode_path))
+            if is_main:
+                save_mode_path = os.path.join(snapshot_path, 'epoch_' + str(epoch_num) + '.pth')
+                torch.save(model.state_dict(), save_mode_path)
+                logging.info("save model to {}".format(save_mode_path))
             iterator.close()
             break
 
-    total_hours = (time.time() - train_start - val_time_s) / 3600
-    logging.info("Total training time: {:.2f} hours (excl. {:.1f} min validation overhead)".format(
-        total_hours, val_time_s / 60))
-    if torch.cuda.is_available():
-        peak_mb = torch.cuda.max_memory_allocated() / 1024**2
-        logging.info("Peak VRAM: {:.0f} MB ({:.1f} GB)".format(peak_mb, peak_mb / 1024))
-    writer.close()
+    if is_main:
+        total_hours = (time.time() - train_start - val_time_s) / 3600
+        logging.info("Total training time: {:.2f} hours (excl. {:.1f} min validation overhead)".format(
+            total_hours, val_time_s / 60))
+        if torch.cuda.is_available():
+            peak_mb = torch.cuda.max_memory_allocated() / 1024**2
+            logging.info("Peak VRAM: {:.0f} MB ({:.1f} GB)".format(peak_mb, peak_mb / 1024))
+        if writer is not None:
+            writer.close()
+    if use_ddp:
+        dist.destroy_process_group()
     return "Training Finished!"
 
 
 if __name__ == "__main__":
+    # DDP setup: torchrun sets LOCAL_RANK; single-GPU python invocation leaves it unset
+    _local_rank = int(os.environ.get('LOCAL_RANK', -1))
+    if _local_rank >= 0 and args.n_gpu > 1:
+        dist.init_process_group(backend='nccl')
+        torch.cuda.set_device(_local_rank)
+
     if not args.deterministic:
         cudnn.benchmark = True
         cudnn.deterministic = False

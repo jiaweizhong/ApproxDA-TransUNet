@@ -210,13 +210,9 @@ Night 6:  AdaDA rank=8   Synapse  (T4 x2, ~4h)   --rank 8
 
 | Rank | Conference | CORE | Acceptance | Location | 2026 Deadline | Notes |
 |------|-----------|------|------------|----------|---------------|-------|
-| 1 | **MICCAI** | A | ~30% | Varies | ~Feb 2027 | Premier medical imaging venue — gold standard in domain |
-| 2 | **ACCV** ⭐ | A | ~28% | Osaka, Japan 🇯🇵 | **Jul 5, 2026** | **Our target** — strong general CV, Asia |
-| 3 | **ICONIP** | B+ | ~35% | Asia-Pacific | Jun–Jul | Neural computing, Asia |
-| 4 | **ACPR** | B | ~40% | Asia | Jul–Aug | Pattern recognition, Asia |
-| 5 | **PRICAI** | B | ~40% | Asia-Pacific | Jun–Jul | Pacific Rim AI |
-| 6 | **APSIPA ASC** | C | ~50% | Asia-Pacific | Jul–Aug | Signal/image processing |
-| 7 | **BMEI** | C+ | ~45% | China | Jul–Aug | IEEE biomedical, China |
+| 1 | **ACCV** ⭐ | B | ~28% | Osaka, Japan 🇯🇵 | **Jul 5, 2026** | **Our target** — strong general CV, Asia |
+| 2 | **PRICAI** | C | ~30-35% | Guangzhou, China | Jun–Jul | Pacific Rim AI |
+| 3 | **BIBM 2026** | B | ~19-22% | Dallas, Tx | Jul–Aug | Signal/image processing |
 
 **Prestige note:** MICCAI ranks higher than ACCV for medical imaging work specifically (it is the dedicated specialist venue, widely cited in clinical AI). Both are CORE A. ACCV is the right target now because:
 - MICCAI 2027 deadline has not opened yet
