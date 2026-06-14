@@ -123,7 +123,7 @@ cd /teamspace/studios/this_studio/AdaDA-TransUNet/experiments/DA-TransUNet
 
 python -u train.py \
   --dataset Synapse --vit_name R50-ViT-B_16 \
-  --max_epochs 300 --batch_size 24 --n_gpu 1 \
+  --max_epochs 300 --batch_size 24 \
   --base_lr 0.01 --n_skip 3 --img_size 224 \
   --seed 1234 --val_interval 15 \
 2>&1 | tee run_da.log && \
@@ -145,7 +145,7 @@ cd /teamspace/studios/this_studio/AdaDA-TransUNet/experiments/Ada-DA-TransUNet
 
 python -u train.py \
   --dataset Synapse --vit_name R50-ViT-B_16 \
-  --max_epochs 300 --batch_size 24 --n_gpu 1 \
+  --max_epochs 300 --batch_size 24 \
   --base_lr 0.01 --n_skip 3 --img_size 224 \
   --window_size 7 --rank 32 --groups 8 \
   --seed 1234 --val_interval 15 \
@@ -169,7 +169,7 @@ cd /teamspace/studios/this_studio/AdaDA-TransUNet/experiments/Ada-DA-TransUNet
 
 CUDA_VISIBLE_DEVICES=0,1 torchrun --nproc_per_node=2 train.py \
   --dataset Synapse --vit_name R50-ViT-B_16 \
-  --max_epochs 300 --batch_size 12 --n_gpu 2 \
+  --max_epochs 300 --batch_size 12 \
   --base_lr 0.01 --n_skip 3 --img_size 224 \
   --window_size 7 --rank 32 --groups 8 \
   --seed 1234 --val_interval 15 \
@@ -216,7 +216,7 @@ cd /teamspace/studios/this_studio/AdaDA-TransUNet/experiments/Ada-DA-TransUNet
 
 CUDA_VISIBLE_DEVICES=0,1 torchrun --nproc_per_node=2 train.py \
   --dataset Synapse --vit_name R50-ViT-B_16 \
-  --max_epochs 300 --batch_size 12 --n_gpu 2 \
+  --max_epochs 300 --batch_size 12 \
   --base_lr 0.01 --n_skip 3 --img_size 224 \
   --window_size 7 --rank 32 --groups 8 \
   --disable_gate --seed 1234 --val_interval 15 \
@@ -241,7 +241,7 @@ cd /teamspace/studios/this_studio/AdaDA-TransUNet/experiments/Ada-DA-TransUNet
 
 CUDA_VISIBLE_DEVICES=0,1 torchrun --nproc_per_node=2 train.py \
   --dataset Synapse --vit_name R50-ViT-B_16 \
-  --max_epochs 300 --batch_size 12 --n_gpu 2 \
+  --max_epochs 300 --batch_size 12 \
   --base_lr 0.01 --n_skip 3 --img_size 224 \
   --window_size 7 --rank 32 --groups 8 \
   --seed 1234 --val_interval 15 \
@@ -263,7 +263,7 @@ cd /teamspace/studios/this_studio/AdaDA-TransUNet/experiments/Ada-DA-TransUNet
 
 CUDA_VISIBLE_DEVICES=0,1 torchrun --nproc_per_node=2 train.py \
   --dataset Synapse --vit_name R50-ViT-B_16 \
-  --max_epochs 300 --batch_size 12 --n_gpu 2 \
+  --max_epochs 300 --batch_size 12 \
   --base_lr 0.01 --n_skip 3 --img_size 224 \
   --window_size 7 --rank 8 --groups 8 \
   --seed 1234 --val_interval 15 \

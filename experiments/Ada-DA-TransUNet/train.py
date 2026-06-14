@@ -88,7 +88,8 @@ def trainer_synapse(args, model, snapshot_path):
     from datasets.dataset_synapse import Synapse_dataset, RandomGenerator
 
     local_rank = int(os.environ.get('LOCAL_RANK', -1))
-    use_ddp = local_rank >= 0 and args.n_gpu > 1
+    world_size = int(os.environ.get('WORLD_SIZE', 1))
+    use_ddp = dist.is_initialized() and world_size > 1
     is_main = not use_ddp or local_rank == 0
 
     if is_main:
@@ -104,6 +105,7 @@ def trainer_synapse(args, model, snapshot_path):
                                    [RandomGenerator(output_size=[args.img_size, args.img_size])]))
     if is_main:
         print("The length of train set is: {}".format(len(db_train)))
+        print("DDP: {} GPU(s), world_size={}".format(world_size if use_ddp else 1, world_size))
 
     def worker_init_fn(worker_id):
         random.seed(args.seed + worker_id)
@@ -224,9 +226,10 @@ def trainer_synapse(args, model, snapshot_path):
 
 
 if __name__ == "__main__":
-    # DDP setup: torchrun sets LOCAL_RANK; single-GPU python invocation leaves it unset
+    # DDP setup: torchrun injects LOCAL_RANK; plain `python train.py` leaves it unset (-1).
+    # No --n_gpu check needed — WORLD_SIZE from the environment is the authoritative source.
     _local_rank = int(os.environ.get('LOCAL_RANK', -1))
-    if _local_rank >= 0 and args.n_gpu > 1:
+    if _local_rank >= 0:
         dist.init_process_group(backend='nccl')
         torch.cuda.set_device(_local_rank)
 
