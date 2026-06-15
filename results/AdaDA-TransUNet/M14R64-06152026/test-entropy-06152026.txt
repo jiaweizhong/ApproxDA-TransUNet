@@ -1,0 +1,78 @@
+Loading checkpoint: ../model/AdaDA_Synapse224/AdaDA_pretrain_R50-ViT-B_16_skip3_epo300_bs12_224_M14_r64/best_model.pth
+Found 13 AdaDABlock(s):
+  transformer.embeddings.ada_block
+  decoder.blocks.0.da
+  decoder.blocks.0.da2
+  decoder.blocks.0.da3
+  decoder.blocks.1.da
+  decoder.blocks.1.da2
+  decoder.blocks.1.da3
+  decoder.blocks.2.da
+  decoder.blocks.2.da2
+  decoder.blocks.2.da3
+  decoder.blocks.3.da
+  decoder.blocks.3.da2
+  decoder.blocks.3.da3
+Running inference on 12 Synapse volumes …
+
+4 of 13 blocks active during inference:
+  [0] transformer.embeddings.ada_block
+  [3] decoder.blocks.0.da3
+  [5] decoder.blocks.1.da2
+  [7] decoder.blocks.2.da
+
+=== Spearman correlation: H(F) vs gate g (per block) ===
+  transformer.embeddings.ada_block                    H: r=-0.2572 p=4.11e-25  [CHECK]  |  Var: r=+0.2419 p=2.58e-22
+  decoder.blocks.0.da3                                H: r=-0.1350 p=7.97e-08  [CHECK]  |  Var: r=-0.0012 p=9.61e-01
+  decoder.blocks.1.da2                                H: r=+0.4273 p=1.35e-70  [PROCEED]  |  Var: r=+0.3986 p=7.48e-61
+  decoder.blocks.2.da                                 H: r=+0.0451 p=7.42e-02  [WEAK]  |  Var: r=-0.3933 p=3.75e-59
+
+=== Figure D: high-H vs low-H gate comparison (top/bottom 20%) ===
+  Block  0  high-H mean_g=0.5002  low-H mean_g=0.5002  delta=-0.0000
+  Block  1  high-H mean_g=0.5003  low-H mean_g=0.5003  delta=-0.0000
+  Block  2  high-H mean_g=0.5010  low-H mean_g=0.5010  delta=+0.0000
+  Block  3  high-H mean_g=0.4993  low-H mean_g=0.4993  delta=+0.0000
+
+=== Per-class analysis (Synapse) ===
+  Aorta            n= 827  mean_H=7.3456  mean_g=0.5002  r_s=+0.2508  p=2.49e-13
+  Gallbladder      n= 131  mean_H=7.3457  mean_g=0.5002  r_s=+0.3040  p=4.16e-04
+  Kidney(L)        n= 362  mean_H=7.3457  mean_g=0.5002  r_s=+0.3146  p=9.34e-10
+  Kidney(R)        n= 350  mean_H=7.3456  mean_g=0.5002  r_s=+0.2408  p=5.19e-06
+  Liver            n= 631  mean_H=7.3457  mean_g=0.5002  r_s=+0.2211  p=2.00e-08
+  Pancreas         n= 316  mean_H=7.3456  mean_g=0.5002  r_s=+0.1589  p=4.64e-03
+  Spleen           n= 332  mean_H=7.3457  mean_g=0.5002  r_s=+0.3193  p=2.63e-09
+  Stomach          n= 421  mean_H=7.3457  mean_g=0.5002  r_s=+0.2054  p=2.16e-05
+
+Fig A saved: figures/fig_A_gate_distribution.png
+Fig B saved: figures/fig_B_entropy_scatter.png
+Fig B2 saved: figures/fig_B2_variance_scatter.png
+Fig C saved: figures/fig_C_spearman_bars.png
+Fig D saved: figures/fig_D_group_comparison.png
+Fig E saved: figures/fig_E_Synapse_per_class.png
+Fig F saved: figures/fig_F_Synapse_per_class_spearman.png
+Fig F saved: figures/fig_F_Synapse_per_class_spearman.png
+
+All figures written to: figures/
+
+=== Decision summary ===
+  Gate collapse check: max |delta| across blocks = 0.0000  (COLLAPSED — gate is inert)
+
+Case 0 — GATE COLLAPSED (g ≈ 0.5 regardless of entropy, delta ≈ 0).
+  Spearman r may look high but reflects rank ordering on negligible magnitude variation.
+  The gate_fc learned near-zero weights → σ(0) ≈ 0.5 for all inputs.
+  -> Phase 2 entropy gate will NOT help — the gate itself is the problem.
+  -> Accuracy gap is from windowed attention losing global context, not from gating.
+  -> Recommended ablation: --gate_mode fixed to confirm gate is inert,
+     then investigate larger window (M=14) or higher rank (r=64).
+
+  max |r_H| = 0.427  |  max |r_Var| = 0.399  |  max gate |delta| = 0.0000
+
+=== Per-class decision hints ===
+  Aorta                 r_s=+0.2508  p=2.49e-13  [weak]
+  Gallbladder           r_s=+0.3040  p=4.16e-04  [STRONG]
+  Kidney(L)             r_s=+0.3146  p=9.34e-10  [STRONG]
+  Kidney(R)             r_s=+0.2408  p=5.19e-06  [weak]
+  Liver                 r_s=+0.2211  p=2.00e-08  [weak]
+  Pancreas              r_s=+0.1589  p=4.64e-03  [weak]
+  Spleen                r_s=+0.3193  p=2.63e-09  [STRONG]
+  Stomach               r_s=+0.2054  p=2.16e-05  [weak]

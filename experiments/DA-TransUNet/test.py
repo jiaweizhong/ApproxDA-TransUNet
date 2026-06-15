@@ -15,10 +15,14 @@ from utils import test_single_volume
 from Architecture.DATransUNet import DA_Transformer as ViT_seg
 from Architecture.DATransUNet import CONFIGS as CONFIGS_ViT_seg
 try:
-    from thop import profile as thop_profile
-    _THOP = True
+    from fvcore.nn import FlopCountAnalysis
+    _FLOP_LIB = 'fvcore'
 except ImportError:
-    _THOP = False
+    try:
+        from thop import profile as thop_profile
+        _FLOP_LIB = 'thop'
+    except ImportError:
+        _FLOP_LIB = None
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--volume_path', type=str,
@@ -56,11 +60,16 @@ def inference(args, model, test_save_path=None):
     n_params = sum(p.numel() for p in model.parameters()) / 1e6
     logging.info("Model parameters: {:.2f} M".format(n_params))
 
-    if _THOP:
+    if _FLOP_LIB:
         try:
             dummy = torch.randn(1, 1, args.img_size, args.img_size).cuda()
-            macs, _ = thop_profile(model, inputs=(dummy,), verbose=False)
-            logging.info("GFLOPs (single 224x224 slice): {:.1f}".format(macs / 1e9))
+            if _FLOP_LIB == 'fvcore':
+                _fa = FlopCountAnalysis(model, dummy)
+                _fa.unsupported_ops_warnings(False)
+                logging.info("GFLOPs (single 224x224 slice, fvcore, includes attention bmm): {:.1f}".format(_fa.total() / 1e9))
+            else:
+                macs, _ = thop_profile(model, inputs=(dummy,), verbose=False)
+                logging.info("GFLOPs (single 224x224 slice, thop, attention bmm NOT counted): {:.1f}".format(macs / 1e9))
         except Exception as e:
             logging.info("GFLOPs: could not profile ({})".format(e))
 
