@@ -79,12 +79,18 @@ def test_single_volume(image, label, net, classes, patch_size=[256, 256], test_s
                     pred = out
                 prediction[ind] = pred
     else:
-        input = torch.from_numpy(image).unsqueeze(
-            0).unsqueeze(0).float().cuda()
+        x, y = image.shape
+        if x != patch_size[0] or y != patch_size[1]:
+            image_r = zoom(image, (patch_size[0] / x, patch_size[1] / y), order=3)
+        else:
+            image_r = image
+        input = torch.from_numpy(image_r).unsqueeze(0).unsqueeze(0).float().cuda()
         net.eval()
         with torch.no_grad():
             out = torch.argmax(torch.softmax(net(input), dim=1), dim=1).squeeze(0)
             prediction = out.cpu().detach().numpy()
+            if x != patch_size[0] or y != patch_size[1]:
+                prediction = zoom(prediction, (x / patch_size[0], y / patch_size[1]), order=0)
     metric_list = []
     for i in range(1, classes):
         metric_list.append(calculate_metric_percase(prediction == i, label == i))

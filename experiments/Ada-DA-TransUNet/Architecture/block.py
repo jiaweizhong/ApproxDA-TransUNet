@@ -200,15 +200,24 @@ class LowRankWindowedPAM(nn.Module):
 
     def forward(self, x):
         B, C, H, W = x.shape
-        M = self.M
+        # Clamp window to feature-map size so window_size=112 gives global attention
+        # at every scale without requiring H to be a multiple of self.M.
+        M = min(self.M, H, W)
         x_w  = window_partition(x, M)               # (B*nW, C, M, M)
         nBW  = x_w.shape[0]
-        x_n  = x_w.view(nBW, C, M * M)              # (B*nW, C, N)
+        x_n  = x_w.view(nBW, C, M * M)              # (B*nW, C, N_actual)
         feat_B = self.conv_B(x_n)
         feat_C = self.conv_C(x_n)
         feat_D = self.conv_D(x_n)
-        C_r = self.proj_r(feat_C)                   # (B*nW, C, r)
-        D_r = self.proj_r(feat_D)
+        # proj_r was registered with N=self.M**2; slice weights when clamped
+        N_actual = M * M
+        if N_actual == self.M ** 2:
+            C_r = self.proj_r(feat_C)               # (B*nW, C, r)
+            D_r = self.proj_r(feat_D)
+        else:
+            w = self.proj_r.weight[:, :N_actual]    # (r, N_actual)
+            C_r = F.linear(feat_C, w)
+            D_r = F.linear(feat_D, w)
         scores = torch.bmm(feat_B.transpose(1, 2), C_r)   # (B*nW, N, r)
         scores = F.softmax(scores, dim=-1)
         E_out  = torch.bmm(scores, D_r.transpose(1, 2))   # (B*nW, N, C)

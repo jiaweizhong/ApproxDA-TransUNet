@@ -30,7 +30,7 @@ git -C /teamspace/studios/this_studio/AdaDA-TransUNet pull
 ### 3. Install dependencies
 
 ```bash
-pip install timm einops ml-collections medpy SimpleITK tensorboardX thop h5py scipy
+pip install timm einops ml-collections medpy SimpleITK tensorboardX thop h5py scipy fvcore
 ```
 
 ### 4. Download data

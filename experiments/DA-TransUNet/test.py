@@ -11,6 +11,8 @@ import torch.nn as nn
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 from datasets.dataset_synapse import Synapse_dataset
+from datasets.dataset_kvasir import Kvasir_dataset
+from datasets.dataset_isic import ISIC_dataset
 from utils import test_single_volume
 from Architecture.DATransUNet import DA_Transformer as ViT_seg
 from Architecture.DATransUNet import CONFIGS as CONFIGS_ViT_seg
@@ -128,6 +130,20 @@ if __name__ == "__main__":
             'volume_path': '../data/Synapse/test_vol_h5',
             'list_dir': './lists/lists_Synapse',
             'num_classes': 9,
+            'z_spacing': 1,
+        },
+        'Kvasir': {
+            'Dataset': Kvasir_dataset,
+            'volume_path': '../data/Kvasir-SEG',
+            'list_dir': './lists/lists_Kvasir',
+            'num_classes': 2,
+            'z_spacing': 1,
+        },
+        'ISIC': {
+            'Dataset': ISIC_dataset,
+            'volume_path': '../data/ISIC2018',
+            'list_dir': './lists/lists_ISIC',
+            'num_classes': 2,
             'z_spacing': 1,
         },
     }
