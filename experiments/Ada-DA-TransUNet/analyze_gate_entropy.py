@@ -68,22 +68,30 @@ parser.add_argument('--seed', type=int, default=1234)
 parser.add_argument('--window_size', type=int, default=7)
 parser.add_argument('--rank', type=int, default=32)
 parser.add_argument('--groups', type=int, default=8)
+parser.add_argument('--gate_mode', type=str, default='learn',
+                    choices=['learn', 'fixed', 'pam', 'cam'],
+                    help='Must match the gate_mode used during training')
 parser.add_argument('--out_dir', type=str, default='figures',
                     help='directory to save paper figures (created if absent)')
 args = parser.parse_args()
 
+if args.gate_mode != 'learn':
+    sys.exit("Gate entropy analysis only applies to gate_mode='learn' (other modes have no learned gate).")
 
-# ---------- build snapshot path (mirrors test.py logic) ----------
+# ---------- build snapshot path (mirrors train.py logic exactly) ----------
 dataset_tag = {'Synapse': 'Synapse224', 'Kvasir': 'Kvasir224', 'ISIC': 'ISIC224'}[args.dataset]
 args.exp = 'AdaDA_' + dataset_tag
 snapshot_path = '../model/{}/{}'.format(args.exp, 'AdaDA')
 snapshot_path += '_pretrain'
 snapshot_path += '_' + args.vit_name
 snapshot_path += '_skip' + str(args.n_skip)
-snapshot_path += '_epo' + str(args.max_epochs) if args.max_epochs != 30 else snapshot_path
+snapshot_path += '_epo' + str(args.max_epochs) if args.max_epochs != 30 else ''
 snapshot_path += '_bs' + str(args.batch_size)
 snapshot_path += '_lr' + str(args.base_lr) if args.base_lr != 0.01 else ''
 snapshot_path += '_' + str(args.img_size)
+snapshot_path += '_s' + str(args.seed) if args.seed != 1234 else ''
+snapshot_path += '_M' + str(args.window_size) if args.window_size != 7 else ''
+snapshot_path += '_r' + str(args.rank) if args.rank != 32 else ''
 
 checkpoint = os.path.join(snapshot_path, 'best_model.pth')
 if not os.path.exists(checkpoint):
@@ -99,7 +107,7 @@ config_vit.n_skip = args.n_skip
 config_vit.window_size = args.window_size
 config_vit.rank = args.rank
 config_vit.groups = args.groups
-config_vit.gate_mode = 'learn'
+config_vit.gate_mode = args.gate_mode
 if args.vit_name.find('R50') != -1:
     config_vit.patches.grid = (
         args.img_size // args.vit_patches_size,

@@ -74,7 +74,7 @@ Runs completed / in progress:
 
 | Run | GPUs | Config | Status | Best Val DSC |
 |-----|------|--------|--------|-------------|
-| AdaDA, M=14, r=64 | GPU 0,1 (DDP) | `--window_size 14 --rank 64 --gate_mode learn` | ✅ Train done — **test.py pending** | **78.04% (ep 210)**, 6.65h, 6.4 GB VRAM |
+| AdaDA, M=14, r=64 | GPU 0,1 (DDP) | `--window_size 14 --rank 64 --gate_mode learn` | ✅ Done | DSC **78.04%**, HD95 **28.77mm**, 115.05M params, 27.3 GFLOPs, 6.65h, 6.4 GB/GPU |
 | AdaDA, gate=pam | GPU 2,3 (DDP) | `--window_size 7 --rank 32 --gate_mode pam` | 🔄 Running | — |
 | AdaDA, gate=cam | GPU 3 (1×GPU) | `--window_size 7 --rank 32 --gate_mode cam` | 🔄 Running | — |
 
@@ -183,8 +183,7 @@ Night 5:  AdaDA         ISIC     (T4 x2, ~2.5h)
 ### Week 2 (ablation, Synapse only) — IN PROGRESS
 
 ```
-✅ Done:  AdaDA M=14 r=64   Synapse  (4-GPU host, GPU 0+1)   best val 78.04% ep210, 6.65h, 6.4GB VRAM
-          → test.py needed to confirm official test DSC
+✅ Done:  AdaDA M=14 r=64   Synapse  DSC 78.04%, HD95 28.77mm (+0.11% DSC, -5.19mm HD vs M=7/r=32)
 Running:  AdaDA gate=pam    Synapse  (4-GPU host, GPU 2+3)   --gate_mode pam
 Running:  AdaDA gate=cam    Synapse  (4-GPU host, GPU 3, 1×GPU)  --gate_mode cam
 ```
@@ -248,7 +247,7 @@ Running:  AdaDA gate=cam    Synapse  (4-GPU host, GPU 3, 1×GPU)  --gate_mode ca
 |--------|--------|------|---------|-----------|-------|
 | DA-TransUNet baseline | — (global) | — | 80.51 | 25.41 | Full PAM+CAM, no gate, T4×1 |
 | AdaDA, `--gate_mode learn` | M=7 | r=32 | 77.93 | 33.96 | ✅ T4×1 done (best epoch 45) |
-| AdaDA, `--gate_mode learn` | M=14 | r=64 | **~78.04** | XX | ✅ Train done (val DSC ep210, 6.65h/2×GPU, 6.4GB VRAM) — **test.py pending** |
+| AdaDA, `--gate_mode learn` | M=14 | r=64 | **78.04** | **28.77** | ✅ Done (6.65h/2×GPU, 6.4GB/GPU VRAM, 115.05M, 27.3 GFLOPs) |
 
 **Axis 2: Gate mode** — isolate gate contribution (M=7, r=32 baseline)
 
