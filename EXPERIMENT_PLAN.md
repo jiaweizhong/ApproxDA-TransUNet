@@ -70,23 +70,38 @@ All runs on **Lightning AI** (persistent studio, not Kaggle).
 
 > **gate=fixed removed** — gate=learn already confirmed g≈0.5 (Δg=0.0000), making fixed redundant.
 
-Currently running simultaneously on 4-GPU host:
+Runs completed / in progress:
 
-| Run | GPUs | Config | Status |
-|-----|------|--------|--------|
-| AdaDA, M=14, r=64 | GPU 0,1 (DDP) | `--window_size 14 --rank 64 --gate_mode learn` | 🔄 Running |
-| AdaDA, gate=pam | GPU 2,3 (DDP) | `--window_size 7 --rank 32 --gate_mode pam` | 🔄 Running |
-| AdaDA, gate=cam | GPU 3 (1×GPU) | `--window_size 7 --rank 32 --gate_mode cam` | 🔄 Running |
-
-**Exp 1 (M=14, r=64) is the project pivot point. Do not plan further experiments until this result is known.**
+| Run | GPUs | Config | Status | Best Val DSC |
+|-----|------|--------|--------|-------------|
+| AdaDA, M=14, r=64 | GPU 0,1 (DDP) | `--window_size 14 --rank 64 --gate_mode learn` | ✅ Train done — **test.py pending** | **78.04% (ep 210)**, 6.65h, 6.4 GB VRAM |
+| AdaDA, gate=pam | GPU 2,3 (DDP) | `--window_size 7 --rank 32 --gate_mode pam` | 🔄 Running | — |
+| AdaDA, gate=cam | GPU 3 (1×GPU) | `--window_size 7 --rank 32 --gate_mode cam` | 🔄 Running | — |
 
 ### Phase A — Decision after Exp 1
 
-| Exp 1 DSC | Next action |
-|-----------|-------------|
-| **≥ 80.5%** | Window+LowRank is validated. Enter Phase B (scaling study). |
-| **~79%** | Run M=14, r=128 to find upper bound. Hold scaling grid. |
-| **≤ 78%** | Window+LowRank path has fundamental limits. Reassess venue (SPIE/ACPR). |
+**Exp 1 result (val DSC 78.04% at ep 210):** Marginal improvement over M=7/r=32 baseline (+0.11% vs 77.93% test DSC). Window scaling alone is not recovering the gap to DA-TransUNet (80.51%).
+
+**Root cause hypothesis:** Even M=14 window covers only 14²/112² = 1.56% of spatial positions (vs 0.39% for M=7). Original DA-TransUNet uses full global attention (100% coverage). LowRankWindowedPAM is still fundamentally local — increasing M or r beyond this point yields diminishing returns.
+
+> **Next action: Run test.py on best_model.pth to confirm official test DSC before making Phase A call.**
+>
+> Snapshot path: `../model/AdaDA_Synapse224/AdaDA_pretrain_R50-ViT-B_16_skip3_epo300_bs12_224_M14_r64/`
+>
+> ```bash
+> cd /teamspace/studios/this_studio/AdaDA-TransUNet/experiments/Ada-DA-TransUNet
+> python test.py --dataset Synapse --vit_name R50-ViT-B_16 --max_epochs 300 --batch_size 12 \
+>   --n_skip 3 --img_size 224 --window_size 14 --rank 64 --groups 8 --gate_mode learn
+> ```
+
+| Exp 1 test DSC | Phase A decision |
+|----------------|-----------------|
+| **≥ 80.5%** | Window+LowRank validated. Enter Phase B (scaling study). |
+| **79–80.4%** | Meaningful gain. Run M=14, r=128 to find upper bound. |
+| **78–79%** | Modest gain. Window scaling has limits. Wait for PAM/CAM ablation results before deciding. |
+| **≤ 78%** | Window+LowRank path has fundamental limits. Efficiency story is the paper (Route 1). |
+
+**While waiting for test.py:** PAM and CAM ablation results will reveal whether the gate or the PAM architecture is the bottleneck. If PAM-only ≪ CAM-only, windowed PAM is fundamentally broken for global context.
 
 ### Phase B — Scaling Study (only if Exp 1 ≥ 80.5%)
 
@@ -168,7 +183,8 @@ Night 5:  AdaDA         ISIC     (T4 x2, ~2.5h)
 ### Week 2 (ablation, Synapse only) — IN PROGRESS
 
 ```
-Running:  AdaDA M=14 r=64   Synapse  (4-GPU host, GPU 0+1)   --window_size 14 --rank 64
+✅ Done:  AdaDA M=14 r=64   Synapse  (4-GPU host, GPU 0+1)   best val 78.04% ep210, 6.65h, 6.4GB VRAM
+          → test.py needed to confirm official test DSC
 Running:  AdaDA gate=pam    Synapse  (4-GPU host, GPU 2+3)   --gate_mode pam
 Running:  AdaDA gate=cam    Synapse  (4-GPU host, GPU 3, 1×GPU)  --gate_mode cam
 ```
@@ -232,7 +248,7 @@ Running:  AdaDA gate=cam    Synapse  (4-GPU host, GPU 3, 1×GPU)  --gate_mode ca
 |--------|--------|------|---------|-----------|-------|
 | DA-TransUNet baseline | — (global) | — | 80.51 | 25.41 | Full PAM+CAM, no gate, T4×1 |
 | AdaDA, `--gate_mode learn` | M=7 | r=32 | 77.93 | 33.96 | ✅ T4×1 done (best epoch 45) |
-| AdaDA, `--gate_mode learn` | M=14 | r=64 | XX | XX | Week 2 Night 5 — expected main gain |
+| AdaDA, `--gate_mode learn` | M=14 | r=64 | **~78.04** | XX | ✅ Train done (val DSC ep210, 6.65h/2×GPU, 6.4GB VRAM) — **test.py pending** |
 
 **Axis 2: Gate mode** — isolate gate contribution (M=7, r=32 baseline)
 

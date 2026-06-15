@@ -149,6 +149,9 @@ if __name__ == "__main__":
     snapshot_path = snapshot_path + '_lr' + str(args.base_lr) if args.base_lr != 0.01 else snapshot_path
     snapshot_path = snapshot_path + '_'+str(args.img_size)
     snapshot_path = snapshot_path + '_s'+str(args.seed) if args.seed!=1234 else snapshot_path
+    snapshot_path = snapshot_path + '_M'+str(args.window_size) if args.window_size!=7 else snapshot_path
+    snapshot_path = snapshot_path + '_r'+str(args.rank) if args.rank!=32 else snapshot_path
+    snapshot_path = snapshot_path + '_'+args.gate_mode if args.gate_mode!='learn' else snapshot_path
 
     config_vit = CONFIGS_ViT_seg[args.vit_name]
     config_vit.n_classes = args.num_classes
