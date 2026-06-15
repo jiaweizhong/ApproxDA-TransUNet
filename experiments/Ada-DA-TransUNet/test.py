@@ -72,6 +72,7 @@ def inference(args, model, test_save_path=None):
             if _FLOP_LIB == 'fvcore':
                 _fa = FlopCountAnalysis(model, dummy)
                 _fa.unsupported_ops_warnings(False)
+                _fa.uncalled_modules_warnings(False)
                 logging.info("GFLOPs (single 224x224 slice, fvcore, includes attention bmm): {:.1f}".format(_fa.total() / 1e9))
             else:
                 macs, _ = thop_profile(model, inputs=(dummy,), verbose=False)
