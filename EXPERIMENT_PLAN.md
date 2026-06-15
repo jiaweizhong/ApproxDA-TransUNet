@@ -33,7 +33,7 @@ All runs on **Lightning AI** (persistent studio, not Kaggle).
 - DA-TransUNet baseline: single **NVIDIA Tesla T4 (15 GB VRAM)**
 - AdaDA multi-GPU: **T4 × 2** via `torchrun --nproc_per_node=2` (DDP, NCCL, per-GPU batch=12, total=24, LR 0.01 unchanged)
 - AdaDA 4×GPU: `torchrun --nproc_per_node=4 train.py --batch_size 6 --n_gpu 4 ...` (per-GPU batch=6, total=24)
-- DA-TransUNet multi-GPU failure: **Primary cause is a code bug, not OOM.** `DataParallel` replicates the full model onto each device including the zero-element `query_conv.weight [0,4,1,1]` in `DANetHead(64,64)`, then `BroadcastBackward` during `loss.backward()` fails to synchronize gradients on a zero-element tensor: `RuntimeError: BroadcastBackward got [0] but expected [0,4,1,1]`. Crash occurs at the first backward call regardless of skip routing — confirmed on T4×2 with unmodified code. Even if this architectural issue were patched (clamping C_inter ≥ 8), full PAM at 112×112 would require ~7 GB for the attention matrix alone; combined with the ~10 GB already used by weights + buffers + activations, total ~17 GB exceeds T4 capacity (14.6 GB) by ~2.4 GB. Both issues are documented in the paper appendix.
+- DA-TransUNet multi-GPU failure: `DataParallel` crashes at first backward call with `RuntimeError: Function BroadcastBackward returned an invalid gradient at index 395 — got [0] but expected shape compatible with [0, 4, 1, 1]`. Root cause: `DANetHead(64,64)` contains a zero-element tensor (`query_conv.weight [0,4,1,1]`); `DataParallel` replicates it across devices and `BroadcastBackward` cannot synchronize gradients on zero-element tensors. Crash is deterministic regardless of skip routing or batch size — confirmed on T4×2 with unmodified code.
 - AdaDA DDP rationale: NCCL all-reduce avoids `BroadcastBackward`; `LowRankWindowedPAM` has no zero-channel collapse; ~390x memory reduction enables the 112x112 skip.
 
 | Setting | Value |
@@ -66,30 +66,40 @@ All runs on **Lightning AI** (persistent studio, not Kaggle).
 | AdaDA ISIC | T4 x2 | ~2.5h | ISIC 2018 | |
 | **Week 1 Total** | | **~30h** | | Fits within 30h weekly quota |
 
-### Week 2 — Ablation Runs (Synapse only, T4 x2)
+### Week 2 — Ablation Runs (Synapse only) — IN PROGRESS
 
-Strategy: **recover PAM capability first, then run gate ablation, then decide on gate redesign.**
+> **gate=fixed removed** — gate=learn already confirmed g≈0.5 (Δg=0.0000), making fixed redundant.
 
-Gate collapse analysis showed g ≈ 0.5 throughout inference (Δg = 0.0000). Root cause is ambiguous:
-- M=7 window → 0.4% spatial coverage → PAM ≈ local filter ≈ CAM → PAM−CAM ≈ 0 → gate gradient ≈ 0
-- OR gate architecture is fundamentally broken regardless of PAM quality
+Currently running simultaneously on 4-GPU host:
 
-Run order: M=14 first (cheapest test, highest expected gain), then gate ablation.
+| Run | GPUs | Config | Status |
+|-----|------|--------|--------|
+| AdaDA, M=14, r=64 | GPU 0,1 (DDP) | `--window_size 14 --rank 64 --gate_mode learn` | 🔄 Running |
+| AdaDA, gate=pam | GPU 2,3 (DDP) | `--window_size 7 --rank 32 --gate_mode pam` | 🔄 Running |
+| AdaDA, gate=cam | GPU 3 (1×GPU) | `--window_size 7 --rank 32 --gate_mode cam` | 🔄 Running |
 
-| Run | GPU | Est. Time | Config | Purpose |
-|-----|-----|-----------|--------|---------|
-| AdaDA, M=14, r=64 | T4 x2 | ~4h | `--window_size 14 --rank 64` | Recover global PAM context |
-| AdaDA, gate=fixed | T4 x2 | ~4h | `--gate_mode fixed` | Gate ablation: fixed 0.5 |
-| AdaDA, gate=pam | T4 x2 | ~4h | `--gate_mode pam` | Gate ablation: PAM only |
-| AdaDA, gate=cam | T4 x2 | ~4h | `--gate_mode cam` | Gate ablation: CAM only |
-| **Week 2 Total** | | **~16h** | | |
+**Exp 1 (M=14, r=64) is the project pivot point. Do not plan further experiments until this result is known.**
 
-**Decision after gate ablation:**
-- If `fixed ≈ pam ≈ cam ≈ learn` (within ~0.2%) → gate contributes nothing → remove in next version
-- If gate=learn >> fixed/pam/cam after M=14 → gate works when PAM/CAM are truly different → keep and study entropy routing
-- Entropy gate / diversity loss only if gate ablation confirms gate has value
+### Phase A — Decision after Exp 1
 
-Weekly quota: 30h. Week 1 uses ~23h, Week 2 uses ~16h — both within limit.
+| Exp 1 DSC | Next action |
+|-----------|-------------|
+| **≥ 80.5%** | Window+LowRank is validated. Enter Phase B (scaling study). |
+| **~79%** | Run M=14, r=128 to find upper bound. Hold scaling grid. |
+| **≤ 78%** | Window+LowRank path has fundamental limits. Reassess venue (SPIE/ACPR). |
+
+### Phase B — Scaling Study (only if Exp 1 ≥ 80.5%)
+
+Two targeted runs first to answer: **window or rank — which matters more?**
+
+| Run | Config | Answers |
+|-----|--------|---------|
+| M=7, r=64 | `--window_size 7 --rank 64` | Rank effect in isolation |
+| M=14, r=32 | `--window_size 14 --rank 32` | Window effect in isolation |
+
+Then if trend is clear, add r=128 as upper bound. Do NOT run all 6 grid points upfront.
+
+**Do not plan further grid runs until Phase B results arrive.**
 
 ---
 
@@ -155,25 +165,21 @@ Night 5:  AdaDA         ISIC     (T4 x2, ~2.5h)
 > Night 3 pairs AdaDA T4×2 Synapse (~4h) with DA-TransUNet Kvasir (~3h) in one session.
 > Night 4 pairs DA-TransUNet ISIC (~4h) with AdaDA Kvasir (~2h).
 
-### Week 2 (ablation, Synapse only)
-
-**Strategy:** Recover PAM capability first, then isolate gate contribution.
+### Week 2 (ablation, Synapse only) — IN PROGRESS
 
 ```
-Night 5:  AdaDA M=14 r=64   Synapse  (T4 x2, ~4h)   --window_size 14 --rank 64
-Night 6:  AdaDA gate=fixed  Synapse  (T4 x2, ~4h)   --gate_mode fixed   (M=7, r=32)
-Night 7:  AdaDA gate=pam    Synapse  (T4 x2, ~4h)   --gate_mode pam     (PAM only)
-          AdaDA gate=cam    Synapse  (T4 x2, ~4h)   --gate_mode cam     (CAM only)
+Running:  AdaDA M=14 r=64   Synapse  (4-GPU host, GPU 0+1)   --window_size 14 --rank 64
+Running:  AdaDA gate=pam    Synapse  (4-GPU host, GPU 2+3)   --gate_mode pam
+Running:  AdaDA gate=cam    Synapse  (4-GPU host, GPU 3, 1×GPU)  --gate_mode cam
 ```
 
-**Decision tree after Week 2:**
+**Exp 1 (M=14, r=64) DSC is the project pivot. Everything below is conditional on that result.**
 
-| Result | Next action |
-|--------|-------------|
-| M=14 DSC >> 77.93% (closes gap to ~80%) | Window size was the root cause. Gate ablation still needed to understand gate contribution. |
-| gate=fixed ≈ gate=pam ≈ gate=cam ≈ gate=learn | Gate contributes nothing → remove gate in paper, simplify model. |
-| gate=learn >> others (after M=14) | Gate works when PAM/CAM truly differ. Consider entropy gate Phase 2. |
-| M=14 still << 80.51% | Both window and gate are problems. Investigate rank=128 or deeper redesign. |
+| Exp 1 result | Weeks 3–4 path |
+|-------------|----------------|
+| ≥ 80.5% | Scaling study (M=7/r=64, M=14/r=32 first; r=128 only if trend is clear) → Kvasir + ISIC → BIBM/ACCV |
+| ~79% | Run M=14, r=128 (find upper bound) → assess venue |
+| ≤ 78% | Window+LowRank path has limits → SPIE/ACPR or pivot |
 
 ---
 
@@ -194,6 +200,8 @@ Night 7:  AdaDA gate=pam    Synapse  (T4 x2, ~4h)   --gate_mode pam     (PAM onl
 
 | Method | DSC (%) | mIoU (%) |
 |--------|---------|---------|
+| TransUNet | 87.91 | 80.03 |
+| DA-TransUNet (paper, 500ep Adam) | 88.47 | 81.02 |
 | DA-TransUNet (ours) | XX | XX |
 | **AdaDA-TransUNet (ours)** | **XX** | **XX** |
 
@@ -201,6 +209,8 @@ Night 7:  AdaDA gate=pam    Synapse  (T4 x2, ~4h)   --gate_mode pam     (PAM onl
 
 | Method | DSC (%) | mIoU (%) |
 |--------|---------|---------|
+| TransUNet | 88.78 | 82.63 |
+| DA-TransUNet (paper, 50ep Adam) | 88.88 | 82.78 |
 | DA-TransUNet (ours) | XX | XX |
 | **AdaDA-TransUNet (ours)** | **XX** | **XX** |
 
@@ -212,6 +222,7 @@ Night 7:  AdaDA gate=pam    Synapse  (T4 x2, ~4h)   --gate_mode pam     (PAM onl
 | AdaDA (r=32, M=7, G=8) | 114.90 | 27.2 | 11.51h (T4×1, 300ep) | 10.6 GB | 118.4 | 0.5 GB | Yes (T4×2 pending) |
 
 > Params and inference metrics are logged by test.py. Train VRAM is logged at end of train.py.
+> **Note:** DA-TransUNet paper includes a paired t-test (p=0.032, mean ΔDSC=3.96 vs TransUNet). Our paper should include the same for AdaDA vs DA-TransUNet.
 
 ### Ablation Study (Synapse)
 
@@ -227,42 +238,48 @@ Night 7:  AdaDA gate=pam    Synapse  (T4 x2, ~4h)   --gate_mode pam     (PAM onl
 
 | Config | `--gate_mode` | DSC (%) | HD95 (mm) | Notes |
 |--------|--------------|---------|-----------|-------|
-| AdaDA, PAM only | `pam` (g=1) | XX | XX | Week 2 |
-| AdaDA, CAM only | `cam` (g=0) | XX | XX | Week 2 |
-| AdaDA, fixed blend | `fixed` (g=0.5) | XX | XX | Week 2 |
+| AdaDA, PAM only | `pam` (g=1) | XX | XX | 🔄 Running |
+| AdaDA, CAM only | `cam` (g=0) | XX | XX | 🔄 Running (1×GPU) |
 | AdaDA, learnable gate | `learn` | 77.93 | 33.96 | ✅ Done — gate collapsed (g≈0.5, Δg=0.0000) |
 
-> Gate analysis (analyze_gate_entropy.py): Spearman r=0.787, but gate range [0.4976, 0.5003] (Δ=0.0027%).
-> Gate is inert — confirmed collapse. Ablation Axis 2 will quantify whether this matters for accuracy.
-> Entropy gate / redesign only considered after gate ablation results show gate has nonzero contribution.
+> gate=fixed skipped: gate=learn already confirmed g≈0.5 throughout, making fixed redundant.
+> Gate collapse is an **analysis finding**, not a contribution. Will appear in Discussion/Analysis section.
+> No new gate modules planned until scaling study confirms Window+LowRank path is viable.
 
 ---
 
 ## Conference Target
 
-### 🎯 Primary: ACCV 2026
-- **Full name:** 18th Asian Conference on Computer Vision
-- **Location:** Osaka, Japan 🇯🇵
-- **Dates:** December 14–18, 2026
-- **Paper deadline:** July 5, 2026 (23:59 GMT) — **27 days away**
-- **CORE ranking:** A
-- **Acceptance rate:** ~28%
-- **Fit:** Computer vision + pattern recognition, medical image segmentation regularly published
+### Paper Routes (conditional on Exp 1)
 
-### Conference Ranking (medical image segmentation)
+**Route 1 — Efficient Dual Attention** (safest, Exp 1 any result)
+- Contribution 1: LowRankWindowedPAM — O(N²) → O(N·M²·r)
+- Contribution 2: GroupedCAM — O(C²) → O(C²/G)
+- Analysis: gate collapse as mechanistic insight (not contribution)
+- Target: BIBM / SPIE / ACPR
 
-| Rank | Conference | CORE | Acceptance | Location | 2026 Deadline | Notes |
-|------|-----------|------|------------|----------|---------------|-------|
-| 1 | **ACCV** ⭐ | B | ~28% | Osaka, Japan 🇯🇵 | **Jul 5, 2026** | **Our target** — strong general CV, Asia |
-| 2 | **PRICAI** | C | ~30-35% | Guangzhou, China | Jun–Jul | Pacific Rim AI |
-| 3 | **BIBM 2026** | B | ~19-22% | Dallas, Tx | Jul–Aug | Signal/image processing |
-| 4 | **ACPR 2026** | B | ~30% | Asian Pacific | Sep-Oct | Asian Conference on Pattern Recognition |
-| 5 | **SPIE Medical Imaging 2027** | C | ~19-22% | Vancouver, CA | August 5 | https://spie.org/MI27/conferencedetails/medical-image-processing |
+**Route 2 — Efficient Dual Attention + Scaling Analysis** (requires Exp 1 ≥ 80.5%)
+- Contribution 1: LowRankWindowedPAM
+- Contribution 2: GroupedCAM
+- Contribution 3: Systematic scaling study (M × r → accuracy/efficiency tradeoff)
+- Insight section: gate collapse + routing collapse analysis (why, not just what)
+- Target: BIBM primary, ACCV if mechanism analysis is strong
 
-**Prestige note:** MICCAI ranks higher than ACCV for medical imaging work specifically (it is the dedicated specialist venue, widely cited in clinical AI). Both are CORE A. ACCV is the right target now because:
-- MICCAI 2027 deadline has not opened yet
-- Our paper's efficiency contribution (windowed attention, low-rank projection) appeals to the broader CV audience at ACCV
-- Recommended path: **ACCV 2026 → MICCAI 2027** (extended version with full experiments)
+**Route 3 — New gate modules** ❌ Do not pursue. Gate story is dead without evidence.
+
+### 🎯 Conference Targets
+
+| Venue | CORE | Deadline | Probability if Exp1 ≥ 80.5% |
+|-------|------|----------|------------------------------|
+| **BIBM 2026** | B | Jul–Aug | 75–85% |
+| **PRICAI 2026** | C | Jun–Jul | 80% |
+| **ACPR 2026** | B | Sep–Oct | 85% |
+| **SPIE 2027** | C | Aug 5 | 95% |
+| **ACCV 2026** | B | Jul 5, 2026 | 45–60% (needs strong mechanism story) |
+
+> ACCV deadline is Jul 5, 2026. With experiments still running, this is extremely tight.
+> Realistic primary target: **BIBM 2026** (Jul–Aug deadline, medical imaging focus).
+> Recommended path: **BIBM 2026 → MICCAI 2027** (extended version).
 
 ### Journal Extension (after conference acceptance)
 **Target:** IEEE JBHI or *Frontiers in Bioengineering and Biotechnology* (same journal as DA-TransUNet)
