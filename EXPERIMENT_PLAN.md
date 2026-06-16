@@ -22,7 +22,7 @@ Both DA-TransUNet (baseline) and AdaDA-TransUNet are run under identical conditi
 | Dataset | DA-TransUNet Train | DA-TransUNet Test | AdaDA Train | AdaDA Test |
 |---------|-------------------|-------------------|-------------|------------|
 | Synapse | ✅ Done (12.06h, T4×1, 300ep, Peak VRAM 11.5 GB) | ✅ Done (DSC 80.51%, HD95 25.41mm, GFLOPs **30.2 (fvcore)**, Params 107.95M, Infer 121.8s/vol, Infer VRAM 0.5 GB) — *GFLOPs remeasured 06/15/2026; val_interval=0 run discarded (epoch_299 fallback gave 76.07%)* | ✅ Done (T4×1, 3-skip, 300ep, 11.51h pure train, Peak VRAM 10.6 GB, best val epoch 45) | ✅ Done (DSC 77.93%, HD95 33.96mm, Params 114.90M, GFLOPs 27.2, Infer 118.4s/vol, Infer VRAM 0.5GB) |
-| Kvasir-SEG | ✅ Done (4.29h, T4×1, 300ep, Peak VRAM 11.5 GB, best val DSC 0.8838 at ep300) | ⏳ Pending (inference bug fixed — run test.py) | ✅ Done (4.45h, T4×1, 300ep, gate=learn, Peak VRAM 10.5 GB, best val DSC 0.8923 at ep300) | ⏳ Pending |
+| Kvasir-SEG | ✅ Done (4.29h, T4×1, 300ep, Peak VRAM 11.5 GB, best val DSC 0.8838 at ep300) | ✅ Done (DSC **88.44%**, HD95 53.04mm, GFLOPs **30.2 (fvcore)**, Params 107.95M, 155ms/img, Infer VRAM 0.5 GB) | ✅ Done (4.45h, T4×1, 300ep, gate=learn, Peak VRAM 10.5 GB, best val DSC 0.8923 at ep300) | ✅ Done (DSC **89.24%**, HD95 42.60mm, GFLOPs 32.0 (fvcore), Params 114.90M, 126ms/img, Infer VRAM 0.5 GB) |
 | ISIC 2018 | 🔄 Training | ⏳ Pending | 🔄 Training | ⏳ Pending |
 
 ---
@@ -241,12 +241,12 @@ Night 5:  AdaDA         ISIC     (T4 x2, ~2.5h)
 
 > ⚠️ **Setup difference vs paper:** DA-TransUNet paper used Adam (lr=1e-3), 500ep, 75/25 split. Our runs use SGD (lr=0.01), 300ep, 80/20 split. Our DA-TransUNet (ours) numbers will likely be lower than paper. The DA vs AdaDA delta is the real contribution — both use identical setup.
 
-| Method | DSC (%) | mIoU (%) |
-|--------|---------|---------|
-| TransUNet | 87.91 | 80.03 |
-| DA-TransUNet (paper, 500ep Adam, 75/25 split) | 88.47 | 81.02 |
-| DA-TransUNet (ours, 300ep SGD, 80/20 split) | XX | XX |
-| **AdaDA-TransUNet (ours, gate=learn, M=7, r=32, 300ep SGD, 80/20 split)** | **XX** | **XX** |
+| Method | DSC (%) | mIoU (%) | HD95 (mm) |
+|--------|---------|---------|-----------|
+| TransUNet | 87.91 | 80.03 | — |
+| DA-TransUNet (paper, 500ep Adam, 75/25 split) | 88.47 | 81.02 | — |
+| DA-TransUNet (ours, 300ep SGD, 80/20 split) | 88.44 | XX | 53.04 |
+| **AdaDA-TransUNet (ours, gate=learn, M=7, r=32, 300ep SGD, 80/20 split)** | **89.24** | **XX** | **42.60** |
 
 ### ISIC 2018 Skin Lesion
 
