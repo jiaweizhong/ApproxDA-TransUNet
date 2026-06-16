@@ -2,8 +2,14 @@
 
 ## Goal
 
-Run experiments on 3 datasets to support submission to **ACCV 2026** (Osaka, Japan, deadline Jul 5, 2026).
+Run experiments on 3 datasets to support conference submission (**BIBM 2026**, primary target, ~Aug 2026 deadline).
 Both DA-TransUNet (baseline) and AdaDA-TransUNet are run under identical conditions for fair comparison.
+
+**Paper title:** "Task-Conditioned Attention Approximation for Efficient Medical Image Segmentation"
+**Method name:** **ApproxDA-TransUNet** (Approximate Dual Attention TransUNet — describes the mechanism; code directories retain `Ada-DA-TransUNet` name)
+**Scientific question:** *"When is attention approximation safe for medical image segmentation?"*
+**Design principle:** Task Context Complexity (TCC) → Required Global Context → Safe Approximation Strength
+**4 contributions:** efficient approximation framework, gate-collapse theory, cross-task empirical study, preliminary TCC→safety evidence
 
 ---
 
@@ -22,7 +28,7 @@ Both DA-TransUNet (baseline) and AdaDA-TransUNet are run under identical conditi
 | Dataset | DA-TransUNet Train | DA-TransUNet Test | AdaDA Train | AdaDA Test |
 |---------|-------------------|-------------------|-------------|------------|
 | Synapse | ✅ Done (12.06h, T4×1, 300ep, Peak VRAM 11.5 GB) | ✅ Done (DSC 80.51%, HD95 25.41mm, GFLOPs **30.2 (fvcore)**, Params 107.95M, Infer 121.8s/vol, Infer VRAM 0.5 GB) — *GFLOPs remeasured 06/15/2026; val_interval=0 run discarded (epoch_299 fallback gave 76.07%)* | ✅ Done (T4×1, 3-skip, 300ep, 11.51h pure train, Peak VRAM 10.6 GB, best val epoch 45) | ✅ Done (DSC 77.93%, HD95 33.96mm, Params 114.90M, GFLOPs 27.2, Infer 118.4s/vol, Infer VRAM 0.5GB) |
-| Kvasir-SEG | ✅ Done (4.29h, T4×1, 300ep, Peak VRAM 11.5 GB, best val DSC 0.8838 at ep300) | ✅ Done (DSC **88.44%**, HD95 53.04mm, GFLOPs **30.2 (fvcore)**, Params 107.95M, 155ms/img, Infer VRAM 0.5 GB) | ✅ Done (4.45h, T4×1, 300ep, gate=learn, Peak VRAM 10.5 GB, best val DSC 0.8923 at ep300) | ✅ Done (DSC **89.24%**, HD95 42.60mm, GFLOPs 32.0 (fvcore), Params 114.90M, 126ms/img, Infer VRAM 0.5 GB) |
+| Kvasir-SEG | ✅ Done (4.29h, T4×1, 300ep, Peak VRAM 11.5 GB, best val DSC 0.8838 at ep300) | ✅ Done (DSC **88.44%**, mIoU **81.70%**, HD95 53.04mm, GFLOPs **30.2 (fvcore)**, Params 107.95M, 117ms/img, Infer VRAM 0.5 GB) | ✅ Done (4.45h, T4×1, 300ep, gate=learn, Peak VRAM 10.5 GB, best val DSC 0.8923 at ep300) | ✅ Done (DSC **89.24%**, mIoU **83.40%**, HD95 42.60mm, GFLOPs 32.0 (fvcore), Params 114.90M, 120ms/img, Infer VRAM 0.5 GB) |
 | ISIC 2018 | 🔄 Training | ⏳ Pending | 🔄 Training | ⏳ Pending |
 
 ---
@@ -97,10 +103,10 @@ The collapse is not caused by window size. It is a **gradient symmetry problem**
 
 This makes the gate collapse a **stronger and more general finding**: it reveals a fundamental limitation of naïve learnable gating in multi-branch attention architectures, not a windowing artifact.
 
-**Phase A call: Route 1 (Efficient Dual Attention)**
-- DSC 78.04% is in the "≤78%" bucket — window+rank scaling does not close the accuracy gap
+**Phase A call: V4.0 path (Task-Conditioned Approximation Study)**
+- DSC 78.04% is in the "≤78%" bucket — window+rank scaling does not close the Synapse accuracy gap
 - HD95 improvement (−5.19mm) is meaningful and supports boundary quality as a secondary metric
-- Wait for PAM/CAM ablation to complete the gate analysis story before writing
+- Gate collapse + cross-task pattern (Synapse: approximation hurts; Kvasir: approximation helps) forms the paper's central empirical finding
 
 ### Phase B — Window Isolation Experiment (Priority 3, after Kvasir)
 
@@ -235,7 +241,7 @@ Night 5:  AdaDA         ISIC     (T4 x2, ~2.5h)
 | Swin-Unet | 79.13 | 21.55 |
 | DA-TransUNet (paper) | 79.80 | 23.48 |
 | DA-TransUNet (ours, 300ep best_model) | 80.51 | 25.41 |
-| **AdaDA-TransUNet (ours, gate=pam, M=7, r=32, T4×2, 300ep)** | **78.64** | **31.09** |
+| **ApproxDA-TransUNet (ours, gate=pam, M=7, r=32, T4×2, 300ep)** | **78.64** | **31.09** |
 
 ### Kvasir-SEG Polyp
 
@@ -245,8 +251,8 @@ Night 5:  AdaDA         ISIC     (T4 x2, ~2.5h)
 |--------|---------|---------|-----------|
 | TransUNet | 87.91 | 80.03 | — |
 | DA-TransUNet (paper, 500ep Adam, 75/25 split) | 88.47 | 81.02 | — |
-| DA-TransUNet (ours, 300ep SGD, 80/20 split) | 88.44 | XX | 53.04 |
-| **AdaDA-TransUNet (ours, gate=learn, M=7, r=32, 300ep SGD, 80/20 split)** | **89.24** | **XX** | **42.60** |
+| DA-TransUNet (ours, 300ep SGD, 80/20 split) | 88.44 | 81.70 | 53.04 |
+| **ApproxDA-TransUNet (ours, gate=learn, M=7, r=32, 300ep SGD, 80/20 split)** | **89.24** | **83.40** | **42.60** |
 
 ### ISIC 2018 Skin Lesion
 
@@ -257,16 +263,16 @@ Night 5:  AdaDA         ISIC     (T4 x2, ~2.5h)
 | TransUNet | 88.78 | 82.63 |
 | DA-TransUNet (paper, 50ep Adam, 75/25 split) | 88.88 | 82.78 |
 | DA-TransUNet (ours, 300ep SGD, 80/20 split) | XX | XX |
-| **AdaDA-TransUNet (ours, gate=pam, 300ep SGD, 80/20 split)** | **XX** | **XX** |
+| **ApproxDA-TransUNet (ours, gate=pam, 300ep SGD, 80/20 split)** | **XX** | **XX** |
 
 ### Efficiency (Synapse, T4)
 
 | Method | Params (M) | GFLOPs | Train Time | Train VRAM | Infer Time (s/vol) | Infer VRAM | Multi-GPU |
 |--------|-----------|--------|-----------|-----------|-------------------|-----------|-----------|
 | DA-TransUNet | 107.95 | **30.2 (fvcore)** | 12.06h (T4×1, 300ep) | **11.5 GB** | 121.8 | 0.5 GB | No (BroadcastBackward crash) |
-| AdaDA (M=7, r=32, G=8, gate=pam) | 112.98 | 32.1 (fvcore) | 8.34h (T4×2, 300ep) | 6.4 GB/GPU | 121.3 | 0.5 GB | Yes (T4×2) |
-| AdaDA (M=7, r=32, G=8, gate=learn) | 114.90 | ~32.1 (fvcore est.) | 11.51h (T4×1, 300ep) | 10.6 GB | 118.4 | 0.5 GB | Yes (T4×2) |
-| AdaDA (M=14, r=64, G=8, gate=learn) | 115.05 | **32.4 (fvcore)** | 6.65h (T4×2, 300ep) | 6.4 GB/GPU | 119.7 | 0.5 GB | Yes (T4×2) |
+| ApproxDA (M=7, r=32, G=8, gate=pam) | 112.98 | 32.1 (fvcore) | 8.34h (T4×2, 300ep) | 6.4 GB/GPU | 121.3 | 0.5 GB | Yes (T4×2) |
+| ApproxDA (M=7, r=32, G=8, gate=learn) | 114.90 | ~32.1 (fvcore est.) | 11.51h (T4×1, 300ep) | 10.6 GB | 118.4 | 0.5 GB | Yes (T4×2) |
+| ApproxDA (M=14, r=64, G=8, gate=learn) | 115.05 | **32.4 (fvcore)** | 6.65h (T4×2, 300ep) | 6.4 GB/GPU | 119.7 | 0.5 GB | Yes (T4×2) |
 
 > DA-TransUNet GFLOPs corrected to **30.2** (fvcore, 06/15/2026 re-run). Previous thop value (25.5) undercounted by 4.7 GFLOPs due to missing bmm in PAM. The 30.2 vs AdaDA ~32 reversal is smaller than the analysis section predicted — likely because fvcore fuses some bmm ops or the 112×112 skip feature map is smaller in practice.
 
@@ -325,8 +331,8 @@ Night 5:  AdaDA         ISIC     (T4 x2, ~2.5h)
 >
 > **Finding 4 — HD95 exception:** gate=learn M=14 has the best HD95 (29.09mm) among AdaDA variants despite being 3rd in DSC. Larger window recovers global boundary context even when DSC is lower. This supports the "window limits global context" hypothesis specifically for boundary-sensitive metrics.
 >
-> Gate collapse is an **analysis/insight finding**, not a contribution. Will appear in Analysis/Discussion section.
-> **Paper narrative:** "Naïve learnable gating suffers from gradient symmetry collapse. Ablation confirms the gate is not only inert but actively harmful — PAM-only strictly dominates all gated variants. This motivates removing the gate entirely in future work."
+> Gate collapse is **Contribution 2** in V4.0 — a theoretical finding about the fundamental limitation of naïve learnable gating in two-branch attention architectures.
+> **Paper narrative (V4.0, Contribution 2):** "Naïve learnable gating suffers from gradient symmetry collapse: when g=0.5, PAM and CAM receive identical gradients, branches converge symmetrically, and the gate gradient → 0. This is a fundamental limitation, not a windowing artifact. The collapsed gate produces a fixed 50/50 routing whose effectiveness is task-conditional: harmful on complex multi-organ CT (gate=learn 77.93% < gate=pam 78.64%) but beneficial on single-object tasks (Kvasir: gate=learn AdaDA 89.24% > DA-TransUNet 88.44%). This motivates a task-conditioned analysis rather than redesigning the gate (conference goal: understand routing failure; journal goal: learn effective routing)."
 
 ---
 
@@ -334,12 +340,15 @@ Night 5:  AdaDA         ISIC     (T4 x2, ~2.5h)
 
 ### Paper Routes (conditional on Exp 1)
 
-**Route 1 — Efficient Dual Attention Approximation** ✅ ACTIVE PATH
-- Core claim: LowRankWindowedPAM + GroupedCAM enable multi-GPU DDP (DA-TransUNet cannot) and reduce per-GPU VRAM, with task-conditional accuracy trade-off
-- Contribution 1: LowRankWindowedPAM — DDP-compatible (no BroadcastBackward crash); per-GPU VRAM 6.4 GB vs DA 11.5 GB; 30% faster training (8.34h T4×2 vs 12.06h T4×1). **Do NOT claim GFLOPs reduction — fvcore shows AdaDA 32.1 vs DA 30.2 (AdaDA slightly higher due to added Conv1d/projection overhead in decoder).**
-- Contribution 2: GroupedCAM — O(C²/G) channel attention, avoids the zero-element tensor that crashes DA-TransUNet DataParallel
-- Analysis: Gate collapse (gradient symmetry) — explains the 50/50 blend; framed as "why approximation fails on CT" not as a contribution
-- Performance story: Synapse −1.87% DSC vs DA baseline using best config (gate=pam, M=7, r=32); Kvasir/ISIC TBD (expected smaller gap or parity on binary tasks)
+**Route 1 — Task-Conditioned Approximation Study** ✅ ACTIVE PATH (V4.0)
+- Central question: *"When is attention approximation safe for medical image segmentation?"*
+- Core claim: Task Context Complexity (TCC) governs required global context → determines safe approximation strength. High-TCC tasks (multi-organ CT: complex anatomy, scale variation, global spatial dependencies) suffer under approximation; low-TCC tasks (polyp, skin lesion: single object, simple boundary) tolerate or benefit from approximation.
+- **Contribution 1 — Efficient approximation framework:** LowRankWindowedPAM + GroupedCAM. DDP-compatible (no BroadcastBackward crash); per-GPU VRAM 6.4 GB vs DA 11.5 GB; 30% faster training (8.34h T4×2 vs 12.06h T4×1). **Do NOT claim GFLOPs reduction** — fvcore shows AdaDA 32.1 vs DA 30.2 (AdaDA slightly higher).
+- **Contribution 2 — Gate collapse theory:** Gradient symmetry problem (g=0.5 → identical gradients → PAM≈CAM → gate gradient≈0). General finding applicable to any two-branch attention with naïve learnable gating; not a windowing artifact.
+- **Contribution 3 — Cross-task empirical study:** Synapse (high-TCC): best config gate=pam, −1.87% DSC vs DA; Kvasir (low-TCC): gate=learn, +0.80% DSC vs DA; ISIC (low-TCC): TBD. Task-conditioned pattern.
+- **Contribution 4 — Preliminary TCC→safety evidence:** Single-object, homogeneous-boundary tasks tolerate approximation; complex multi-organ tasks with global anatomical dependencies do not. Preliminary because TCC is not yet formally quantified.
+- Conference paper: No new gating mechanism — focus on understanding routing failure and cross-task approximation behavior.
+- Journal paper: Non-collapsing routing mechanisms (entropy-guided, orthogonal branch loss, MoE), formal TCC metric, expanded dataset range.
 - Target: **BIBM 2026** primary, ACPR 2026 backup, SPIE 2027 safe
 
 **Route 2 — + Scaling Analysis** ❌ CLOSED (Exp 1 DSC 78.04% < 80.5% threshold)
@@ -359,12 +368,13 @@ Night 5:  AdaDA         ISIC     (T4 x2, ~2.5h)
 | **SPIE 2027** | C | Aug 5, 2026 | ✅ Safe bet — workshop venue, less competitive |
 | **MICCAI 2027** | A | Jan 2027 | 🎯 Journal extension target after acceptance |
 
-> **Narrative to write now:** "LowRankWindowedPAM is the only dual-attention design compatible with multi-GPU DDP training (DA-TransUNet crashes with DataParallel). It halves per-GPU VRAM (6.4 vs 11.5 GB) and cuts training time by 30%, at a cost of −1.87% DSC on complex multi-organ CT — a trade-off we show is task-dependent: smaller or absent on binary segmentation tasks."
-> This story needs Kvasir + ISIC results to be compelling.
+> **Narrative to write now (V4.0):** "When is attention approximation safe for medical image segmentation? We propose an efficient dual-attention approximation framework (LowRankWindowedPAM + GroupedCAM) and study this question empirically. We find: (1) naïve learnable gating collapses due to gradient symmetry — a fundamental limitation of two-branch attention architectures; (2) the resulting fixed routing is task-conditional in effectiveness — harmful on complex multi-organ CT (Synapse: −1.87% DSC) but beneficial on simpler single-object tasks (Kvasir: +0.80% DSC). Task Context Complexity emerges as the governing factor: high-TCC tasks require global context that approximation loses; low-TCC tasks are robust to — or benefit from — the implicit regularization of approximation."
+> This story needs ISIC results and the Global PAM experiment to be complete.
 
 ### Journal Extension (after conference acceptance)
 **Target:** IEEE JBHI or *Frontiers in Bioengineering and Biotechnology* (same journal as DA-TransUNet)
-- Add remaining 2 datasets (Chest X-Ray, CVC-ClinicDB)
-- Add full ablation study with real numbers
-- Add sensitivity curves (rank r, window M, groups G)
+- Design non-collapsing routing mechanisms (entropy-guided gate, orthogonal branch loss, MoE-style routing) that avoid the gradient symmetry collapse
+- Formally quantify Task Context Complexity (TCC) and validate its correlation with approximation safety empirically
+- Add broader dataset range to widen TCC spectrum (Chest X-Ray, CVC-ClinicDB)
+- Add sensitivity curves (rank r, window M, groups G) and per-organ analysis for Synapse
 - Extend to ~12 pages
