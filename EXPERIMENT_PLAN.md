@@ -13,7 +13,7 @@ Both DA-TransUNet (baseline) and AdaDA-TransUNet are run under identical conditi
 |---|---------|------|---------|-------|--------|
 | 1 | **Synapse** | Multi-organ CT segmentation | 9 | 18 train / 12 test | DSC, HD95 |
 | 2 | **Kvasir-SEG** | Polyp segmentation (endoscopy) | 2 (binary) | 800 train / 200 test | DSC, mIoU |
-| 3 | **ISIC 2018** | Skin lesion segmentation (dermoscopy) | 2 (binary) | 1815 train / 259 val / 520 test | DSC, mIoU |
+| 3 | **ISIC 2018** | Skin lesion segmentation (dermoscopy) | 2 (binary) | 2075 train / 519 test (80/20 of 2594 labeled images; official val/test sets have no masks) | DSC, mIoU |
 
 ---
 
@@ -21,9 +21,9 @@ Both DA-TransUNet (baseline) and AdaDA-TransUNet are run under identical conditi
 
 | Dataset | DA-TransUNet Train | DA-TransUNet Test | AdaDA Train | AdaDA Test |
 |---------|-------------------|-------------------|-------------|------------|
-| Synapse | ✅ Done (~11.4h pure train, 22.35h wall-clock, T4×1, 300ep, peak VRAM pending) | ✅ Done (DSC 80.51%, HD95 25.41mm, GFLOPs 25.5, Params 107.95M, Infer 121.8s/vol, Infer VRAM 0.5GB) | ✅ Done (T4×1, 3-skip, 300ep, 11.51h pure train, Peak VRAM 10.6 GB, best val epoch 45) | ✅ Done (DSC 77.93%, HD95 33.96mm, Params 114.90M, GFLOPs 27.2, Infer 118.4s/vol, Infer VRAM 0.5GB) |
-| Kvasir-SEG | ⏳ Pending | ⏳ Pending | ⏳ Pending | ⏳ Pending |
-| ISIC 2018 | ⏳ Pending | ⏳ Pending | ⏳ Pending | ⏳ Pending |
+| Synapse | ✅ Done (12.06h, T4×1, 300ep, Peak VRAM 11.5 GB) | ✅ Done (DSC 80.51%, HD95 25.41mm, GFLOPs **30.2 (fvcore)**, Params 107.95M, Infer 121.8s/vol, Infer VRAM 0.5 GB) — *GFLOPs remeasured 06/15/2026; val_interval=0 run discarded (epoch_299 fallback gave 76.07%)* | ✅ Done (T4×1, 3-skip, 300ep, 11.51h pure train, Peak VRAM 10.6 GB, best val epoch 45) | ✅ Done (DSC 77.93%, HD95 33.96mm, Params 114.90M, GFLOPs 27.2, Infer 118.4s/vol, Infer VRAM 0.5GB) |
+| Kvasir-SEG | ✅ Done (4.29h, T4×1, 300ep, Peak VRAM 11.5 GB, best val DSC 0.8838 at ep300) | ⏳ Pending (inference bug fixed — run test.py) | ✅ Done (4.45h, T4×1, 300ep, gate=learn, Peak VRAM 10.5 GB, best val DSC 0.8923 at ep300) | ⏳ Pending |
+| ISIC 2018 | 🔄 Training | ⏳ Pending | 🔄 Training | ⏳ Pending |
 
 ---
 
@@ -75,8 +75,8 @@ Runs completed / in progress:
 | Run | GPUs | Config | Status | Best Val DSC |
 |-----|------|--------|--------|-------------|
 | AdaDA, M=14, r=64 | GPU 0,1 (DDP) | `--window_size 14 --rank 64 --gate_mode learn` | ✅ Done | DSC **78.04%**, HD95 **28.77mm**, 115.05M params, 27.3 GFLOPs, 6.65h, 6.4 GB/GPU |
-| AdaDA, gate=pam | GPU 0,1 (DDP) | `--window_size 7 --rank 32 --gate_mode pam` | ✅ Done | val DSC **78.82%** (ep270), 8.34h T4×2 — test pending |
-| AdaDA, gate=cam | GPU 3 (1×GPU) | `--window_size 7 --rank 32 --gate_mode cam` | ✅ Done | val DSC **78.26%** (ep150), 11.32h T4×1, batch_size=24 — ⚠️ test pending; checkpoint saved WITHOUT `_cam` suffix (old train.py) — rename needed |
+| AdaDA, gate=pam | GPU 0,1 (DDP) | `--window_size 7 --rank 32 --gate_mode pam` | ✅ Done | val DSC **78.82%** (ep270), test DSC **78.64%**, HD95 **31.09mm**, 8.34h T4×2, 112.98M params, 32.1 GFLOPs (fvcore) |
+| AdaDA, gate=cam | GPU 3 (1×GPU) | `--window_size 7 --rank 32 --gate_mode cam` | ✅ Done | val DSC **78.26%** (ep150), test DSC **78.26%**, HD95 **30.59mm**, 11.32h T4×1, batch_size=24, 112.98M params |
 
 ### Phase A — Decision ✅ RESOLVED
 
@@ -145,8 +145,8 @@ Snapshot path: `AdaDA_pretrain_R50-ViT-B_16_skip3_epo300_bs12_224_M112_r64_pam`
 | Code | `deepsotaai/adada-transunet-code` | Re-upload after each local code change |
 | ViT weights | `deepsotaai/vit-pretrained-weights` | One-time upload |
 | Synapse data | `dogcdt/synapse` | Public dataset, already attached |
-| Kvasir-SEG | `debeshranaDS/kvasir-seg` | Search on Kaggle, attach to notebook |
-| ISIC 2018 | `shonenkov/isic2018` | Search on Kaggle, attach to notebook |
+| Kvasir-SEG | `debeshjha1/kvasirseg` | Double-nested zip: `Kvasir-SEG/Kvasir-SEG/{images,masks}/` |
+| ISIC 2018 | `tschandl/isic2018-challenge-task1-data-segmentation` | Training input + Task1 ground truth only (13.8 GB) |
 | DA checkpoints | `deepsotaai/da-transunet-checkpoints` | Already uploaded |
 
 ---
@@ -195,7 +195,7 @@ All experiments run from the Lightning AI Studio **terminal** (not Jupyter noteb
 
 ### Week 1 (main results)
 ```
-Night 1:  DA-TransUNet  Synapse  (T4 x1, 22.35h, 300ep)  ✅ DONE — DSC 80.51%, HD95 25.41mm, GFLOPs 25.5, Params=107.95M, Infer=121.8s/vol, VRAM=0.5GB (best_model.pth at epoch 270)
+Night 1:  DA-TransUNet  Synapse  (T4 x1, 12.06h, 300ep)  ✅ DONE — DSC 80.51%, HD95 25.41mm, GFLOPs 30.2 (fvcore), Params=107.95M, Infer=121.8s/vol, VRAM=0.5GB (best_model.pth at epoch 270)
 Night 2:  AdaDA         Synapse  (T4 x1, ~7h)    ← apples-to-apples efficiency row
 Night 3:  AdaDA         Synapse  (T4 x2, ~4h)    back-to-back with
           DA-TransUNet  Kvasir   (T4 x1, ~3h)    ← ~7h total, within 9h limit
@@ -210,8 +210,8 @@ Night 5:  AdaDA         ISIC     (T4 x2, ~2.5h)
 
 ```
 ✅ Done:  AdaDA M=14 r=64   Synapse  DSC 78.04%, HD95 28.77mm (+0.11% DSC, -5.19mm HD vs M=7/r=32)
-✅ Done:  AdaDA gate=pam    Synapse  val DSC 78.82% (ep270), 8.34h/T4×2 — test.py pending
-✅ Done:  AdaDA gate=cam    Synapse  val DSC 78.26% (ep150), 11.32h T4×1 (bs24) — test.py pending; ⚠️ checkpoint missing `_cam` (old train.py) — rename folder first
+✅ Done:  AdaDA gate=pam    Synapse  val DSC 78.82% (ep270), 8.34h/T4×2
+✅ Done:  AdaDA gate=cam    Synapse  val DSC 78.26% (ep150), 11.32h T4×1 (bs24) 
 ```
 
 **Exp 1 (M=14, r=64) DSC is the project pivot. Everything below is conditional on that result.**
@@ -235,47 +235,50 @@ Night 5:  AdaDA         ISIC     (T4 x2, ~2.5h)
 | Swin-Unet | 79.13 | 21.55 |
 | DA-TransUNet (paper) | 79.80 | 23.48 |
 | DA-TransUNet (ours, 300ep best_model) | 80.51 | 25.41 |
-| **AdaDA-TransUNet (ours, 3-skip, T4×1, 300ep)** | **77.93** | **33.96** |
+| **AdaDA-TransUNet (ours, gate=pam, M=7, r=32, T4×2, 300ep)** | **78.64** | **31.09** |
 
 ### Kvasir-SEG Polyp
+
+> ⚠️ **Setup difference vs paper:** DA-TransUNet paper used Adam (lr=1e-3), 500ep, 75/25 split. Our runs use SGD (lr=0.01), 300ep, 80/20 split. Our DA-TransUNet (ours) numbers will likely be lower than paper. The DA vs AdaDA delta is the real contribution — both use identical setup.
 
 | Method | DSC (%) | mIoU (%) |
 |--------|---------|---------|
 | TransUNet | 87.91 | 80.03 |
-| DA-TransUNet (paper, 500ep Adam) | 88.47 | 81.02 |
-| DA-TransUNet (ours) | XX | XX |
-| **AdaDA-TransUNet (ours)** | **XX** | **XX** |
+| DA-TransUNet (paper, 500ep Adam, 75/25 split) | 88.47 | 81.02 |
+| DA-TransUNet (ours, 300ep SGD, 80/20 split) | XX | XX |
+| **AdaDA-TransUNet (ours, gate=learn, M=7, r=32, 300ep SGD, 80/20 split)** | **XX** | **XX** |
 
 ### ISIC 2018 Skin Lesion
+
+> ⚠️ **Setup difference vs paper:** DA-TransUNet paper used Adam (lr=1e-3), 50ep, 75/25 split. Our runs use SGD (lr=0.01), 300ep, 80/20 split. The 50ep Adam vs 300ep SGD difference is large — paper numbers are reference only.
 
 | Method | DSC (%) | mIoU (%) |
 |--------|---------|---------|
 | TransUNet | 88.78 | 82.63 |
-| DA-TransUNet (paper, 50ep Adam) | 88.88 | 82.78 |
-| DA-TransUNet (ours) | XX | XX |
-| **AdaDA-TransUNet (ours)** | **XX** | **XX** |
+| DA-TransUNet (paper, 50ep Adam, 75/25 split) | 88.88 | 82.78 |
+| DA-TransUNet (ours, 300ep SGD, 80/20 split) | XX | XX |
+| **AdaDA-TransUNet (ours, gate=pam, 300ep SGD, 80/20 split)** | **XX** | **XX** |
 
 ### Efficiency (Synapse, T4)
 
 | Method | Params (M) | GFLOPs | Train Time | Train VRAM | Infer Time (s/vol) | Infer VRAM | Multi-GPU |
 |--------|-----------|--------|-----------|-----------|-------------------|-----------|-----------|
-| DA-TransUNet | 107.95 | 25.5 (thop*) | 22.35h (T4×1, 300ep) | ~11.5 GB | 121.8 | 0.5 GB | No (BroadcastBackward crash) |
+| DA-TransUNet | 107.95 | **30.2 (fvcore)** | 12.06h (T4×1, 300ep) | **11.5 GB** | 121.8 | 0.5 GB | No (BroadcastBackward crash) |
 | AdaDA (M=7, r=32, G=8, gate=pam) | 112.98 | 32.1 (fvcore) | 8.34h (T4×2, 300ep) | 6.4 GB/GPU | 121.3 | 0.5 GB | Yes (T4×2) |
 | AdaDA (M=7, r=32, G=8, gate=learn) | 114.90 | ~32.1 (fvcore est.) | 11.51h (T4×1, 300ep) | 10.6 GB | 118.4 | 0.5 GB | Yes (T4×2) |
 | AdaDA (M=14, r=64, G=8, gate=learn) | 115.05 | **32.4 (fvcore)** | 6.65h (T4×2, 300ep) | 6.4 GB/GPU | 119.7 | 0.5 GB | Yes (T4×2) |
 
-> *DA-TransUNet GFLOPs (25.5) measured by thop — attention bmm NOT counted. True value expected substantially higher (N²=157M for 112×112 skip). Re-run DA-TransUNet test.py with fvcore to get corrected baseline GFLOPs before paper submission.
+> DA-TransUNet GFLOPs corrected to **30.2** (fvcore, 06/15/2026 re-run). Previous thop value (25.5) undercounted by 4.7 GFLOPs due to missing bmm in PAM. The 30.2 vs AdaDA ~32 reversal is smaller than the analysis section predicted — likely because fvcore fuses some bmm ops or the 112×112 skip feature map is smaller in practice.
 
 > Params and inference metrics are logged by test.py. Train VRAM is logged at end of train.py.
 > **Note:** DA-TransUNet paper includes a paired t-test (p=0.032, mean ΔDSC=3.96 vs TransUNet). Our paper should include the same for AdaDA vs DA-TransUNet.
 >
-> **GFLOPs measurement note — reported numbers are undercounts for BOTH models:**
-> `thop` only counts `nn.Linear`, `nn.Conv2d`, `nn.Conv1d` ops. It cannot see `torch.bmm` or `torch.einsum`, which is where attention matrix multiplications happen in both DA-TransUNet (PAMModule) and AdaDA (LowRankWindowedPAM/GroupedCAM).
-> - DA-TransUNet PAM at 112×112 (N=12544, C/8=8): bmm alone ≈ 1.26B + 10.07B = 11.3B MACs — ALL invisible to thop. Reported 25.5 GFLOPs is a massive undercount.
-> - AdaDA LowRankWindowedPAM at 112×112 (M=7, nW=256, r=32): windowed bmm ≈ 51M MACs total. Reported 27.2 GFLOPs is only a minor undercount (20% missing).
-> - Net result: thop shows AdaDA HIGHER (27.2 vs 25.5) because it counts AdaDA's new Conv1d/Linear projections but misses DA-TransUNet's massive N² bmm cost. True ordering is reversed.
-> - **Industry fix:** use `fvcore.nn.FlopCountAnalysis` (Meta AI, handles matmul/bmm natively) — `pip install fvcore`. Re-run both models to get corrected numbers before paper submission.
-> - **True efficiency reduction at 112×112 skip:** DA 11.3B MACs vs AdaDA 51M MACs ≈ **220× reduction** in attention FLOPs at that layer. This is the correct number to highlight in the paper.
+> **GFLOPs measurement note — fvcore is the authoritative tool:**
+> `thop` misses `torch.bmm` (attention matrix multiplications). All GFLOPs numbers are now measured with fvcore.
+> - **DA-TransUNet fvcore: 30.2 GFLOPs** (includes PAM/CAM bmm)
+> - **AdaDA fvcore: 32.1 GFLOPs** (gate=pam, M=7, r=32) — slightly *higher* than DA-TransUNet
+> - The 220× reduction in attention FLOPs at the 112×112 skip layer is real at the layer level, but the ViT backbone (~20+ GFLOPs, identical in both models) dominates total cost. The decoder DANet/AdaDA blocks are a small fraction of total FLOPs, so the layer-level savings do not translate to a total-model reduction.
+> - **Conclusion: Do not claim GFLOPs savings in the paper.** The efficiency story is DDP-compatibility and per-GPU VRAM (6.4 vs 11.5 GB), not total compute.
 
 ### Ablation Study (Synapse)
 
@@ -283,7 +286,7 @@ Night 5:  AdaDA         ISIC     (T4 x2, ~2.5h)
 
 | Config | Window | Rank | Gate | DSC (%) | HD95 (mm) | GFLOPs | Notes |
 |--------|--------|------|------|---------|-----------|--------|-------|
-| DA-TransUNet baseline | — (global) | — | N/A | 80.51 | 25.41 | 25.5 (thop) | Full PAM+CAM, no gate, T4×1 |
+| DA-TransUNet baseline | — (global) | — | N/A | 80.51 | 25.41 | **30.2 (fvcore)** | Full PAM+CAM, no gate, T4×1 |
 | AdaDA, `--gate_mode learn` | M=7 | r=32 | learn | 77.93 | 33.96 | 27.2 (thop) | ✅ Done (best epoch 45, T4×1) |
 | AdaDA, `--gate_mode learn` | M=14 | r=64 | learn | **78.04** | **29.09** | **32.4 (fvcore)** | ✅ Done (6.65h/2×GPU, 6.4GB/GPU VRAM, 115.05M) |
 | AdaDA, **Global PAM** | M=112 (global) | r=64 | pam | ⏳ TBD | ⏳ TBD | ~32+ (est.) | ⏳ Pending — directly answers window vs. low-rank bottleneck |
@@ -295,8 +298,8 @@ Night 5:  AdaDA         ISIC     (T4 x2, ~2.5h)
 
 | Config | `--gate_mode` | DSC (%) | HD95 (mm) | GFLOPs | Notes |
 |--------|--------------|---------|-----------|--------|-------|
-| AdaDA, PAM only | `pam` (g=1) | **78.64** | 31.09 | 32.1 (fvcore) | ✅ Done (val 78.82%, ep270, 8.34h T4×2) |
-| AdaDA, CAM only | `cam` (g=0) | 78.26 | 30.59 | 27.2 (thop*) | ✅ Done (val 78.26%, ep150, 11.32h T4×1) |
+| AdaDA, PAM only | `pam` (g=1) | **78.64** | 31.09 | 32.1 (fvcore) | ✅ Done (test 78.64%, HD95 31.09mm, val 78.82% ep270, 8.34h T4×2, 121.3s/vol infer) |
+| AdaDA, CAM only | `cam` (g=0) | 78.26 | 30.59 | 27.2 (thop*) | ✅ Done (test 78.26%, HD95 30.59mm, ep150, 11.32h T4×1, 112.98M params) |
 | AdaDA, learnable gate (M=7) | `learn` | 77.93 | 33.96 | 27.2 (thop*) | ✅ Done — gate collapsed (g≈0.5, Δg=0.0000) |
 | AdaDA, learnable gate (M=14) | `learn` | 78.04 | 29.09 | 32.4 (fvcore) | ✅ Done — gate collapsed (g≈0.5002, Δg=0.0000) |
 
@@ -332,30 +335,31 @@ Night 5:  AdaDA         ISIC     (T4 x2, ~2.5h)
 ### Paper Routes (conditional on Exp 1)
 
 **Route 1 — Efficient Dual Attention Approximation** ✅ ACTIVE PATH
-- Core claim: LowRankWindowedPAM + GroupedCAM reduce training VRAM and enable multi-GPU DDP, with task-conditional accuracy trade-off
-- Contribution 1: LowRankWindowedPAM — DDP-compatible (no BroadcastBackward crash), 2× faster training (11.5h vs 22.35h)
-- Contribution 2: GroupedCAM — O(C²/G)
+- Core claim: LowRankWindowedPAM + GroupedCAM enable multi-GPU DDP (DA-TransUNet cannot) and reduce per-GPU VRAM, with task-conditional accuracy trade-off
+- Contribution 1: LowRankWindowedPAM — DDP-compatible (no BroadcastBackward crash); per-GPU VRAM 6.4 GB vs DA 11.5 GB; 30% faster training (8.34h T4×2 vs 12.06h T4×1). **Do NOT claim GFLOPs reduction — fvcore shows AdaDA 32.1 vs DA 30.2 (AdaDA slightly higher due to added Conv1d/projection overhead in decoder).**
+- Contribution 2: GroupedCAM — O(C²/G) channel attention, avoids the zero-element tensor that crashes DA-TransUNet DataParallel
 - Analysis: Gate collapse (gradient symmetry) — explains the 50/50 blend; framed as "why approximation fails on CT" not as a contribution
-- Performance story: Synapse −2.47% DSC (complex 9-organ CT), Kvasir/ISIC TBD (expected smaller gap or parity)
+- Performance story: Synapse −1.87% DSC vs DA baseline using best config (gate=pam, M=7, r=32); Kvasir/ISIC TBD (expected smaller gap or parity on binary tasks)
 - Target: **BIBM 2026** primary, ACPR 2026 backup, SPIE 2027 safe
 
 **Route 2 — + Scaling Analysis** ❌ CLOSED (Exp 1 DSC 78.04% < 80.5% threshold)
 
 **Route 3 — New gate modules** ❌ Do not pursue. No entropy gate, no diversity loss, no MoE. Gate is not the main bottleneck.
 
-> **GFLOPs note:** thop likely undercounts attention flops for both models. True efficiency advantage is training speed (2×) and DDP-compatibility, not reported GFLOPs. Do NOT lead the paper with GFLOPs comparison.
+> **GFLOPs note:** fvcore measurements show DA-TransUNet 30.2 vs AdaDA 32.1 — AdaDA is slightly **higher** in total GFLOPs because the Conv1d/Linear projection overhead added in the decoder outweighs the windowed attention savings at the total-model scale. The per-layer 220× attention FLOP reduction at 112×112 is real but is swamped by the shared ViT backbone. **Do NOT report or compare GFLOPs in the paper.** Lead instead with DDP-compatibility, per-GPU VRAM (6.4 vs 11.5 GB), and wall-clock training time (8.34h T4×2 vs 12.06h T4×1).
 
 ### 🎯 Conference Targets
 
 | Venue | CORE | Deadline | Status |
 |-------|------|----------|--------|
-| **ACCV 2026** | B | Jul 5, 2026 | ❌ Closed — performance gap (−2.47% DSC) + no GFLOPs advantage = immediate rejection risk |
+| **ACCV 2026** | B | Jul 5, 2026 | ❌ Closed — performance gap (−1.87% DSC, best config) + AdaDA GFLOPs actually higher (32.1 vs 30.2) = immediate rejection risk |
 | **BIBM 2026** | B | Jul–Aug 2026 | ✅ Primary — medical imaging focus, efficiency + analysis story fits |
 | **ACPR 2026** | B | Sep–Oct 2026 | ✅ Backup — broader CV, binary dataset results needed |
+| **PRCAI 2027** | C | Aug 27, 2026 | ✅ less competitive |
 | **SPIE 2027** | C | Aug 5, 2026 | ✅ Safe bet — workshop venue, less competitive |
 | **MICCAI 2027** | A | Jan 2027 | 🎯 Journal extension target after acceptance |
 
-> **Narrative to write now:** "LowRankWindowedPAM enables efficient multi-GPU dual attention training but trades global context for local approximation — accuracy loss is task-dependent (larger on complex CT, smaller on binary segmentation)."
+> **Narrative to write now:** "LowRankWindowedPAM is the only dual-attention design compatible with multi-GPU DDP training (DA-TransUNet crashes with DataParallel). It halves per-GPU VRAM (6.4 vs 11.5 GB) and cuts training time by 30%, at a cost of −1.87% DSC on complex multi-organ CT — a trade-off we show is task-dependent: smaller or absent on binary segmentation tasks."
 > This story needs Kvasir + ISIC results to be compelling.
 
 ### Journal Extension (after conference acceptance)

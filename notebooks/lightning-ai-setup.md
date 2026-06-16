@@ -65,20 +65,29 @@ wget -q --show-progress \
 
 ### 5. Create symlinks (data path resolution)
 
-`train.py` and `test.py` resolve paths relative to their own directory (`../data/`, `../model/`). Symlink once:
+`train.py` and `test.py` resolve paths relative to their own directory (`../data/`, `../model/`). `experiments/data/` is a **directory** (not a single symlink) containing per-dataset symlinks. Create them individually:
 
 ```bash
 REPO=/teamspace/studios/this_studio/AdaDA-TransUNet/experiments
+BASE=/teamspace/studios/this_studio
 
-ln -sfn /teamspace/studios/this_studio/data  $REPO/data
-ln -sfn /teamspace/studios/this_studio/model $REPO/model
+mkdir -p $REPO/data $REPO/model
+
+ln -sfn $BASE/data/Synapse    $REPO/data/Synapse
+ln -sfn $BASE/data/Kvasir-SEG $REPO/data/Kvasir-SEG
+ln -sfn $BASE/data/ISIC2018   $REPO/data/ISIC2018
+ln -sfn $BASE/model            $REPO/model
 
 # verify
 ls -la $REPO/data/Synapse/
+ls -la $REPO/data/Kvasir-SEG/
+ls -la $REPO/data/ISIC2018/
 ls -la $REPO/model/vit_checkpoint/imagenet21k/
 ```
 
 Expected: `R50+ViT-B_16.npz` (with `+` intact — Lightning AI does not strip it).
+
+> **Do NOT run** `ln -sfn $BASE/data $REPO/data` — this creates a nested `$REPO/data/data` symlink and breaks relative path resolution.
 
 ### 6. Fix datasets/ package shadowing
 
@@ -206,73 +215,32 @@ See `AdaDA-TransUNet.md §10–11` for the 4-case decision table and backup plan
 
 ---
 
-## Phase 2 Ablation Runs (Week 2)
+## Phase 2 Ablation Runs (Week 2) — ✅ COMPLETE
 
-### No-gate ablation (`--disable_gate`, fixed g=0.5)
+> **`--disable_gate` is removed.** The flag was replaced by `--gate_mode {learn,fixed,pam,cam}`.
+> All gate ablation runs used `--gate_mode` and are now complete.
 
-```bash
-# Inside tmux:
-cd /teamspace/studios/this_studio/AdaDA-TransUNet/experiments/Ada-DA-TransUNet
+### Results summary
 
-CUDA_VISIBLE_DEVICES=0,1 torchrun --nproc_per_node=2 train.py \
-  --dataset Synapse --vit_name R50-ViT-B_16 \
-  --max_epochs 300 --batch_size 12 \
-  --base_lr 0.01 --n_skip 3 --img_size 224 \
-  --window_size 7 --rank 32 --groups 8 \
-  --disable_gate --seed 1234 --val_interval 15 \
-2>&1 | tee run_nogate.log && \
-python -u test.py \
-  --dataset Synapse --vit_name R50-ViT-B_16 \
-  --num_classes 9 --max_epochs 300 --batch_size 12 --img_size 224 \
-  --window_size 7 --rank 32 --groups 8 --is_savenii \
-2>&1 | tee -a run_nogate.log
+| Config | Test DSC | Test HD95 | Status |
+|--------|---------|-----------|--------|
+| `--gate_mode learn --window_size 7 --rank 32` | 77.93% | 33.96mm | ✅ Done (T4×1, 300ep) |
+| `--gate_mode pam --window_size 7 --rank 32` | 78.64% | 31.09mm | ✅ Done (T4×2, 300ep) |
+| `--gate_mode cam --window_size 7 --rank 32` | 78.26% | 30.59mm | ✅ Done (T4×1, 300ep) |
+| `--gate_mode learn --window_size 14 --rank 64` | 78.04% | 29.09mm | ✅ Done (T4×2, 300ep) |
 
-# Detach: Ctrl+B, D
-```
+**Finding:** Gate collapsed (g≈0.5, Δg=0.0000) in all `learn` runs. gate=learn is strictly worse than PAM-only. See `EXPERIMENT_PLAN.md §Ablation` for full analysis.
 
-### Full model — entropy gate (Phase 2, after code change to block.py)
-
-```bash
-# Implement Phase 2 first: gate_fc = Linear(channels+1, channels) in block.py
-# Then retrain from scratch (checkpoint incompatible with GAP-only checkpoint)
-
-# Inside tmux:
-cd /teamspace/studios/this_studio/AdaDA-TransUNet/experiments/Ada-DA-TransUNet
-
-CUDA_VISIBLE_DEVICES=0,1 torchrun --nproc_per_node=2 train.py \
-  --dataset Synapse --vit_name R50-ViT-B_16 \
-  --max_epochs 300 --batch_size 12 \
-  --base_lr 0.01 --n_skip 3 --img_size 224 \
-  --window_size 7 --rank 32 --groups 8 \
-  --seed 1234 --val_interval 15 \
-2>&1 | tee run_entropy_gate.log && \
-python -u test.py \
-  --dataset Synapse --vit_name R50-ViT-B_16 \
-  --num_classes 9 --max_epochs 300 --batch_size 12 --img_size 224 \
-  --window_size 7 --rank 32 --groups 8 --is_savenii \
-2>&1 | tee -a run_entropy_gate.log
-
-# Detach: Ctrl+B, D
-```
-
-### Rank sensitivity (`--rank 8` on full model)
+### Global PAM experiment (Phase B, after Kvasir/ISIC)
 
 ```bash
 # Inside tmux:
 cd /teamspace/studios/this_studio/AdaDA-TransUNet/experiments/Ada-DA-TransUNet
 
-CUDA_VISIBLE_DEVICES=0,1 torchrun --nproc_per_node=2 train.py \
-  --dataset Synapse --vit_name R50-ViT-B_16 \
-  --max_epochs 300 --batch_size 12 \
-  --base_lr 0.01 --n_skip 3 --img_size 224 \
-  --window_size 7 --rank 8 --groups 8 \
-  --seed 1234 --val_interval 15 \
-2>&1 | tee run_rank8.log && \
-python -u test.py \
-  --dataset Synapse --vit_name R50-ViT-B_16 \
-  --num_classes 9 --max_epochs 300 --batch_size 12 --img_size 224 \
-  --window_size 7 --rank 8 --groups 8 --is_savenii \
-2>&1 | tee -a run_rank8.log
+CUDA_VISIBLE_DEVICES=0,1 torchrun --nproc_per_node=2 train.py --dataset Synapse --vit_name R50-ViT-B_16 --max_epochs 300 --batch_size 12 --base_lr 0.01 --n_skip 3 --img_size 224 --gate_mode pam --window_size 112 --rank 64 --groups 8 --seed 1234 --val_interval 15 2>&1 | tee run_adada_global_pam.log
+
+# After training finishes:
+python -u test.py --dataset Synapse --vit_name R50-ViT-B_16 --num_classes 9 --max_epochs 300 --batch_size 12 --img_size 224 --window_size 112 --rank 64 --groups 8 --gate_mode pam 2>&1 | tee -a run_adada_global_pam.log
 
 # Detach: Ctrl+B, D
 ```
@@ -291,16 +259,19 @@ tail -f /teamspace/studios/this_studio/AdaDA-TransUNet/experiments/Ada-DA-TransU
 # Quick status across all logs
 BASE=/teamspace/studios/this_studio/AdaDA-TransUNet/experiments
 for f in $BASE/DA-TransUNet/run_da.log \
+          $BASE/DA-TransUNet/run_da_kvasir.log \
+          $BASE/DA-TransUNet/run_da_isic.log \
           $BASE/Ada-DA-TransUNet/run_adada_1gpu.log \
           $BASE/Ada-DA-TransUNet/run_adada_2gpu.log \
-          $BASE/Ada-DA-TransUNet/run_nogate.log \
-          $BASE/Ada-DA-TransUNet/run_entropy_gate.log; do
+          $BASE/Ada-DA-TransUNet/run_adada_kvasir.log \
+          $BASE/Ada-DA-TransUNet/run_adada_isic.log \
+          $BASE/Ada-DA-TransUNet/run_adada_global_pam.log; do
   echo "=== $(basename $f) ===";
   tail -3 "$f" 2>/dev/null || echo "(not started)";
 done
 
 # Final DSC numbers
-grep "Testing performance" $BASE/DA-TransUNet/run_da.log 2>/dev/null
+grep "Testing performance" $BASE/DA-TransUNet/run_da*.log 2>/dev/null
 grep "Testing performance" $BASE/Ada-DA-TransUNet/run_*.log 2>/dev/null
 ```
 
@@ -326,6 +297,177 @@ scp <studio-ssh>:/teamspace/studios/this_studio/AdaDA-TransUNet/experiments/Ada-
 
 ---
 
-## Future Datasets (Kvasir-SEG, ISIC 2018)
+## Kvasir-SEG and ISIC 2018
 
-Code changes required before running — see `EXPERIMENT_PLAN.md §Code Changes Required`. Once `dataset_kvasir.py` and `dataset_isic.py` exist, the commands follow the same pattern: replace `--dataset Synapse` with `--dataset Kvasir` or `--dataset ISIC`.
+Dataset code is ready. Follow these steps before running training.
+
+### 1. Download datasets (Kaggle API)
+
+Make sure `~/.kaggle/kaggle.json` is installed (see One-Time Setup §4 above).
+
+```bash
+BASE=/teamspace/studios/this_studio
+
+# --- Kvasir-SEG (by original paper authors, 151MB, 1000 images) ---
+mkdir -p $BASE/data/raw_kvasir
+kaggle datasets download -d debeshjha1/kvasirseg -p $BASE/data/raw_kvasir --unzip
+
+# Zip unpacks as Kvasir-SEG/Kvasir-SEG/{images,masks}/
+mkdir -p $BASE/data/Kvasir-SEG
+mv $BASE/data/raw_kvasir/Kvasir-SEG/Kvasir-SEG/images $BASE/data/Kvasir-SEG/images
+mv $BASE/data/raw_kvasir/Kvasir-SEG/Kvasir-SEG/masks  $BASE/data/Kvasir-SEG/masks
+rm -rf $BASE/data/raw_kvasir
+
+# Verify (should see ~1000 JPEG files each)
+ls $BASE/data/Kvasir-SEG/images/ | wc -l
+ls $BASE/data/Kvasir-SEG/masks/  | wc -l
+
+# --- ISIC 2018 Task 1 (lesion segmentation) ---
+# Slug: tschandl/isic2018-challenge-task1-data-segmentation (13.8GB, 8319 downloads)
+# Contains train/val/test splits; only training set has ground truth masks.
+# We use training set only (2594 images) and do our own 80/20 split.
+
+mkdir -p $BASE/data/raw_isic
+kaggle datasets download -d tschandl/isic2018-challenge-task1-data-segmentation \
+  -p $BASE/data/raw_isic --unzip
+
+# Folder structure after unzip:
+#   ISIC2018_Task1-2_Training_Input/          <- images (.jpg)
+#   ISIC2018_Task1_Training_GroundTruth/      <- masks (*_segmentation.png)
+#   ISIC2018_Task1-2_Validation_Input/        <- no masks, skip
+#   ISIC2018_Task1-2_Test_Input/              <- no masks, skip
+
+mkdir -p $BASE/data/ISIC2018/images $BASE/data/ISIC2018/masks
+mv $BASE/data/raw_isic/ISIC2018_Task1-2_Training_Input/*.jpg \
+   $BASE/data/ISIC2018/images/
+mv $BASE/data/raw_isic/ISIC2018_Task1_Training_GroundTruth/*_segmentation.png \
+   $BASE/data/ISIC2018/masks/
+rm -rf $BASE/data/raw_isic
+
+# Verify
+ls $BASE/data/ISIC2018/images/ | wc -l   # expect 2594
+ls $BASE/data/ISIC2018/masks/  | wc -l   # expect 2594
+```
+
+> **If the Kaggle slug or folder names differ**, check with `ls $BASE/data/raw_*/` after download and adjust the `mv` paths.
+
+### 2. Generate list files
+
+Run once after downloading (creates `train.txt` and `test.txt`):
+
+```bash
+cd /teamspace/studios/this_studio/AdaDA-TransUNet/experiments/Ada-DA-TransUNet
+
+# Use absolute paths — relative ../data/ fails because the symlink is in experiments/data/,
+# not in the script's CWD (experiments/Ada-DA-TransUNet/).
+python datasets/generate_lists.py --dataset Kvasir \
+  --data_dir /teamspace/studios/this_studio/data/Kvasir-SEG
+# Output: lists/lists_Kvasir/train.txt (800) + test.txt (200)  [seed=42, 80/20]
+
+python datasets/generate_lists.py --dataset ISIC \
+  --data_dir /teamspace/studios/this_studio/data/ISIC2018
+# Output: lists/lists_ISIC/train.txt (~2075) + test.txt (~519)  [seed=42, 80/20]
+```
+
+Copy the same list files to DA-TransUNet so both models use identical splits:
+
+```bash
+REPO=/teamspace/studios/this_studio/AdaDA-TransUNet/experiments
+cp $REPO/Ada-DA-TransUNet/lists/lists_Kvasir/train.txt $REPO/DA-TransUNet/lists/lists_Kvasir/train.txt
+cp $REPO/Ada-DA-TransUNet/lists/lists_Kvasir/test.txt  $REPO/DA-TransUNet/lists/lists_Kvasir/test.txt
+cp $REPO/Ada-DA-TransUNet/lists/lists_ISIC/train.txt   $REPO/DA-TransUNet/lists/lists_ISIC/train.txt
+cp $REPO/Ada-DA-TransUNet/lists/lists_ISIC/test.txt    $REPO/DA-TransUNet/lists/lists_ISIC/test.txt
+```
+
+### 3. Training + inference commands
+
+#### DA-TransUNet — Kvasir (single T4, ~3h)
+
+```bash
+cd /teamspace/studios/this_studio/AdaDA-TransUNet/experiments/DA-TransUNet
+
+python -u train.py \
+  --dataset Kvasir --vit_name R50-ViT-B_16 \
+  --max_epochs 300 --batch_size 24 \
+  --base_lr 0.01 --n_skip 3 --img_size 224 \
+  --seed 1234 --val_interval 15 \
+2>&1 | tee run_da_kvasir.log && \
+python -u test.py \
+  --dataset Kvasir --vit_name R50-ViT-B_16 \
+  --num_classes 2 --max_epochs 300 --batch_size 24 --img_size 224 \
+2>&1 | tee -a run_da_kvasir.log
+```
+
+#### DA-TransUNet — ISIC (single T4, ~4h)
+
+```bash
+cd /teamspace/studios/this_studio/AdaDA-TransUNet/experiments/DA-TransUNet
+
+python -u train.py \
+  --dataset ISIC --vit_name R50-ViT-B_16 \
+  --max_epochs 300 --batch_size 24 \
+  --base_lr 0.01 --n_skip 3 --img_size 224 \
+  --seed 1234 --val_interval 15 \
+2>&1 | tee run_da_isic.log && \
+python -u test.py \
+  --dataset ISIC --vit_name R50-ViT-B_16 \
+  --num_classes 2 --max_epochs 300 --batch_size 24 --img_size 224 \
+2>&1 | tee -a run_da_isic.log
+```
+
+#### AdaDA — Kvasir, gate=pam, 2×T4 (~2h)
+
+```bash
+cd /teamspace/studios/this_studio/AdaDA-TransUNet/experiments/Ada-DA-TransUNet
+
+CUDA_VISIBLE_DEVICES=0,1 torchrun --nproc_per_node=2 train.py \
+  --dataset Kvasir --vit_name R50-ViT-B_16 \
+  --max_epochs 300 --batch_size 12 \
+  --base_lr 0.01 --n_skip 3 --img_size 224 \
+  --window_size 7 --rank 32 --groups 8 --gate_mode pam \
+  --seed 1234 --val_interval 15 \
+2>&1 | tee run_adada_kvasir.log && \
+python -u test.py \
+  --dataset Kvasir --vit_name R50-ViT-B_16 \
+  --num_classes 2 --max_epochs 300 --batch_size 12 --img_size 224 \
+  --window_size 7 --rank 32 --groups 8 --gate_mode pam \
+2>&1 | tee -a run_adada_kvasir.log
+```
+
+#### AdaDA — ISIC, gate=pam, 2×T4 (~2.5h)
+
+```bash
+cd /teamspace/studios/this_studio/AdaDA-TransUNet/experiments/Ada-DA-TransUNet
+
+CUDA_VISIBLE_DEVICES=0,1 torchrun --nproc_per_node=2 train.py \
+  --dataset ISIC --vit_name R50-ViT-B_16 \
+  --max_epochs 300 --batch_size 12 \
+  --base_lr 0.01 --n_skip 3 --img_size 224 \
+  --window_size 7 --rank 32 --groups 8 --gate_mode pam \
+  --seed 1234 --val_interval 15 \
+2>&1 | tee run_adada_isic.log && \
+python -u test.py \
+  --dataset ISIC --vit_name R50-ViT-B_16 \
+  --num_classes 2 --max_epochs 300 --batch_size 12 --img_size 224 \
+  --window_size 7 --rank 32 --groups 8 --gate_mode pam \
+2>&1 | tee -a run_adada_isic.log
+```
+
+#### AdaDA — Global PAM (M=112, r=64), 2×T4 (~8h, after Kvasir/ISIC)
+
+```bash
+cd /teamspace/studios/this_studio/AdaDA-TransUNet/experiments/Ada-DA-TransUNet
+
+CUDA_VISIBLE_DEVICES=0,1 torchrun --nproc_per_node=2 train.py \
+  --dataset Synapse --vit_name R50-ViT-B_16 \
+  --max_epochs 300 --batch_size 12 \
+  --base_lr 0.01 --n_skip 3 --img_size 224 \
+  --window_size 112 --rank 64 --groups 8 --gate_mode pam \
+  --seed 1234 --val_interval 15 \
+2>&1 | tee run_adada_global_pam.log && \
+python -u test.py \
+  --dataset Synapse --vit_name R50-ViT-B_16 \
+  --num_classes 9 --max_epochs 300 --batch_size 12 --img_size 224 \
+  --window_size 112 --rank 64 --groups 8 --gate_mode pam \
+2>&1 | tee -a run_adada_global_pam.log
+```
