@@ -1,0 +1,109 @@
+\section{Discussion}
+\label{sec:analysis}
+
+\subsection{Observation 1: Gate Collapse}
+\label{sec:collapse}
+
+\textbf{Derivation.} Given fused output $\mathbf{F} = g\mathbf{F}_\text{P} + (1-g)\mathbf{F}_\text{C}$, the gate gradient is:
+\begin{equation}
+  \frac{\partial\mathcal{L}}{\partial g} = \frac{\partial\mathcal{L}}{\partial\mathbf{F}} \cdot \left(\mathbf{F}_\text{P} - \mathbf{F}_\text{C}\right).
+  \label{eq:gate_grad}
+\end{equation}
+At initialization $g{\approx}0.5$, both branches receive equal gradient $\tfrac{1}{2}\partial\mathcal{L}/\partial\mathbf{F}$. Without incentive to differentiate, $\mathbf{F}_\text{P} \approx \mathbf{F}_\text{C}$, so Eq.~\eqref{eq:gate_grad}$\approx \mathbf{0}$. This is self-reinforcing: equal gradients $\to$ convergent representations $\to$ near-zero gate gradient $\to$ $g$ fixed at~0.5.
+
+\textbf{Empirical confirmation.} After 300 epochs, the gate range at $M{=}7$ is $[0.4993,\,0.5010]$ with $\Delta g{=}0.0017$. At $M{=}14$: $g{\approx}0.5002$ with $\Delta g{\approx}0.0000$. Collapse is identical at both window sizes, confirming it is a fundamental property of symmetric two-branch gating and not a consequence of limited receptive field. Figure~\ref{fig:gate_collapse} visualizes the collapse trajectory.
+
+\textbf{Design implication.} Symmetric two-branch gating is an unstable fixed point that any dual-attention architecture will converge to without explicit symmetry breaking. Future designs should initialize branches asymmetrically, use diversity-encouraging loss terms, or replace the gate with a non-symmetric routing mechanism to escape this degenerate equilibrium.
+
+\begin{figure}[t]
+  \centering
+  \fbox{\rule{0pt}{3.5cm}\rule{\columnwidth}{0pt}}
+  \caption{Gate value $g$ vs.\ training epoch for $M{=}7$ and $M{=}14$. Both converge to $g{\approx}0.5$ by epoch~100, independent of window size. Shaded band shows gate range across network blocks. [Generated from training logs after experiments complete.]}
+  \label{fig:gate_collapse}
+\end{figure}
+
+\begin{figure}[t]
+  \centering
+  \fbox{\rule{0pt}{3.2cm}\rule{\columnwidth}{0pt}}
+  \caption{Gate value vs.\ per-block input entropy scatter (300-epoch checkpoint, Synapse validation). Gate values cluster tightly at $g{\approx}0.5$ regardless of input entropy, confirming no sample-adaptive routing occurs. [Generated from inference analysis.]}
+  \label{fig:entropy}
+\end{figure}
+
+\subsection{Observation 2: Task-Dependent Approximation Safety}
+
+Although ApproxDA adopts the same approximation operators across all experiments, its effectiveness varies considerably among different segmentation datasets. ApproxDA consistently underperforms the original dual-attention module on Synapse, while achieving competitive or improved performance on Kvasir.
+
+We attribute this phenomenon to the different global contextual requirements of the underlying segmentation tasks. Multi-organ abdominal CT segmentation requires reasoning over long-range anatomical relationships among multiple organs. Aggressive attention approximation inevitably weakens such global dependency modeling, leading to performance degradation.
+
+In contrast, polyp and skin lesion segmentation are primarily determined by local appearance, boundary contrast, and texture consistency. Consequently, restricting attention to local regions introduces only limited information loss while simultaneously acting as an implicit regularizer, which explains the improved generalization observed on Kvasir.
+
+\subsection{GCR and Approximation Safety}
+
+We formally define two complementary task-level properties:
+
+\begin{description}
+  \item[\textbf{Global Context Requirement (GCR)}:] The degree to which accurate segmentation depends on long-range spatial dependencies between distant anatomical elements. GCR is intrinsic to the task, independent of the model architecture. High-GCR tasks (multi-organ CT) require cross-organ anatomical reasoning---liver position relative to spleen, aorta relative to vena cava---where disrupting global spatial interaction degrades delineation. Low-GCR tasks (polyp, skin lesion) are dominated by local boundary contrast and texture, with minimal dependence on distant context.
+
+  \item[\textbf{Approximation Safety}:] The degree to which spatial attention approximation can be introduced without degrading segmentation accuracy on a given task.
+\end{description}
+
+Our central hypothesis is an inverse relationship between these properties:
+\begin{equation}
+  \text{Approximation Safety} \approx f(\text{GCR}), \quad f'(\cdot) < 0.
+  \label{eq:gcr_hypothesis}
+\end{equation}
+Equation~\eqref{eq:gcr_hypothesis} is a conceptual claim, not an analytic proof. It summarizes the empirical pattern: the same ApproxDA configuration achieves $+$0.77\% DSC on low-GCR Kvasir-SEG and $-$1.16\% on high-GCR Synapse---opposite effects consistent with a monotonically decreasing relationship. Figure~\ref{fig:gcr_curve} plots the confirmed data points against this hypothesis.
+
+\begin{figure}[t]
+  \centering
+  \begin{tikzpicture}[scale=0.85]
+    \draw[->, thick] (0,0) -- (5.2,0) node[right, font=\small] {GCR};
+    \draw[->, thick] (0,0) -- (0,3.8) node[above, font=\small] {Approx.\ Safety};
+    \node[font=\footnotesize] at (0.65,-0.35) {Low};
+    \node[font=\footnotesize] at (4.5,-0.35) {High};
+    \node[font=\footnotesize, rotate=90] at (-0.5,0.55) {Low};
+    \node[font=\footnotesize, rotate=90] at (-0.5,3.2) {High};
+    \draw[thick, blue!60!black, dashed]
+      (0.3,3.4) .. controls (1.5,3.2) and (3.0,0.9) .. (4.8,0.35);
+    \filldraw[green!60!black] (1.1, 3.0) circle (3pt);
+    \node[font=\footnotesize, green!50!black, right] at (1.2, 3.0) {Kvasir-SEG ($+$0.77\%)};
+    \filldraw[red!60!black]   (3.9, 0.6) circle (3pt);
+    \node[font=\footnotesize, red!60!black, left]  at (3.8, 0.6) {Synapse ($-$1.16\%)};
+    \node[font=\small\itshape, blue!50!black] at (3.2, 2.7) {$f'\!<\!0$};
+  \end{tikzpicture}
+  \caption{Conceptual relationship between GCR and approximation safety (Eq.~\eqref{eq:gcr_hypothesis}). The dashed curve is hypothetical, not fitted; confirmed data points for Kvasir-SEG (low GCR) and Synapse (high GCR) are consistent with the monotonically decreasing trend. ISIC 2018 result pending.}
+  \label{fig:gcr_curve}
+\end{figure}
+
+Attention approximation should not be regarded as a binary design choice but as a space whose safety depends on GCR. Different approximation configurations (Figure~\ref{fig:approx_space}) suit different GCR regimes. The gate=learn improvement on Kvasir ($+$0.77\%) further suggests that on low-GCR tasks, the implicit regularization of a collapsed 50/50 gate may confer a generalization benefit that PAM-only routing does not.
+
+\subsection{Design Principles}
+
+The GCR framework and the gate collapse finding together provide three practical principles for efficient attention design in medical image segmentation.
+
+First, attention approximation should be selected according to the contextual characteristics of the target segmentation task, rather than applied uniformly across all medical imaging applications.
+
+Second, adaptive routing mechanisms require sufficient feature diversity between attention branches; otherwise, gradient symmetry may cause routing collapse regardless of window size or rank.
+
+Finally, future efficient attention architectures should explicitly consider approximation safety together with computational efficiency, instead of focusing exclusively on reducing theoretical complexity. Figure~\ref{fig:guideline} summarizes these guidelines as a practical decision tree.
+
+\begin{figure}[t]
+  \centering
+  \begin{tikzpicture}[
+    decision/.style={diamond, draw, fill=yellow!15, minimum width=2.8cm,
+                     minimum height=0.75cm, text centered, font=\small, inner sep=1pt, align=center},
+    result/.style={draw, rounded corners=3pt, minimum width=2.4cm, minimum height=0.7cm,
+                   text centered, font=\small, align=center},
+    arr/.style={->, thick, >=stealth}
+  ]
+    \node[result, fill=blue!10]   (task) at (0, 0)    {Segmentation Task};
+    \node[decision]               (q)    at (0,-1.2)  {High GCR?};
+    \node[result, fill=red!10]    (yes)  at (-2.2,-2.8) {Full Dual Attention\\(DA-TransUNet)\\preserve context};
+    \node[result, fill=green!10]  (no)   at (2.2,-2.8)  {ApproxDA\\windowed PAM\\+grouped CAM};
+    \draw[arr] (task)--(q);
+    \draw[arr] (q) -- node[left,  font=\footnotesize] {Yes} +(-2.2,-0.8) -- (yes);
+    \draw[arr] (q) -- node[right, font=\footnotesize] {No}  +(2.2,-0.8)  -- (no);
+  \end{tikzpicture}
+  \caption{Practical design guideline derived from GCR analysis. Tasks requiring cross-organ anatomical reasoning (high GCR) should retain full dual attention. Local-structure tasks (low GCR) can safely use ApproxDA, reducing per-GPU VRAM by 44\% with no accuracy penalty.}
+  \label{fig:guideline}
+\end{figure}

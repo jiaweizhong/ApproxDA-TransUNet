@@ -1,0 +1,36 @@
+\section{Related Work}
+\label{sec:related_work}
+
+\subsection{CNN-based Medical Image Segmentation}
+
+Convolutional encoder-decoder architectures have established the foundational design paradigm for medical image segmentation. U-Net~\cite{ronneberger2015unet} introduced a symmetric encoder-decoder with skip connections that combine deep semantic features with shallow spatial detail, enabling precise boundary localization. U-Net++~\cite{zhou2018unetpp} densified the skip pathways through nested sub-networks to reduce the semantic gap between encoder and decoder. Attention U-Net~\cite{oktay2018attention} integrated soft attention gates on skip connections to selectively suppress irrelevant activations at each scale. ResUNet~\cite{diakogiannis2020resunet} incorporated residual connections for stable training at greater depth, while MultiResUNet~\cite{ibtehaz2020multiresunet} replaced standard convolutions with multi-resolution blocks for richer local feature representations. These five architectures form the primary CNN baselines evaluated in this work. Despite their strong performance on local-feature-dominant tasks, their limited receptive fields hinder long-range anatomical reasoning, motivating the Transformer-based methods discussed next.
+
+\subsection{Transformer-based Medical Image Segmentation}
+
+Transformer architectures have significantly advanced medical image segmentation by enabling global dependency modeling beyond the locality of convolutional neural networks. Representative methods such as TransUNet~\cite{chen2021transunet}, Swin-Unet~\cite{cao2022swinunet}, UNETR~\cite{hatamizadeh2022unetr}, UCTransNet~\cite{wang2022uctransnet}, and DAEformer~\cite{azad2023daeformer} combine convolutional feature extraction with transformer-based contextual modeling to achieve state-of-the-art segmentation performance across a wide range of medical imaging tasks.
+
+\subsection{Dual Attention and DA-TransUNet}
+
+Position Attention Modules (PAM) and Channel Attention Modules (CAM) were introduced by DANet~\cite{fu2019dual} for scene segmentation. PAM computes a non-local affinity matrix over all $N{=}H{\times}W$ spatial positions at $\mathcal{O}(N^2C)$ complexity, enabling each location to aggregate context from every other position. CAM models dependencies among all $C$ channels through a channel-wise affinity matrix at $\mathcal{O}(C^2N)$ complexity, capturing global semantic channel correlations independent of spatial layout. Outputs of both branches are summed via learned coefficients to produce the final dual-attended representation.
+
+DA-TransUNet~\cite{sun2024datransunet} adapted this design for medical image segmentation by inserting dual-attention blocks at multiple skip connections and the bottleneck of a hybrid R50-ViT-B/16 encoder-decoder, with a learnable channel-wise gate fusing PAM and CAM at each block. DA-TransUNet achieves state-of-the-art accuracy on multiple benchmarks, but inherits the quadratic complexity of PAM ($\mathcal{O}(N^2C)$) and CAM ($\mathcal{O}(C^2N)$), and its public implementation contains a DataParallel incompatibility that prevents multi-GPU training. This work directly targets the dual-attention module of DA-TransUNet.
+
+\subsection{Adaptive Attention Routing}
+
+Learnable gating for feature branch fusion appears widely in transformer-based segmentation~\cite{azad2023daeformer,rahman2024emcad}, with the implicit assumption that such gates converge to meaningful, sample-adaptive strategies after end-to-end optimization. Existing work generally does not investigate whether the routing module remains effective or degenerates. This work explicitly analyzes the optimization dynamics of the gate within DA-TransUNet~\cite{sun2024datransunet} and shows that gradient symmetry between the two attention branches causes the gate to collapse to a near-constant coefficient, degenerating from adaptive routing into a fixed blend.
+
+\subsection{Research Gap}
+
+Existing efficient attention studies mainly address the following question:
+
+\begin{quote}
+\emph{How can attention be approximated more efficiently while preserving segmentation accuracy?}
+\end{quote}
+
+In contrast, this work investigates a complementary yet largely unexplored problem:
+
+\begin{quote}
+\emph{Under what contextual conditions is attention approximation fundamentally appropriate for medical image segmentation?}
+\end{quote}
+
+Instead of introducing another efficient attention operator, we reformulate the dual-attention module of DA-TransUNet~\cite{sun2024datransunet} into a controllable approximation framework and systematically investigate the interaction between approximation strategies, routing behavior, and task-specific contextual requirements. This perspective shifts the focus from designing increasingly efficient attention operators toward understanding the applicability and limitations of attention approximation itself.

@@ -1,0 +1,16 @@
+\section{Conclusion}
+\label{sec:conclusion}
+
+This paper presented ApproxDA, a controllable approximation formulation derived from the dual-attention module of DA-TransUNet~\cite{sun2024datransunet}. Rather than proposing another efficient attention operator, ApproxDA was designed to systematically investigate the effectiveness of attention approximation under different medical image segmentation tasks.
+
+Extensive experiments demonstrate that attention approximation is fundamentally context dependent. While approximation remains effective for local-structure-dominant segmentation tasks such as polyp segmentation (ApproxDA achieves 89.24\% DSC on Kvasir-SEG, +0.77\% over the full-attention baseline), it consistently degrades performance on tasks requiring extensive global anatomical reasoning such as multi-organ CT segmentation ($-$1.16\% DSC on Synapse).
+
+Furthermore, our analysis reveals that the conventional learnable routing mechanism naturally collapses because of gradient symmetry, causing adaptive routing to degenerate into an almost fixed fusion strategy. This collapse is independent of window size or rank, representing a fundamental limitation of symmetric two-branch gating rather than a windowing artifact.
+
+Together, these findings establish Global Context Requirement (GCR) as a practical criterion for predicting whether attention approximation will be beneficial or harmful for a given segmentation task---shifting the research question from \emph{how to approximate} to \emph{when to approximate}.
+
+Future efficient attention research should move beyond designing increasingly lightweight attention operators toward understanding when approximation is fundamentally appropriate. We hope this study provides practical guidelines for designing future efficient attention architectures in medical image segmentation. In future work, we plan to investigate routing mechanisms that explicitly preserve branch diversity, as well as broader approximation strategies for foundation medical vision models.
+
+\section*{Acknowledgment}
+
+The authors thank the open-source contributors of DA-TransUNet, TransUNet, and Swin Transformer for their publicly available codebases.

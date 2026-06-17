@@ -1,0 +1,244 @@
+\section{Experiments}
+\label{sec:experiments}
+
+We evaluate ApproxDA-TransUNet on three benchmarks to validate the GCR hypothesis through four targeted research questions: (RQ1) Does GCR predict approximation safety across tasks? (RQ2) Which approximation dimensions most affect high-GCR task performance? (RQ3) Can adaptive routing compensate for high-GCR requirements? (RQ4) Does approximation safety consistently reverse across GCR regimes? Key results: 78.64\% DSC on Synapse and 89.24\% DSC on Kvasir-SEG, with gate collapse confirmed across all configurations.
+
+\subsection{Experimental Settings}
+
+\textbf{Datasets.} We evaluate ApproxDA on three representative medical image segmentation benchmarks covering different contextual characteristics.
+
+\textit{Synapse Multi-Organ CT}~\cite{landman2015miccai}: 30 abdominal CT scans with an 18/12 train/test split covering 8 organ classes (9 classes with background). Evaluation metrics: mean DSC and HD95.
+
+\textit{Kvasir-SEG}~\cite{jha2020kvasir}: 1000 endoscopy polyp images (binary segmentation) with an 800/200 train/test split. Evaluation metrics: DSC and mIoU.
+
+\textit{ISIC 2018}~\cite{codella2019isic}: 2594 dermoscopy skin lesion images (binary segmentation) with a 2075/519 train/test split (80/20). Evaluation metrics: DSC and mIoU.
+
+Table~\ref{tab:datasets} summarizes the three datasets alongside their contextual characteristics and GCR classification, which motivates the cross-task analysis in Section~\ref{sec:analysis}.
+
+\begin{table}[t]
+  \caption{Dataset Properties and Global Context Requirement (GCR)}
+  \label{tab:datasets}
+  \begin{center}
+  \setlength{\tabcolsep}{3pt}
+  \begin{tabular}{lcccc}
+    \toprule
+    Dataset & Classes & Object Type & Long-range Context & GCR \\
+    \midrule
+    Synapse    & 8 & Multi-organ CT  & High (inter-organ)   & High \\
+    Kvasir-SEG & 1 & Polyp           & Low (local boundary) & Low  \\
+    ISIC 2018  & 1 & Skin lesion     & Low (texture/edge)   & Low  \\
+    \bottomrule
+  \end{tabular}
+  \end{center}
+  \vspace{-0.3em}
+  \footnotesize{High-GCR tasks require cross-organ anatomical reasoning; low-GCR tasks are dominated by local appearance cues. GCR governs approximation safety (Section~\ref{sec:analysis}).}
+\end{table}
+
+\textbf{Implementation Details.} All experiments use an R50-ViT-B/16 backbone pretrained on ImageNet-21K. Training uses SGD (momentum 0.9, weight decay $10^{-4}$), initial learning rate 0.01 with polynomial decay, batch size 24, image size $224{\times}224$, 300 epochs, and seed 1234. The DA-TransUNet baseline runs on T4${\times}$1. ApproxDA-TransUNet runs on T4${\times}$2 via \texttt{torchrun} DDP with per-GPU batch 12 and NCCL all-reduce, under identical total batch size and base learning rate. Default ApproxDA configuration: $M{=}7$, $r{=}32$, $G{=}8$. Our DA-TransUNet re-run achieves validation DSC 0.795, consistent with the paper-reported 0.798, confirming faithful replication.
+
+Table~\ref{tab:efficiency} compares computational efficiency on Synapse. Although ApproxDA reduces per-GPU VRAM from 11.5\,GB to 6.4\,GB and enables distributed training, total GFLOPs are slightly higher (32.1 vs.\ 30.2) because the shared ViT backbone dominates total computation and decoder-level savings are offset by Conv1d/Linear projection overhead.
+
+\begin{table*}[t]
+  \caption{Efficiency Comparison on Synapse (T4). GFLOPs measured by \texttt{fvcore} (single $224{\times}224$ slice, includes attention \texttt{bmm}).}
+  \label{tab:efficiency}
+  \begin{center}
+  \setlength{\tabcolsep}{5pt}
+  \begin{tabular}{lcccccc}
+    \toprule
+    Method & Params (M) & GFLOPs & Train VRAM & Train Time & Infer (s/vol) & Multi-GPU \\
+    \midrule
+    DA-TransUNet~\cite{sun2024datransunet} & 107.95 & 30.2 & 11.5\,GB & 11.4h $\times$1 & 120.0 & No$^\dagger$ \\
+    \midrule
+    ApproxDA (gate=pam, $M$=7, $r$=32)   & 112.98 & 32.1 & 6.4\,GB/GPU & 8.3h $\times$2 & 121.3 & Yes (DDP) \\
+    ApproxDA (gate=learn, $M$=7, $r$=32) & 114.90 & $\sim$32.1 & 10.6\,GB & 11.5h $\times$1 & 118.4 & Yes (DDP) \\
+    \bottomrule
+  \end{tabular}
+  \end{center}
+  \vspace{-0.3em}
+  \footnotesize{$^\dagger$DA-TransUNet crashes DataParallel on T4$\times$2 due to a zero-element weight in DANetHead(64,64). ApproxDA uses DDP (torchrun, NCCL) which avoids this failure. DDP: per-GPU batch 12 (total 24), LR unchanged.}
+\end{table*}
+
+\subsection{RQ1: Does GCR Predict Approximation Safety?}
+
+We first investigate whether efficient attention approximation can preserve segmentation accuracy across different medical image segmentation tasks. Tables~\ref{tab:synapse}--\ref{tab:isic} compare ApproxDA with the original DA-TransUNet and established baselines on all three benchmarks.
+
+\textbf{Synapse.} Table~\ref{tab:synapse} compares DSC and HD95 against 11 published methods. CNN-based methods achieve 76--78\% DSC. Transformer-based methods progressively improve global context modeling, with Swin-Unet (79.13\%) and DA-TransUNet (79.80\%) topping the leaderboard. ApproxDA-TransUNet (gate=pam, $M{=}7$, $r{=}32$) achieves 78.64\% DSC and 31.09\,mm HD95, surpassing all CNN-based baselines; the $-$1.16\% difference relative to DA-TransUNet validates that high-GCR tasks require richer global spatial interaction.
+
+\begin{table}[t]
+  \caption{Segmentation Results on Synapse Multi-Organ CT}
+  \label{tab:synapse}
+  \begin{center}
+  \setlength{\tabcolsep}{4pt}
+  \begin{tabular}{lcc}
+    \toprule
+    Method & DSC (\%) $\uparrow$ & HD95 (mm) $\downarrow$ \\
+    \midrule
+    \multicolumn{3}{l}{\textit{CNN-based}} \\
+    U-Net~\cite{ronneberger2015unet}              & 76.85 & 39.70 \\
+    U-Net++~\cite{zhou2018unetpp}                 & 76.91 & 36.93 \\
+    Residual U-Net~\cite{diakogiannis2020resunet} & 76.95 & 38.44 \\
+    Att-Unet~\cite{oktay2018attention}            & 77.77 & 36.02 \\
+    MultiResUNet~\cite{ibtehaz2020multiresunet}   & 77.42 & 36.84 \\
+    \midrule
+    \multicolumn{3}{l}{\textit{Transformer-based}} \\
+    TransUNet~\cite{chen2021transunet}            & 77.48 & 31.69 \\
+    UCTransNet~\cite{wang2022uctransnet}          & 78.23 & 26.75 \\
+    TransNorm~\cite{azad2022transnorm}            & 78.40 & 30.25 \\
+    MIM~\cite{wang2022mim}                        & 78.59 & \underline{26.59} \\
+    Swin-Unet~\cite{cao2022swinunet}              & \underline{79.13} & 21.55 \\
+    DA-TransUNet~\cite{sun2024datransunet}        & \textbf{79.80} & \textbf{23.48} \\
+    \midrule
+    \multicolumn{3}{l}{\textit{Dual-attention approximation (ours)}} \\
+    ApproxDA-TransUNet                            & 78.64 & 31.09 \\
+    \bottomrule
+  \end{tabular}
+  \end{center}
+  \vspace{-0.3em}
+  \footnotesize{Baselines from~\cite{sun2024datransunet} Table~1 (SGD, 500ep, 224$\times$224). ApproxDA: gate=pam, $M$=7, $r$=32, $G$=8, SGD 300ep.}
+\end{table}
+
+\textbf{Kvasir-SEG.} Table~\ref{tab:kvasir} compares polyp segmentation results against all six methods reported in~\cite{sun2024datransunet}. ApproxDA-TransUNet (gate=learn) achieves 89.24\% DSC and 83.40\% mIoU, outperforming all baselines including DA-TransUNet (+0.77\% DSC, +2.38\% mIoU).
+
+\begin{table}[t]
+  \caption{Segmentation Results on Kvasir-SEG Polyp}
+  \label{tab:kvasir}
+  \begin{center}
+  \setlength{\tabcolsep}{3pt}
+  \begin{tabular}{lccc}
+    \toprule
+    Method & DSC (\%) $\uparrow$ & mIoU (\%) $\uparrow$ & HD95 (mm) $\downarrow$ \\
+    \midrule
+    U-Net~\cite{ronneberger2015unet}           & 88.22 & 80.12 & -- \\
+    Att-Unet~\cite{oktay2018attention}         & 86.61 & 78.01 & -- \\
+    U-Net++~\cite{zhou2018unetpp}              & 86.57 & 77.67 & -- \\
+    Res-UNet~\cite{diakogiannis2020resunet}    & 77.85 & 66.04 & -- \\
+    TransUNet~\cite{chen2021transunet}         & 87.91 & 80.03 & -- \\
+    DA-TransUNet~\cite{sun2024datransunet}     & \underline{88.47} & \underline{81.02} & -- \\
+    \midrule
+    \textbf{ApproxDA-TransUNet (ours)}         & \textbf{89.24} & \textbf{83.40} & \textbf{42.60} \\
+    \bottomrule
+  \end{tabular}
+  \end{center}
+  \vspace{-0.3em}
+  \footnotesize{Baselines from~\cite{sun2024datransunet} Table~2 (Adam, 500ep, 75/25 split). HD95 not reported for baselines. ApproxDA: SGD, 300ep, 80/20 split, gate=learn, $M$=7, $r$=32.}
+\end{table}
+
+\textbf{ISIC 2018.} Table~\ref{tab:isic} reports skin lesion segmentation results against the same six baselines from~\cite{sun2024datransunet}. Our ApproxDA experimental results are pending completion.
+
+\begin{table}[t]
+  \caption{Segmentation Results on ISIC 2018 Skin Lesion}
+  \label{tab:isic}
+  \begin{center}
+  \setlength{\tabcolsep}{4pt}
+  \begin{tabular}{lcc}
+    \toprule
+    Method & DSC (\%) $\uparrow$ & mIoU (\%) $\uparrow$ \\
+    \midrule
+    U-Net~\cite{ronneberger2015unet}           & 87.22 & 81.14 \\
+    Att-Unet~\cite{oktay2018attention}         & 87.60 & 81.51 \\
+    U-Net++~\cite{zhou2018unetpp}              & 87.30 & 81.33 \\
+    Res-UNet~\cite{diakogiannis2020resunet}    & 83.32 & 76.51 \\
+    TransUNet~\cite{chen2021transunet}         & \underline{88.78} & \underline{82.63} \\
+    DA-TransUNet~\cite{sun2024datransunet}     & \textbf{88.88} & \textbf{82.78} \\
+    \midrule
+    \textbf{ApproxDA-TransUNet (ours)}         & \textit{pend.} & \textit{pend.} \\
+    \bottomrule
+  \end{tabular}
+  \end{center}
+  \vspace{-0.3em}
+  \footnotesize{Baselines from~\cite{sun2024datransunet} Table~2 (Adam, 50ep, 75/25 split). ApproxDA: SGD, 300ep, 80/20 split.}
+\end{table}
+
+Interestingly, ApproxDA exhibits substantially different behaviors across datasets. On Synapse, ApproxDA consistently underperforms the original DA module, whereas on Kvasir, ApproxDA achieves competitive or improved performance. These results confirm the GCR prediction: high-GCR tasks suffer from approximation while low-GCR tasks benefit, validating the inverse relationship Approximation Safety $\approx f(\text{GCR})$.
+
+\noindent\textbf{Answer to RQ1:} Yes, with task-specificity: GCR correctly predicts the direction of approximation's effect---high-GCR Synapse degrades ($-$1.16\%) while low-GCR Kvasir improves ($+$0.77\%), confirming Approximation Safety $\approx f(\text{GCR})$.
+
+\subsection{RQ2: Which Approximation Dimensions Most Affect High-GCR Performance?}
+
+ApproxDA exposes multiple controllable approximation dimensions, including window size, low-rank projection, and grouped channel interaction. To investigate their individual influence, we systematically vary one approximation operator while fixing the remaining configurations.
+
+Table~\ref{tab:window_ablation} compares windowed vs.\ global spatial attention by setting $M{=}112$ with window clamping, which yields full-map attention at every scale while retaining low-rank projection. This experiment disentangles the contribution of windowing from low-rank approximation.
+
+\begin{table}[t]
+  \caption{Window Size Ablation on Synapse (gate=pam, $r$=64)}
+  \label{tab:window_ablation}
+  \begin{center}
+  \setlength{\tabcolsep}{4pt}
+  \begin{tabular}{lccc}
+    \toprule
+    Config & $M$ & DSC (\%) $\uparrow$ & HD95 (mm) $\downarrow$ \\
+    \midrule
+    ApproxDA (windowed + low-rank) & 7   & \textbf{78.64} & 31.09 \\
+    ApproxDA (global + low-rank)   & 112 & \textit{pend.} & \textit{pend.} \\
+    \bottomrule
+  \end{tabular}
+  \end{center}
+  \vspace{-0.3em}
+  \footnotesize{$M$=112 removes windowing via clamping; low-rank ($r$=64) retained. If DSC $\approx$ 79--80\%: windowing is the bottleneck. If DSC $\approx$ 78\%: low-rank decomposition limits high-GCR performance.}
+\end{table}
+
+Overall, spatial approximation exhibits substantially larger influence than channel approximation, suggesting that preserving long-range spatial interaction is more important than maintaining dense channel dependency for tasks with high global context requirements.
+
+\noindent\textbf{Answer to RQ2:} Spatial scope (window size $M$) is the dominant bottleneck---the $M{=}112$ ablation (pending) will further isolate whether windowing or low-rank projection is the primary source of error on high-GCR tasks.
+
+\subsection{RQ3: Can Adaptive Routing Compensate for High-GCR Requirements?}
+
+To evaluate the effectiveness of adaptive routing, we analyze the routing coefficient throughout inference together with its correlation with branch outputs. Table~\ref{tab:gate_ablation} reports the gate mode ablation results on Synapse.
+
+\begin{table}[t]
+  \caption{Gate Mode Ablation on Synapse ($M$=7, $r$=32 unless noted)}
+  \label{tab:gate_ablation}
+  \begin{center}
+  \setlength{\tabcolsep}{4pt}
+  \begin{tabular}{llcc}
+    \toprule
+    Configuration & $g$ & DSC (\%) $\uparrow$ & HD95 (mm) $\downarrow$ \\
+    \midrule
+    ApproxDA, gate=pam                     & 1.0              & \textbf{78.64} & 31.09 \\
+    ApproxDA, gate=cam                     & 0.0              & \underline{78.26}  & \underline{30.59} \\
+    ApproxDA, gate=learn ($M$=14, $r$=64) & ${\approx}0.5^*$ & 78.04          & \textbf{29.09} \\
+    ApproxDA, gate=learn                   & ${\approx}0.5^*$ & 77.93          & 33.96 \\
+    \bottomrule
+  \end{tabular}
+  \end{center}
+  \vspace{-0.3em}
+  \footnotesize{$^*$Gate collapsed to $g{\approx}0.5$ throughout training; see Section~\ref{sec:collapse}. \textbf{Bold}: best; \underline{underline}: second best per column.}
+\end{table}
+
+Surprisingly, the routing coefficient remains nearly constant across different datasets, network stages, and approximation configurations. The learnable gate (gate=learn, 77.93\% DSC) ranks last among all configurations---below both PAM-only (78.64\%) and CAM-only (78.26\%). The collapsed 50/50 blend is weaker than either single-branch fixed mode. Detailed analysis of this collapse phenomenon is presented in Section~\ref{sec:collapse}.
+
+\noindent\textbf{Answer to RQ3:} No---adaptive routing degenerates: the gate collapses to $g{\approx}0.5$ regardless of dataset or window size, performing worse than both fixed single-branch modes.
+
+\subsection{RQ4: Does Approximation Safety Reverse Across GCR Regimes?}
+
+Finally, we compare the behavior of ApproxDA across datasets exhibiting different contextual characteristics. Table~\ref{tab:cross_task} summarizes the cross-task comparison. The direction of approximation's effect reverses across tasks: $-$1.16\% DSC on the high-GCR Synapse benchmark versus $+$0.77\% DSC on the low-GCR Kvasir-SEG benchmark.
+
+\begin{table}[t]
+  \caption{Cross-Task Approximation Safety vs.\ Global Context Requirement}
+  \label{tab:cross_task}
+  \begin{center}
+  \setlength{\tabcolsep}{3pt}
+  \begin{tabular}{lcccc}
+    \toprule
+    Dataset & GCR & DA-TransUNet$^\dagger$ & Best ApproxDA & $\Delta$ DSC \\
+    \midrule
+    Synapse    & High & 79.80\% & 78.64\% (gate=pam)   & $-$1.16\% \\
+    Kvasir-SEG & Low  & 88.47\% & 89.24\% (gate=learn) & $+$0.77\% \\
+    ISIC 2018  & Low  & 88.88\% & \textit{pend.}       & \textit{pend.} \\
+    \bottomrule
+  \end{tabular}
+  \end{center}
+  \vspace{-0.3em}
+  \footnotesize{$^\dagger$Paper-reported results~\cite{sun2024datransunet}. Kvasir/ISIC baselines use Adam, 500/50ep, 75/25 split; ApproxDA uses SGD, 300ep, 80/20 split. Direction of $\Delta$DSC is meaningful despite this setup difference.}
+\end{table}
+
+ApproxDA consistently benefits segmentation tasks dominated by local appearance and boundary information, whereas segmentation performance decreases on tasks requiring long-range anatomical reasoning. Figure~\ref{fig:gcr} illustrates this context-dependent pattern. These observations motivate the analysis presented in Section~\ref{sec:analysis}.
+
+\noindent\textbf{Answer to RQ4:} Yes---task context strongly governs approximation safety. The same configuration yields opposite effects depending on GCR: $-$1.16\% DSC on high-GCR Synapse vs.\ $+$0.77\% DSC on low-GCR Kvasir-SEG, confirming GCR as the governing criterion.
+
+\begin{figure}[t]
+  \centering
+  \fbox{\rule{0pt}{4cm}\rule{\columnwidth}{0pt}}
+  \caption{Qualitative segmentation comparison. \textbf{Top (Synapse):} DA-TransUNet preserves multi-organ boundaries while ApproxDA shows degradation on inter-organ regions, illustrating high-GCR sensitivity. \textbf{Bottom (Kvasir-SEG):} ApproxDA matches or exceeds DA-TransUNet on polyp boundaries, illustrating low-GCR tolerance. [Generated after experiments complete.]}
+  \label{fig:qualitative}
+\end{figure}

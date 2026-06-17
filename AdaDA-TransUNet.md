@@ -4,10 +4,10 @@
 
 | Layer | Name |
 |-------|------|
-| **Paper Title** | Task-Conditioned Attention Approximation for Efficient Medical Image Segmentation |
+| **Paper Title** | ApproxDA-TransUNet: Understanding Context-Dependent Attention Approximation for Medical Image Segmentation |
 | **Method Name** | ApproxDA-TransUNet (Approximate Dual Attention TransUNet) |
 | **Research Theme** | Approximation Safety |
-| **Design Principle** | Task Context Complexity → Required Global Context → Safe Approximation Strength |
+| **Design Principle** | Global Context Requirement (GCR) → Safe Approximation Strength |
 | **Code directories** | `Ada-DA-TransUNet` / `AdaDA` (keep as-is; no rename needed) |
 
 ---
@@ -35,7 +35,7 @@ DANet [1] models **spatial dependencies** (Position Attention Module, PAM) and *
 |---|---|
 | High computational complexity | PAM: $\mathcal{O}(N^2)$, CAM: $\mathcal{O}(C^2)$ — makes multi-GPU DDP impossible (BroadcastBackward crash on zero-element tensors) |
 | Rigid branch weighting | PAM and CAM always contribute equally regardless of task structure or spatial context requirements |
-| No task-conditional analysis | No understanding of when spatial vs. channel attention matters across tasks with different complexity levels |
+| No context-dependent analysis | No understanding of when spatial vs. channel attention matters across tasks with different global context requirements |
 
 ---
 
@@ -68,22 +68,22 @@ Empirically confirmed at M=7 (gate range 0.4993–0.5010, Δ=0.0017) and M=14 (s
 
 We study how approximation safety varies across tasks with different context complexity:
 
-| Dataset | Task | TCC Level | Best ApproxDA Config | Δ DSC vs DA |
+| Dataset | Task | GCR Level | Best ApproxDA Config | Δ DSC vs DA |
 |---------|------|-----------|-------------------|-------------|
-| Synapse | Multi-organ CT (9 classes) | High | gate=pam, M=7, r=32 | −1.87% |
-| Kvasir-SEG | Polyp segmentation (binary) | Low | gate=learn, M=7, r=32 | **+0.80%** |
-| ISIC 2018 | Skin lesion (binary) | Low | TBD | TBD |
+| Synapse | Multi-organ CT (9 classes) | High GCR | gate=pam, M=7, r=32 | −1.87% |
+| Kvasir-SEG | Polyp segmentation (binary) | Low GCR | gate=learn, M=7, r=32 | **+0.80%** |
+| ISIC 2018 | Skin lesion (binary) | Low GCR | TBD | TBD |
 
-Pattern: high Task Context Complexity tasks lose from approximation; low-TCC tasks tolerate or benefit.
+Pattern: high-GCR tasks lose from approximation; low-GCR tasks tolerate or benefit.
 
-### Contribution 4: Preliminary TCC→Safety Evidence
+### Contribution 4: Preliminary GCR→Safety Evidence
 
-We provide preliminary empirical evidence that Task Context Complexity (TCC) governs when attention approximation is safe:
+We provide preliminary empirical evidence that Global Context Requirement (GCR) governs when attention approximation is safe:
 
-- **High TCC** (Synapse): complex multi-organ anatomy, large scale variation, strong global spatial dependencies across organs → approximation loses critical long-range context → accuracy drops
-- **Low TCC** (Kvasir, ISIC): single object per image, relatively homogeneous boundary structure, local context often sufficient → approximation is safe; the implicit regularization may even help
+- **High GCR** (Synapse): complex multi-organ anatomy, large scale variation, strong global spatial dependencies across organs → approximation loses critical long-range context → accuracy drops
+- **Low GCR** (Kvasir, ISIC): single object per image, relatively homogeneous boundary structure, local context often sufficient → approximation is safe; the implicit regularization may even help
 
-This is framed as **preliminary evidence** because TCC is not yet formally quantified (a journal extension goal).
+This is framed as **preliminary evidence** because GCR is not yet formally quantified (a journal extension goal).
 
 ---
 
@@ -215,19 +215,19 @@ $$\mathcal{L} = \frac{1}{2} \mathcal{L}_{\text{Dice}} + \frac{1}{2} \mathcal{L}_
 
 ## 8. Experimental Results
 
-### Synapse Multi-Organ CT (high TCC)
+### Synapse Multi-Organ CT (high GCR)
 
 | Method | DSC (%) | HD95 (mm) | GFLOPs | Notes |
 |--------|---------|-----------|--------|-------|
 | DA-TransUNet (paper) | 79.80 | 23.48 | — | — |
-| DA-TransUNet (ours, 300ep SGD) | 80.51 | 25.41 | 30.2 (fvcore) | Baseline |
+| DA-TransUNet (paper reported) | 79.80 | 23.48 | 30.2 (fvcore) | Baseline |
 | ApproxDA gate=learn, M=7, r=32 | 77.93 | 33.96 | ~32 | Gate collapsed (g≈0.5) |
 | ApproxDA gate=cam, M=7, r=32 | 78.26 | 30.59 | ~32 | CAM-only |
 | ApproxDA gate=learn, M=14, r=64 | 78.04 | 29.09 | 32.4 (fvcore) | Gate collapsed at larger window too |
 | **ApproxDA gate=pam, M=7, r=32** | **78.64** | **31.09** | **32.1 (fvcore)** | **Best ApproxDA on Synapse** |
 | ApproxDA Global PAM, M=112, r=64 | ⏳ TBD | ⏳ TBD | — | Pending: answers window vs. low-rank bottleneck |
 
-### Kvasir-SEG Polyp (low TCC)
+### Kvasir-SEG Polyp (low GCR)
 
 | Method | DSC (%) | mIoU (%) | HD95 (mm) | Notes |
 |--------|---------|---------|-----------|-------|
@@ -235,7 +235,7 @@ $$\mathcal{L} = \frac{1}{2} \mathcal{L}_{\text{Dice}} + \frac{1}{2} \mathcal{L}_
 | DA-TransUNet (ours, 300ep SGD, 80/20) | 88.44 | 81.70 | 53.04 | Baseline |
 | **ApproxDA gate=learn, M=7, r=32** | **89.24** | **83.40** | **42.60** | **+0.80% DSC vs DA** |
 
-### ISIC 2018 Skin Lesion (low TCC)
+### ISIC 2018 Skin Lesion (low GCR)
 
 | Method | DSC (%) | mIoU (%) | Notes |
 |--------|---------|---------|-------|
@@ -260,7 +260,7 @@ $$\mathcal{L} = \frac{1}{2} \mathcal{L}_{\text{Dice}} + \frac{1}{2} \mathcal{L}_
 
 | `--gate_mode` | g value | DSC (%) | HD95 (mm) | Interpretation |
 |--------------|---------|---------|-----------|---------------|
-| `pam` (g=1) | 1.0 | **78.64** | 31.09 | PAM-only; best on high-TCC task |
+| `pam` (g=1) | 1.0 | **78.64** | 31.09 | PAM-only; best on high-GCR task |
 | `cam` (g=0) | 0.0 | 78.26 | 30.59 | CAM-only |
 | `learn` M=14 | ≈0.5 (collapsed) | 78.04 | **29.09** | Larger window helps HD95 even with collapsed gate |
 | `learn` M=7 | ≈0.5 (collapsed) | 77.93 | 33.96 | Worst DSC — collapsed gate is actively harmful on CT |
@@ -271,7 +271,7 @@ $$\mathcal{L} = \frac{1}{2} \mathcal{L}_{\text{Dice}} + \frac{1}{2} \mathcal{L}_
 
 | Config | M | r | gate | DSC (%) | HD95 (mm) | GFLOPs |
 |--------|---|---|------|---------|-----------|--------|
-| DA-TransUNet | global | — | N/A | 80.51 | 25.41 | 30.2 |
+| DA-TransUNet (paper) | global | — | N/A | 79.80 | 23.48 | 30.2 |
 | ApproxDA | 7 | 32 | learn | 77.93 | 33.96 | ~32 |
 | ApproxDA | 14 | 64 | learn | 78.04 | **29.09** | 32.4 |
 | ApproxDA Global PAM | 112 | 64 | pam | ⏳ TBD | ⏳ TBD | ~32+ |
@@ -280,11 +280,11 @@ $$\mathcal{L} = \frac{1}{2} \mathcal{L}_{\text{Dice}} + \frac{1}{2} \mathcal{L}_
 
 ### Cross-Task Summary
 
-| Dataset | DA-TransUNet DSC | ApproxDA best DSC | Δ DSC | TCC Level | Approximation safe? |
+| Dataset | DA-TransUNet DSC | ApproxDA best DSC | Δ DSC | GCR Level | Approximation safe? |
 |---------|-----------------|---------------|-------|-----------|-------------------|
-| Synapse | 80.51% | 78.64% (gate=pam) | −1.87% | High | ❌ No |
-| Kvasir | 88.44% | 89.24% (gate=learn) | **+0.80%** | Low | ✅ Yes |
-| ISIC | TBD | TBD | TBD | Low | ⏳ Expected Yes |
+| Synapse | 79.80% (paper reported) | 78.64% (gate=pam) | −1.17% | High GCR | ❌ No |
+| Kvasir | 88.44% | 89.24% (gate=learn) | **+0.80%** | Low GCR | ✅ Yes |
+| ISIC | TBD | TBD | TBD | Low GCR | ⏳ Expected Yes |
 
 ---
 
@@ -294,13 +294,13 @@ $$\mathcal{L} = \frac{1}{2} \mathcal{L}_{\text{Dice}} + \frac{1}{2} \mathcal{L}_
 
 2. **Gate collapse analysis:** Theoretical derivation and empirical confirmation of the gradient symmetry collapse in naïve learnable two-branch gating. The collapse is a fundamental limitation (not a windowing artifact) applicable to any two-branch attention architecture with a symmetric initialization.
 
-3. **Cross-task approximation study:** Systematic evaluation across Synapse (high-TCC), Kvasir (low-TCC), and ISIC (low-TCC). First empirical demonstration that the same approximation strategy has opposite effects depending on task complexity: −1.87% DSC on CT vs +0.80% DSC on polyp segmentation.
+3. **Cross-task approximation study:** Systematic evaluation across Synapse (high GCR), Kvasir (low GCR), and ISIC (low GCR). First empirical demonstration that the same approximation strategy has opposite effects depending on global context requirements: −1.87% DSC on CT vs +0.80% DSC on polyp segmentation.
 
-4. **Preliminary TCC→safety evidence:** Task Context Complexity (single-object homogeneous tasks vs multi-organ globally-dependent tasks) predicts whether approximation is safe. Preliminary because TCC is not formally quantified — formal quantification is a journal extension goal.
+4. **Preliminary GCR→safety evidence:** Global Context Requirement (single-object homogeneous tasks vs multi-organ globally-dependent tasks) predicts whether approximation is safe. Preliminary because GCR is not formally quantified — formal quantification is a journal extension goal.
 
-**Conference paper scope:** Understand routing failure and characterize task-conditioned approximation behavior. No new gating mechanism — analysis only.
+**Conference paper scope:** Understand routing failure and characterize context-dependent approximation behavior. No new gating mechanism — analysis only.
 
-**Journal paper scope:** Design non-collapsing routing (entropy-guided gate, orthogonal branch loss, MoE) that learns effective task-conditioned allocation; formally define and measure TCC; expand dataset range.
+**Journal paper scope:** Design non-collapsing routing (entropy-guided gate, orthogonal branch loss, MoE) that learns effective context-dependent allocation; formally define and measure GCR; expand dataset range.
 
 ---
 
@@ -309,7 +309,7 @@ $$\mathcal{L} = \frac{1}{2} \mathcal{L}_{\text{Dice}} + \frac{1}{2} \mathcal{L}_
 **Figure 1 — Cross-Task Performance Bar Chart**
 Bar chart comparing DA-TransUNet vs ApproxDA-TransUNet (best config) across Synapse, Kvasir, ISIC.
 Highlight: Synapse bar shows approximation hurts (−1.87%); Kvasir bar shows it helps (+0.80%).
-This is the paper's central visual — makes the task-conditioned pattern immediately visible.
+This is the paper's central visual — makes the context-dependent pattern immediately visible.
 
 **Figure 2 — Gate Collapse Illustration**
 Two-panel: (a) training curve of mean gate value $g$ over epochs — flat line at 0.5 regardless of M or epoch; (b) gradient flow diagram showing the symmetry trap ($g=0.5$ → equal gradients → PAM≈CAM → gradient≈0).
@@ -317,7 +317,7 @@ Produced by running `analyze_gate_entropy.py` on trained checkpoints.
 
 **Figure 3 — Global Context Analysis (Phase B experiment)**
 Scatter or bar: DSC vs. attention scope (M=7 windowed / M=14 windowed / M=112 global) on Synapse.
-If global PAM closes the gap → "windowing is the bottleneck"; if not → "low-rank itself limits capacity on high-TCC tasks." Either result tells a clean story.
+If global PAM closes the gap → "windowing is the bottleneck"; if not → "low-rank itself limits capacity on high-GCR tasks." Either result tells a clean story.
 
 **Figure 4 — Gate Mode Ablation Bar Chart**
 DSC comparison: gate=pam / gate=cam / gate=learn (M=7) / gate=learn (M=14) on Synapse.
