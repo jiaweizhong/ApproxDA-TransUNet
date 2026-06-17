@@ -9,7 +9,7 @@
   \frac{\partial\mathcal{L}}{\partial g} = \frac{\partial\mathcal{L}}{\partial\mathbf{F}} \cdot \left(\mathbf{F}_\text{P} - \mathbf{F}_\text{C}\right).
   \label{eq:gate_grad}
 \end{equation}
-At initialization $g{\approx}0.5$, both branches receive equal gradient $\tfrac{1}{2}\partial\mathcal{L}/\partial\mathbf{F}$. Without incentive to differentiate, $\mathbf{F}_\text{P} \approx \mathbf{F}_\text{C}$, so Eq.~\eqref{eq:gate_grad}$\approx \mathbf{0}$. This is self-reinforcing: equal gradients $\to$ convergent representations $\to$ near-zero gate gradient $\to$ $g$ fixed at~0.5.
+At initialization $g{\approx}0.5$, both branches receive equal gradient $\tfrac{1}{2}\partial\mathcal{L}/\partial\mathbf{F}$. Without incentive to differentiate, $\mathbf{F}_\text{P} \approx \mathbf{F}_\text{C}$, so Eq.~\eqref{eq:gate_grad}$\approx \mathbf{0}$. This is self-reinforcing: equal gradients $\to$ convergent representations $\to$ near-zero gate gradient $\to$ $g$ fixed at~0.5. This represents a \textbf{stable equilibrium of symmetric dual-branch optimization}: once reached, no first-order gradient signal can escape it.
 
 \textbf{Empirical confirmation.} After 300 epochs, the gate range at $M{=}7$ is $[0.4993,\,0.5010]$ with $\Delta g{=}0.0017$. At $M{=}14$: $g{\approx}0.5002$ with $\Delta g{\approx}0.0000$. Collapse is identical at both window sizes, confirming it is a fundamental property of symmetric two-branch gating and not a consequence of limited receptive field. Figure~\ref{fig:gate_collapse} visualizes the collapse trajectory.
 
@@ -35,24 +35,22 @@ Although ApproxDA adopts the same approximation operators across all experiments
 
 We attribute this phenomenon to the different global contextual requirements of the underlying segmentation tasks. Multi-organ abdominal CT segmentation requires reasoning over long-range anatomical relationships among multiple organs. Aggressive attention approximation inevitably weakens such global dependency modeling, leading to performance degradation.
 
-In contrast, polyp and skin lesion segmentation are primarily determined by local appearance, boundary contrast, and texture consistency. Consequently, restricting attention to local regions introduces only limited information loss while simultaneously acting as an implicit regularizer, which explains the improved generalization observed on Kvasir.
+In contrast, polyp and skin lesion segmentation are primarily determined by local appearance, boundary contrast, and texture consistency. Consequently, restricting attention to local regions introduces only limited information loss while simultaneously acting as an implicit regularizer, which explains the improved generalization observed on Kvasir. This interpretation motivates a more precise characterization in terms of Global Context Requirement, formalized below.
 
 \subsection{GCR and Approximation Safety}
 
 We formally define two complementary task-level properties:
 
-\begin{description}
-  \item[\textbf{Global Context Requirement (GCR)}:] The degree to which accurate segmentation depends on long-range spatial dependencies between distant anatomical elements. GCR is intrinsic to the task, independent of the model architecture. High-GCR tasks (multi-organ CT) require cross-organ anatomical reasoning---liver position relative to spleen, aorta relative to vena cava---where disrupting global spatial interaction degrades delineation. Low-GCR tasks (polyp, skin lesion) are dominated by local boundary contrast and texture, with minimal dependence on distant context.
+\textbf{Global Context Requirement (GCR)} is the degree to which accurate segmentation depends on long-range spatial dependencies between distant anatomical elements. GCR is a latent task property, intrinsic to the task and independent of model architecture. High-GCR tasks (multi-organ CT) require cross-organ anatomical reasoning---liver position relative to spleen, aorta relative to vena cava---where disrupting global spatial interaction degrades delineation. Low-GCR tasks (polyp, skin lesion) are dominated by local boundary contrast and texture, with minimal dependence on distant context.
 
-  \item[\textbf{Approximation Safety}:] The degree to which spatial attention approximation can be introduced without degrading segmentation accuracy on a given task.
-\end{description}
+\textbf{Approximation Safety} is the degree to which spatial attention approximation can be introduced without degrading segmentation accuracy on a given task.
 
-Our central hypothesis is an inverse relationship between these properties:
+We hypothesize an inverse relationship between these properties, which we treat as a predictive claim rather than a proven causal law:
 \begin{equation}
   \text{Approximation Safety} \approx f(\text{GCR}), \quad f'(\cdot) < 0.
   \label{eq:gcr_hypothesis}
 \end{equation}
-Equation~\eqref{eq:gcr_hypothesis} is a conceptual claim, not an analytic proof. It summarizes the empirical pattern: the same ApproxDA configuration achieves $+$0.77\% DSC on low-GCR Kvasir-SEG and $-$1.16\% on high-GCR Synapse---opposite effects consistent with a monotonically decreasing relationship. Figure~\ref{fig:gcr_curve} plots the confirmed data points against this hypothesis.
+Equation~\eqref{eq:gcr_hypothesis} is a conceptual claim, not an analytic proof. It summarizes the empirical pattern: the same ApproxDA configuration achieves $+$0.80\% DSC on low-GCR Kvasir-SEG and $-$1.16\% on high-GCR Synapse---opposite effects consistent with a monotonically decreasing relationship. Figure~\ref{fig:gcr_curve} plots the confirmed data points against this hypothesis.
 
 \begin{figure}[t]
   \centering
@@ -66,7 +64,7 @@ Equation~\eqref{eq:gcr_hypothesis} is a conceptual claim, not an analytic proof.
     \draw[thick, blue!60!black, dashed]
       (0.3,3.4) .. controls (1.5,3.2) and (3.0,0.9) .. (4.8,0.35);
     \filldraw[green!60!black] (1.1, 3.0) circle (3pt);
-    \node[font=\footnotesize, green!50!black, right] at (1.2, 3.0) {Kvasir-SEG ($+$0.77\%)};
+    \node[font=\footnotesize, green!50!black, right] at (1.2, 3.0) {Kvasir-SEG ($+$0.80\%)};
     \filldraw[red!60!black]   (3.9, 0.6) circle (3pt);
     \node[font=\footnotesize, red!60!black, left]  at (3.8, 0.6) {Synapse ($-$1.16\%)};
     \node[font=\small\itshape, blue!50!black] at (3.2, 2.7) {$f'\!<\!0$};
@@ -75,7 +73,7 @@ Equation~\eqref{eq:gcr_hypothesis} is a conceptual claim, not an analytic proof.
   \label{fig:gcr_curve}
 \end{figure}
 
-Attention approximation should not be regarded as a binary design choice but as a space whose safety depends on GCR. Different approximation configurations (Figure~\ref{fig:approx_space}) suit different GCR regimes. The gate=learn improvement on Kvasir ($+$0.77\%) further suggests that on low-GCR tasks, the implicit regularization of a collapsed 50/50 gate may confer a generalization benefit that PAM-only routing does not.
+Attention approximation should not be regarded as a binary design choice but as a space whose safety \emph{appears to depend} on GCR. Different approximation configurations (Figure~\ref{fig:approx_space}) suit different GCR regimes. The gate=learn improvement on Kvasir ($+$0.80\%) further suggests that on low-GCR tasks, the implicit regularization of a collapsed 50/50 gate may confer a generalization benefit that PAM-only routing does not. That the same collapsed routing strategy helps low-GCR tasks but hurts high-GCR tasks underscores that the fixed equilibrium is not inherently harmful---its effect is task-dependent.
 
 \subsection{Design Principles}
 

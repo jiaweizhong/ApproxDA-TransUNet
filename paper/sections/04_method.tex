@@ -25,15 +25,13 @@ Figure~\ref{fig:framework} illustrates the overall ApproxDA architecture.
 
 The original DA module performs dense spatial and channel attention over the full feature map, with quadratic complexity in both spatial resolution and channel dimension. ApproxDA reduces this cost along three independent axes, each targeting a distinct aspect of the approximation:
 
-\begin{description}
-  \item[\textbf{Spatial scope} (window size $M$):] Controls \emph{how far} PAM reaches. Full global attention ($M{=}H$) captures all long-range spatial relationships; restricting to $M{\times}M$ local windows trades long-range context for lower complexity. This axis most directly governs whether high-GCR tasks retain the anatomical context they require.
+\textbf{Spatial scope} (window size $M$) controls \emph{how far} PAM reaches. Full global attention ($M{=}H$) captures all long-range spatial relationships; restricting to $M{\times}M$ local windows trades long-range context for lower complexity. This axis most directly governs whether high-GCR tasks retain the anatomical context they require.
 
-  \item[\textbf{Representation fidelity} (rank $r$):] Controls \emph{how precisely} attention is computed within each window. Low-rank projection ($r \ll M^2$) approximates the affinity matrix at reduced cost; higher $r$ approaches exact attention.
+\textbf{Representation fidelity} (rank $r$) controls \emph{how precisely} attention is computed within each window. Low-rank projection ($r \ll M^2$) approximates the affinity matrix at reduced cost; higher $r$ approaches exact attention.
 
-  \item[\textbf{Channel scope} (groups $G$):] Controls \emph{which channels} may interact in CAM. Partitioning $C$ channels into $G$ independent groups reduces cross-channel dependency while retaining within-group semantic interaction.
-\end{description}
+\textbf{Semantic interaction} (groups $G$) controls \emph{which channels} may interact in CAM. Partitioning $C$ channels into $G$ independent groups reduces cross-channel dependency while retaining within-group semantic interaction.
 
-The axes are fully independent: any two of $\{M,\,r,\,G\}$ can be held fixed while the third varies, enabling clean ablations that isolate individual approximation effects. Figure~\ref{fig:approx_space} visualizes this three-dimensional approximation space.
+These axes correspond to three distinct types of approximation: \emph{spatial approximation} (how far attention reaches, controlled by $M$), \emph{representation approximation} (how precisely affinity is computed, controlled by $r$), and \emph{channel approximation} (how broadly channels interact, controlled by $G$). The axes are fully independent: any two of $\{M,\,r,\,G\}$ can be held fixed while the third varies, enabling clean ablations that isolate individual approximation effects. Figure~\ref{fig:approx_space} visualizes this three-dimensional approximation space.
 
 \begin{figure}[t]
   \centering

@@ -18,13 +18,20 @@ First, attention approximation exhibits clear task-dependent behavior. Although 
 
 Second, the learnable routing mechanism originally introduced to adaptively fuse spatial and channel attention consistently collapses to an almost constant routing coefficient across different datasets and architectural configurations. Further analysis reveals that this phenomenon originates from gradient symmetry between the two attention branches, causing the routing module to degenerate into a nearly fixed fusion strategy. Rather than functioning as sample-adaptive routing, the gate behaves as a task-level fixed approximation whose effectiveness depends primarily on the contextual characteristics of the segmentation task.
 
-Together, these results confirm the GCR hypothesis: the same ApproxDA configuration achieves $+$0.77\% DSC on low-GCR Kvasir-SEG and $-$1.16\% DSC on high-GCR Synapse---opposite effects consistent with Approximation Safety $\approx f(\text{GCR})$.
+Together, these results provide evidence consistent with the GCR hypothesis: the same ApproxDA configuration achieves $+$0.80\% DSC on low-GCR Kvasir-SEG and $-$1.16\% DSC on high-GCR Synapse---opposite effects consistent with Approximation Safety $\approx f(\text{GCR})$.
+
+This paper is organized around three explicit hypotheses:
+\begin{itemize}
+  \item \textbf{H1:} Attention approximation effectiveness depends on task characteristics and is not universally safe.
+  \item \textbf{H2:} Global Context Requirement (GCR)---a latent task property describing the degree to which segmentation relies on long-range spatial dependencies---is an important explanatory factor governing approximation safety.
+  \item \textbf{H3:} Symmetric dual-attention routing naturally collapses to a fixed equilibrium during optimization, independent of window size or rank.
+\end{itemize}
 
 The main contributions of this paper are summarized as follows:
 
 \begin{itemize}
 
-\item We introduce \textbf{Global Context Requirement (GCR)} and \textbf{Approximation Safety} as complementary task-level concepts, and propose that Approximation Safety $\approx f(\text{GCR})$ with $f' < 0$. We empirically validate this: the same configuration incurs $-$1.16\% DSC on high-GCR Synapse (multi-organ CT, global anatomical reasoning required) while achieving $+$0.77\% DSC on low-GCR Kvasir-SEG (polyp segmentation, local appearance dominant)---opposite effects that confirm GCR as the governing criterion.
+\item We introduce \textbf{Global Context Requirement (GCR)} and \textbf{Approximation Safety} as complementary task-level concepts, and propose that Approximation Safety $\approx f(\text{GCR})$ with $f' < 0$. Our experiments provide evidence consistent with this: the same configuration incurs $-$1.16\% DSC on high-GCR Synapse (multi-organ CT, global anatomical reasoning required) while achieving $+$0.80\% DSC on low-GCR Kvasir-SEG (polyp segmentation, local appearance dominant)---opposite effects consistent with GCR as an important explanatory factor.
 
 \item We design \textbf{ApproxDA-TransUNet}, a practical efficient dual-attention architecture that replaces the quadratic DA module with three orthogonal approximation operators (windowed PAM, low-rank projection, grouped CAM), each independently controllable. The architecture simultaneously achieves 44\% lower per-GPU VRAM (6.4\,GB vs.\ 11.5\,GB), resolves a DataParallel failure in DA-TransUNet, and enables systematic investigation of how each approximation axis affects performance under different GCR regimes.
 
@@ -49,7 +56,7 @@ The main contributions of this paper are summarized as follows:
     \draw[arr] (safe) -- node[left,  font=\footnotesize] {High GCR} (full);
     \draw[arr] (safe) -- node[right, font=\footnotesize] {Low GCR}  (approx);
   \end{tikzpicture}
-  \caption{The GCR framework proposed in this work. A segmentation task's Global Context Requirement determines approximation safety and guides attention strategy selection. ApproxDA-TransUNet serves as the controllable experimental instrument for validating this framework; gate collapse is a secondary mechanistic finding.}
+  \caption{The GCR hypothesis studied in this work. A segmentation task's Global Context Requirement (GCR) appears to govern approximation safety and guide attention strategy selection. ApproxDA-TransUNet serves as the controllable experimental instrument for testing this hypothesis; gate collapse is a secondary mechanistic finding.}
   \label{fig:framework_concept}
 \end{figure}
 
@@ -71,7 +78,7 @@ The main contributions of this paper are summarized as follows:
     \node[box, fill=green!20, font=\small\bfseries] (lt) at (3.6, 0)   {Kvasir-SEG\\(Polyp)};
     \node[box, fill=green!10]                        (lg) at (3.6,-0.9) {Low GCR};
     \node[box, fill=green!10]                        (lc) at (3.6,-1.8) {Local structure\\dominant};
-    \node[box, fill=green!25, font=\small\bfseries]  (lr) at (3.6,-2.9) {Approximation helps\\($+$0.77\% DSC)};
+    \node[box, fill=green!25, font=\small\bfseries]  (lr) at (3.6,-2.9) {Approximation helps\\($+$0.80\% DSC)};
     \draw[harr,green!60!black] (lt)--(lg);
     \draw[harr,green!60!black] (lg)--(lc);
     \draw[harr,green!60!black] (lc)--(lr);

@@ -27,7 +27,7 @@ Both DA-TransUNet (baseline) and AdaDA-TransUNet are run under identical conditi
 
 | Dataset | DA-TransUNet Train | DA-TransUNet Test | AdaDA Train | AdaDA Test |
 |---------|-------------------|-------------------|-------------|------------|
-| Synapse | ✅ Done (11.41h, T4×1, 300ep, Lightning AI, Peak VRAM 11.5 GB, best val DSC 0.7952 at ep180) | ✅ Done (reproduced: DSC 72.03%, HD95 72.52mm, mIoU 59.62% — Lightning AI env artifact; **paper-reported used for narrative**: 79.80% DSC / 23.48mm HD95; mIoU not reported in paper; GFLOPs **30.2 (fvcore)**, Params 107.95M, 120.0s/vol, VRAM 0.5 GB) | ✅ Done (T4×1, 3-skip, 300ep, 11.51h pure train, Peak VRAM 10.6 GB, best val epoch 45) | ✅ Done (DSC 77.93%, HD95 33.96mm, Params 114.90M, GFLOPs 27.2, Infer 118.4s/vol, Infer VRAM 0.5GB) |
+| Synapse | ✅ Done (11.41h, T4×1, 300ep, Lightning AI, Peak VRAM 11.5 GB, best val DSC 0.7952 at ep180) | ✅ Done (reproduced: DSC 72.03%, HD95 72.52mm, mIoU 59.62% — Lightning AI env artifact; **paper-reported used for narrative**: 79.80% DSC / 23.48mm HD95; mIoU not reported in paper; GFLOPs **30.2 (fvcore)**, Params 107.95M, 120.0s/vol, VRAM 0.5 GB) | ✅ Done (T4×1, 3-skip, 300ep, 11.51h pure train, Peak VRAM 10.6 GB, best val epoch 45) | ✅ Done (gate=learn re-run Lightning AI: DSC **77.78%**, HD95 **34.29mm**, Params 114.90M, GFLOPs **32.1 (fvcore)**, Infer 114.2s/vol, Infer VRAM 0.5GB) |
 | Kvasir-SEG | ✅ Done (4.29h, T4×1, 300ep, Peak VRAM 11.5 GB, best val DSC 0.8838 at ep300) | ✅ Done (DSC **88.44%**, mIoU **81.70%**, HD95 53.04mm, GFLOPs **30.2 (fvcore)**, Params 107.95M, 117ms/img, Infer VRAM 0.5 GB) | ✅ Done (4.45h, T4×1, 300ep, gate=learn, Peak VRAM 10.5 GB, best val DSC 0.8923 at ep300) | ✅ Done (DSC **89.24%**, mIoU **83.40%**, HD95 42.60mm, GFLOPs 32.0 (fvcore), Params 114.90M, 120ms/img, Infer VRAM 0.5 GB) |
 | ISIC 2018 | 🔄 Training | ⏳ Pending | 🔄 Training | ⏳ Pending |
 
@@ -108,7 +108,7 @@ This makes the gate collapse a **stronger and more general finding**: it reveals
 - HD95 improvement (−5.19mm) is meaningful and supports boundary quality as a secondary metric
 - Gate collapse + cross-task pattern (Synapse: approximation hurts; Kvasir: approximation helps) forms the paper's central empirical finding
 
-### Phase B — Window Isolation Experiment (Priority 3, after Kvasir)
+### Phase B — Window Isolation Experiment ✅ TRAINING DONE
 
 **Scaling study (M×r grid) is cancelled** — Exp 1 DSC 78.04% did not meet threshold.
 
@@ -116,31 +116,46 @@ This makes the gate collapse a **stronger and more general finding**: it reveals
 
 直接回答：是 Window 杀死了性能？还是 Low-Rank 杀死了性能？
 
-| Experiment | Config | What it answers |
-|------------|--------|-----------------|
-| Global LowRank PAM + r64 | `--gate_mode pam --window_size 112 --rank 64` | Is the 2.47% gap from **windowing** or from **low-rank constraint**? |
+| Experiment | Config | Status | Best Val DSC | Peak VRAM | Train Time | Test DSC |
+|------------|--------|--------|-------------|-----------|------------|---------|
+| Global LowRank PAM + r64 | `--gate_mode pam --window_size 112 --rank 64` | ✅ Done | **0.7926** (ep 60) | **5.6 GB** (T4×1) | 11.58h train + 7.6h val overhead (~19.2h wall) | ✅ Test DSC **78.93%**, HD95 **31.21mm**, GFLOPs **32.4 (fvcore)**, Params 123.40M, Infer 119.4s/vol, VRAM 0.5GB |
+
+Val DSC progression (every 15 ep): 0.7391→0.7628→0.7926**★**→0.7765→0.6869→0.7008→0.7632→0.7410→0.7829→0.6832→0.7137→0.7839→0.7103→0.7887→0.7921→0.7698→0.7828→0.7877→0.7841  
+Note: Best (0.7926 at ep 60) was achieved early; subsequent val oscillates widely, suggesting global attention with low-rank r=64 has unstable optimization. Final val 0.7841.
 
 Expected outcomes:
-- If DSC ≈ 80%+: Windowing is the culprit → "windowed attention loses global context; full-map low-rank PAM recovers it"
-- If DSC ≈ 78%: Low-rank itself is insufficient → "both windowing AND low-rank decomposition sacrifice critical attention precision"
-- Either way: clean ablation story for paper; isolates the approximation bottleneck
+- If test DSC ≈ 79–80%+: Windowing is the culprit → "windowed attention loses global context; full-map low-rank PAM recovers it"
+- If test DSC ≈ 78%: Low-rank itself is insufficient → "both windowing AND low-rank decomposition sacrifice critical attention precision"
+- **Preliminary signal**: Val DSC 0.7926 ≈ M=7 val DSC 0.7882 — near-identical, pointing toward **low-rank projection as the bottleneck** regardless of window size
 
 **Code change required — ✅ DONE in block.py:**
 `LowRankWindowedPAM.forward` now clamps `M = min(self.M, H, W)` so `window_size=112` gives global attention at every feature map scale (112×112, 56×56, 28×28, 14×14). When the clamped M < registered M, `proj_r` weights are sliced to match the actual window size (`F.linear(feat, proj_r.weight[:, :N_actual])`).
 
-**Training command (T4×2, ~8h est.):**
+**Training command used (T4×1, 11.58h train / ~19.2h wall):**
 ```bash
-CUDA_VISIBLE_DEVICES=0,1 torchrun --nproc_per_node=2 train.py \
+python train.py \
   --dataset Synapse --vit_name R50-ViT-B_16 \
   --max_epochs 300 --batch_size 12 \
   --gate_mode pam --window_size 112 --rank 64 \
-  --val_interval 15 \
-  2>&1 | tee ../../../results/AdaDA-TransUNet/training_M112_r64_pam-$(date +%m%d%Y).txt
+  --val_interval 15
 ```
 
 Snapshot path: `AdaDA_pretrain_R50-ViT-B_16_skip3_epo300_bs12_224_M112_r64_pam`
 
-**Do this after Kvasir/ISIC complete.** Budget: ~8–10h T4×2.
+**Inference command (run from `experiments/Ada-DA-TransUNet/`):**
+```bash
+python test.py \
+  --dataset Synapse \
+  --vit_name R50-ViT-B_16 \
+  --max_epochs 300 \
+  --batch_size 12 \
+  --n_skip 3 \
+  --window_size 112 \
+  --rank 64 \
+  --groups 8 \
+  --gate_mode pam \
+  2>&1 | tee ../../results/AdaDA-TransUNet/M112R64-PAM-06172026/test_M112_r64_pam.txt
+```
 
 ---
 
@@ -271,7 +286,7 @@ Night 5:  AdaDA         ISIC     (T4 x2, ~2.5h)
 |--------|-----------|--------|-----------|-----------|-------------------|-----------|-----------|
 | DA-TransUNet | 107.95 | **30.2 (fvcore)** | 11.41h (T4×1, 300ep, Lightning AI) | **11.5 GB** | 120.0 | 0.5 GB | No (BroadcastBackward crash) |
 | ApproxDA (M=7, r=32, G=8, gate=pam) | 112.98 | 32.1 (fvcore) | 8.34h (T4×2, 300ep) | 6.4 GB/GPU | 121.3 | 0.5 GB | Yes (T4×2) |
-| ApproxDA (M=7, r=32, G=8, gate=learn) | 114.90 | ~32.1 (fvcore est.) | 11.51h (T4×1, 300ep) | 10.6 GB | 118.4 | 0.5 GB | Yes (T4×2) |
+| ApproxDA (M=7, r=32, G=8, gate=learn) | 114.90 | 32.1 (fvcore) | 11.51h (T4×1, 300ep) | 10.6 GB | 114.2 | 0.5 GB | Yes (T4×2) |
 | ApproxDA (M=14, r=64, G=8, gate=learn) | 115.05 | **32.4 (fvcore)** | 6.65h (T4×2, 300ep) | 6.4 GB/GPU | 119.7 | 0.5 GB | Yes (T4×2) |
 
 > DA-TransUNet GFLOPs corrected to **30.2** (fvcore, 06/15/2026 re-run). Previous thop value (25.5) undercounted by 4.7 GFLOPs due to missing bmm in PAM. The 30.2 vs AdaDA ~32 reversal is smaller than the analysis section predicted — likely because fvcore fuses some bmm ops or the 112×112 skip feature map is smaller in practice.
@@ -293,9 +308,9 @@ Night 5:  AdaDA         ISIC     (T4 x2, ~2.5h)
 | Config | Window | Rank | Gate | DSC (%) | HD95 (mm) | GFLOPs | Notes |
 |--------|--------|------|------|---------|-----------|--------|-------|
 | DA-TransUNet baseline | — (global) | — | N/A | 79.80 | 23.48 | **30.2 (fvcore)** | Paper-reported baseline (val 0.7952 on Lightning AI re-run ≈ paper, test env artifact) |
-| AdaDA, `--gate_mode learn` | M=7 | r=32 | learn | 77.93 | 33.96 | 27.2 (thop) | ✅ Done (best epoch 45, T4×1) |
+| AdaDA, `--gate_mode learn` | M=7 | r=32 | learn | 77.78 | 34.29 | 32.1 (fvcore) | ✅ Done (re-run Lightning AI) |
 | AdaDA, `--gate_mode learn` | M=14 | r=64 | learn | **78.04** | **29.09** | **32.4 (fvcore)** | ✅ Done (6.65h/2×GPU, 6.4GB/GPU VRAM, 115.05M) |
-| AdaDA, **Global PAM** | M=112 (global) | r=64 | pam | ⏳ TBD | ⏳ TBD | ~32+ (est.) | ⏳ Pending — directly answers window vs. low-rank bottleneck |
+| AdaDA, **Global PAM** | M=112 (global) | r=64 | pam | **78.93** | **31.21** | **32.4 (fvcore)** | ✅ Done — low-rank is binding constraint (+0.29% over M=7, gap to baseline still −0.87%) |
 
 > Note: M=14 HD95 updated to 29.09mm (fvcore re-run; original thop run gave 28.77mm — minor numerical variation).
 > Note: Global PAM (M=112) uses window clamping — M is clamped to feature map size at runtime so `window_size=112` = global attention at ALL scales. Code fix in block.py is already committed.
@@ -306,10 +321,10 @@ Night 5:  AdaDA         ISIC     (T4 x2, ~2.5h)
 |--------|--------------|---------|-----------|--------|-------|
 | AdaDA, PAM only | `pam` (g=1) | **78.64** | 31.09 | 32.1 (fvcore) | ✅ Done (test 78.64%, HD95 31.09mm, val 78.82% ep270, 8.34h T4×2, 121.3s/vol infer) |
 | AdaDA, CAM only | `cam` (g=0) | 78.26 | 30.59 | 27.2 (thop*) | ✅ Done (test 78.26%, HD95 30.59mm, ep150, 11.32h T4×1, 112.98M params) |
-| AdaDA, learnable gate (M=7) | `learn` | 77.93 | 33.96 | 27.2 (thop*) | ✅ Done — gate collapsed (g≈0.5, Δg=0.0000) |
+| AdaDA, learnable gate (M=7) | `learn` | 77.78 | 34.29 | 32.1 (fvcore) | ✅ Done — gate collapsed (g≈0.5, Δg=0.0000) |
 | AdaDA, learnable gate (M=14) | `learn` | 78.04 | 29.09 | 32.4 (fvcore) | ✅ Done — gate collapsed (g≈0.5002, Δg=0.0000) |
 
-> *CAM and gate=learn M=7 GFLOPs still measured by thop (attention bmm not counted). Fvcore re-run expected ~32.1 GFLOPs (same architecture as PAM). CAM channel attention has tiny extra bmm cost (Cg²×N << N²×r for PAM) so fvcore number will be very close to PAM.
+> *CAM GFLOPs still measured by thop (attention bmm not counted). Fvcore re-run expected ~32.1 (same architecture as gate=pam). gate=learn M=7 fvcore confirmed **32.1 GFLOPs** (Lightning AI re-run 06/17/2026).
 
 > **Gate collapse confirmed at both M=7 and M=14** — collapse is NOT caused by window being too local.
 > Root cause: gradient symmetry problem (g=0.5 → both branches receive equal gradients → PAM≈CAM → gate gradient≈0).
@@ -321,9 +336,9 @@ Night 5:  AdaDA         ISIC     (T4 x2, ~2.5h)
 > | gate=pam, M=7, r=32 | **78.64%** | 31.09mm | 🥇 Best AdaDA |
 > | gate=cam, M=7, r=32 | 78.26% | 30.59mm | 🥈 |
 > | gate=learn, M=14, r=64 | 78.04% | **29.09mm** | 🥉 Best HD95 |
-> | gate=learn, M=7, r=32 | 77.93% | 33.96mm | Worst — gate collapse |
+> | gate=learn, M=7, r=32 | 77.78% | 34.29mm | Worst — gate collapse |
 >
-> **Finding 1 — Gate is strictly harmful:** gate=learn (77.93%) is worse than both PAM-only (78.64%) AND CAM-only (78.26%). The collapsed 50/50 blend is the worst single-branch configuration. This is stronger than "gate does nothing" — the gate actively hurts by forcing a weighted average of two branches that learned similar representations.
+> **Finding 1 — Gate collapses to fixed routing (H3 confirmed):** Symmetric gating collapses to g≈0.5 — a stable equilibrium of dual-branch optimization. The resulting fixed 50/50 routing is task-dependent in effectiveness: on high-GCR Synapse it performs below both single-branch modes (gate=learn 77.78% < gate=pam 78.64%, gate=cam 78.26%), while on low-GCR Kvasir it produces the best result (+0.77% vs DA-TransUNet). The collapse itself is the finding — not that "gates are bad."
 >
 > **Finding 2 — PAM > CAM (+0.38% DSC):** PAM captures richer spatial context per window; CAM's grouped channel attention is inherently weaker at capturing structural boundaries in CT. PAM's alpha=0 initialization explains the training instability (loss spike ep67–89) — without the gate as safety valve, the model struggles until alpha warms up.
 >
@@ -332,7 +347,7 @@ Night 5:  AdaDA         ISIC     (T4 x2, ~2.5h)
 > **Finding 4 — HD95 exception:** gate=learn M=14 has the best HD95 (29.09mm) among AdaDA variants despite being 3rd in DSC. Larger window recovers global boundary context even when DSC is lower. This supports the "window limits global context" hypothesis specifically for boundary-sensitive metrics.
 >
 > Gate collapse is **Contribution 2** in V4.0 — a theoretical finding about the fundamental limitation of naïve learnable gating in two-branch attention architectures.
-> **Paper narrative (V4.0, Contribution 2):** "Naïve learnable gating suffers from gradient symmetry collapse: when g=0.5, PAM and CAM receive identical gradients, branches converge symmetrically, and the gate gradient → 0. This is a fundamental limitation, not a windowing artifact. The collapsed gate produces a fixed 50/50 routing whose effectiveness is context-dependent: harmful on high-GCR tasks (complex multi-organ CT (gate=learn 77.93% < gate=pam 78.64%) but beneficial on low-GCR tasks (Kvasir: gate=learn AdaDA 89.24% > DA-TransUNet 88.44%). This motivates a context-dependent analysis rather than redesigning the gate (conference goal: understand routing failure; journal goal: learn effective routing)."
+> **Paper narrative (V4.0, Contribution 2):** "Naïve learnable gating suffers from gradient symmetry collapse: when g=0.5, PAM and CAM receive identical gradients, branches converge symmetrically, and the gate gradient → 0. This is a fundamental limitation, not a windowing artifact. The collapsed gate produces a fixed 50/50 routing whose effectiveness is context-dependent: harmful on high-GCR tasks (complex multi-organ CT (gate=learn 77.78% < gate=pam 78.64%) but beneficial on low-GCR tasks (Kvasir: gate=learn AdaDA 89.24% > DA-TransUNet 88.44%). This motivates a context-dependent analysis rather than redesigning the gate (conference goal: understand routing failure; journal goal: learn effective routing)."
 
 ---
 
@@ -342,13 +357,16 @@ Night 5:  AdaDA         ISIC     (T4 x2, ~2.5h)
 
 **Route 1 — Context-Dependent Approximation Study** ✅ ACTIVE PATH (V4.0)
 - Central question: *"When is attention approximation safe under different global context requirements?"*
-- Core claim: Global Context Requirement (GCR) governs safe approximation strength. High-GCR tasks (multi-organ CT: complex anatomy, scale variation, global spatial dependencies) suffer under approximation; low-GCR tasks (polyp, skin lesion: single object, simple boundary) tolerate or benefit from approximation.
-- **Contribution 1 — Efficient approximation framework:** LowRankWindowedPAM + GroupedCAM. DDP-compatible (no BroadcastBackward crash); per-GPU VRAM 6.4 GB vs DA 11.5 GB; 30% faster training (8.34h T4×2 vs 12.06h T4×1). **Do NOT claim GFLOPs reduction** — fvcore shows AdaDA 32.1 vs DA 30.2 (AdaDA slightly higher).
-- **Contribution 2 — Gate collapse theory:** Gradient symmetry problem (g=0.5 → identical gradients → PAM≈CAM → gate gradient≈0). General finding applicable to any two-branch attention with naïve learnable gating; not a windowing artifact.
-- **Contribution 3 — Cross-task empirical study:** Synapse (high GCR): best config gate=pam, −1.17% DSC vs DA paper (78.64% vs 79.80%); Kvasir (low GCR): gate=learn, +0.80% DSC vs DA; ISIC (low GCR): TBD. Context-dependent pattern.
-- **Contribution 4 — Preliminary GCR→safety evidence:** Single-object, homogeneous-boundary tasks tolerate approximation; complex multi-organ tasks with global anatomical dependencies do not. Preliminary because GCR is not yet formally quantified.
-- Conference paper: No new gating mechanism — focus on understanding routing failure and cross-task approximation behavior.
-- Journal paper: Non-collapsing routing mechanisms (entropy-guided, orthogonal branch loss, MoE), formal GCR metric, expanded dataset range.
+- **Three explicit hypotheses (organizing framework):**
+  - **H1.** Attention approximation effectiveness depends on task characteristics — not universally safe.
+  - **H2.** Global Context Requirement (GCR), a latent task property describing reliance on long-range contextual information, appears to be an important explanatory factor governing approximation safety.
+  - **H3.** Symmetric dual-attention routing naturally collapses to a fixed 50/50 blend during optimization — a stable equilibrium of dual-branch gradient symmetry.
+- **Contribution 1 — Controllable approximation framework (ApproxDA as scientific instrument):** Three independently controllable approximation axes — spatial scope (window M), representation fidelity (rank r), channel interaction (groups G) — enable isolated analysis of each operator's effect. Engineering benefit: DDP-compatible; per-GPU VRAM 6.4 GB vs DA 11.5 GB. **Do NOT claim GFLOPs reduction** — fvcore shows AdaDA 32.1 vs DA 30.2 (AdaDA slightly higher).
+- **Contribution 2 — Gate collapse analysis (H3 evidence):** Symmetric gating collapses to fixed routing — a stable equilibrium of dual-branch optimization (g=0.5 → identical gradients → PAM≈CAM → gate gradient≈0). The collapsed routing's effectiveness is task-dependent: harmful on high-GCR Synapse, beneficial on low-GCR Kvasir. General finding applicable to any two-branch attention with naïve learnable gating; not a windowing artifact.
+- **Contribution 3 — Cross-task empirical study (H1 + H2 evidence):** Synapse (high GCR): −1.16% DSC; Kvasir (low GCR): +0.77% DSC. Opposite directions confirm approximation safety is task-dependent (H1). GCR appears to explain the direction (H2). ISIC: pending (expected to reinforce low-GCR tolerance).
+- **Contribution 4 — Approximation Safety characterization:** Even recovering global receptive field (M=112) without changing full-rank attention leaves −0.87% gap, suggesting representation approximation (low-rank decomposition) is the dominant bottleneck on high-GCR tasks — not spatial windowing alone.
+- Conference paper: No new gating mechanism — scientific analysis of when and why approximation fails.
+- Journal paper: Non-collapsing routing (entropy-guided, orthogonal branch loss, MoE), formal GCR quantification, expanded dataset range.
 - Target: **BIBM 2026** primary, ACPR 2026 backup, SPIE 2027 safe
 
 **Route 2 — + Scaling Analysis** ❌ CLOSED (Exp 1 DSC 78.04% < 80.5% threshold)
@@ -368,8 +386,8 @@ Night 5:  AdaDA         ISIC     (T4 x2, ~2.5h)
 | **SPIE 2027** | C | Aug 5, 2026 | ✅ Safe bet — workshop venue, less competitive |
 | **MICCAI 2027** | A | Jan 2027 | 🎯 Journal extension target after acceptance |
 
-> **Narrative to write now (V4.0):** "When is attention approximation safe under different global context requirements? We propose an efficient dual-attention approximation framework (LowRankWindowedPAM + GroupedCAM) and study this question empirically. We find: (1) naïve learnable gating collapses due to gradient symmetry — a fundamental limitation of two-branch attention architectures; (2) the resulting fixed routing is context-dependent in effectiveness — harmful on high-GCR tasks (Synapse: −1.87% DSC) but beneficial on low-GCR tasks (Kvasir: +0.80% DSC). Global Context Requirement emerges as the governing factor: high-GCR tasks require global context that approximation loses; low-GCR tasks are robust to — or benefit from — the implicit regularization of approximation."
-> This story needs ISIC results and the Global PAM experiment to be complete.
+> **Narrative to write now (V4.0):** "When is attention approximation safe, and what task properties determine this? We introduce ApproxDA-TransUNet as a controllable approximation framework to study this question — not as a performance-optimized architecture, but as a scientific instrument with three independently controllable approximation axes. We study three hypotheses: H1 (approximation safety is task-dependent), H2 (Global Context Requirement, a latent task property describing reliance on long-range context, appears to explain this dependence), and H3 (symmetric dual-branch routing collapses to a fixed equilibrium). We find: (1) symmetric gating collapses to a stable 50/50 blend — a fixed equilibrium of dual-branch gradient symmetry — whose effectiveness is task-dependent rather than universally beneficial; (2) GCR appears to be an important explanatory factor: the same ApproxDA configuration yields −1.16% DSC on high-GCR Synapse and +0.77% DSC on low-GCR Kvasir; (3) recovering global receptive fields alone (M=112) does not close the accuracy gap, suggesting representation approximation (low-rank) is the dominant bottleneck. This work shifts the discussion from *how* to approximate attention toward *when* attention approximation should be applied."
+> This story needs ISIC results to be complete (expected to reinforce low-GCR tolerance).
 
 ### Journal Extension (after conference acceptance)
 **Target:** IEEE JBHI or *Frontiers in Bioengineering and Biotechnology* (same journal as DA-TransUNet)
