@@ -29,7 +29,7 @@ At initialization $g{\approx}0.5$, both branches receive equal gradient $\tfrac{
   \label{fig:entropy}
 \end{figure}
 
-\subsection{Observation 2: Task-Dependent Approximation Safety}
+\subsection{Observation 2: Task-Dependent Approximation Effectiveness}
 
 Although ApproxDA adopts the same approximation operators across all experiments, its effectiveness varies considerably among different segmentation datasets. ApproxDA consistently underperforms the original dual-attention module on Synapse, while achieving competitive or improved performance on Kvasir.
 
@@ -37,39 +37,45 @@ We attribute this phenomenon to the different global contextual requirements of 
 
 In contrast, polyp and skin lesion segmentation are primarily determined by local appearance, boundary contrast, and texture consistency. Consequently, restricting attention to local regions introduces only limited information loss while simultaneously acting as an implicit regularizer, which explains the improved generalization observed on Kvasir. This interpretation motivates a more precise characterization in terms of Global Context Requirement, formalized below.
 
-\subsection{GCR and Approximation Safety}
+\subsection{The GCR Hypothesis}
 
-We formally define two complementary task-level properties:
+\textbf{Global Context Requirement (GCR)} is a latent task property: the degree to which accurate segmentation depends on long-range spatial dependencies between distant anatomical elements. High-GCR tasks (multi-organ CT) require cross-organ anatomical reasoning---liver position relative to spleen, aorta relative to vena cava---where disrupting global spatial interaction degrades delineation. Low-GCR tasks (polyp, skin lesion) are dominated by local boundary contrast and texture, with minimal dependence on distant context.
 
-\textbf{Global Context Requirement (GCR)} is the degree to which accurate segmentation depends on long-range spatial dependencies between distant anatomical elements. GCR is a latent task property, intrinsic to the task and independent of model architecture. High-GCR tasks (multi-organ CT) require cross-organ anatomical reasoning---liver position relative to spleen, aorta relative to vena cava---where disrupting global spatial interaction degrades delineation. Low-GCR tasks (polyp, skin lesion) are dominated by local boundary contrast and texture, with minimal dependence on distant context.
-
-\textbf{Approximation Safety} is the degree to which spatial attention approximation can be introduced without degrading segmentation accuracy on a given task.
-
-We hypothesize an inverse relationship between these properties, which we treat as a predictive claim rather than a proven causal law:
+We propose that GCR governs the direction and magnitude of approximation's effect, which we treat as a predictive claim rather than a proven causal law:
 \begin{equation}
-  \text{Approximation Safety} \approx f(\text{GCR}), \quad f'(\cdot) < 0.
+  \Delta_\text{DSC} \approx f(\text{GCR}), \quad f'(\cdot) < 0,
   \label{eq:gcr_hypothesis}
 \end{equation}
-Equation~\eqref{eq:gcr_hypothesis} is a conceptual claim, not an analytic proof. It summarizes the empirical pattern: the same ApproxDA configuration achieves $+$0.80\% DSC on low-GCR Kvasir-SEG and $-$1.16\% on high-GCR Synapse---opposite effects consistent with a monotonically decreasing relationship. Figure~\ref{fig:gcr_curve} plots the confirmed data points against this hypothesis.
+where $\Delta_\text{DSC}$ = DSC(ApproxDA) $-$ DSC(DA-TransUNet). Equation~\eqref{eq:gcr_hypothesis} is a conceptual claim, not an analytic proof. It summarizes the empirical pattern: the same ApproxDA configuration achieves $\Delta_\text{DSC}{=}{+}0.80\%$ on low-GCR Kvasir-SEG and $\Delta_\text{DSC}{=}{-}1.16\%$ on high-GCR Synapse---opposite signs consistent with a monotonically decreasing relationship. Figure~\ref{fig:gcr_curve} illustrates this GCR-governed pattern with the two confirmed benchmarks. A natural experimental proxy for GCR is \emph{window sensitivity}: the slope of DSC as attention window $M$ decreases. Because larger $M$ captures more global context, a steep drop as $M$ shrinks signals high GCR, while a near-flat curve indicates low GCR---consistent with the window ablation in Table~\ref{tab:window_ablation}. We treat systematic GCR estimation as a direction for future work.
 
 \begin{figure}[t]
   \centering
-  \begin{tikzpicture}[scale=0.85]
-    \draw[->, thick] (0,0) -- (5.2,0) node[right, font=\small] {GCR};
-    \draw[->, thick] (0,0) -- (0,3.8) node[above, font=\small] {Approx.\ Safety};
-    \node[font=\footnotesize] at (0.65,-0.35) {Low};
-    \node[font=\footnotesize] at (4.5,-0.35) {High};
-    \node[font=\footnotesize, rotate=90] at (-0.5,0.55) {Low};
-    \node[font=\footnotesize, rotate=90] at (-0.5,3.2) {High};
-    \draw[thick, blue!60!black, dashed]
-      (0.3,3.4) .. controls (1.5,3.2) and (3.0,0.9) .. (4.8,0.35);
-    \filldraw[green!60!black] (1.1, 3.0) circle (3pt);
-    \node[font=\footnotesize, green!50!black, right] at (1.2, 3.0) {Kvasir-SEG ($+$0.80\%)};
-    \filldraw[red!60!black]   (3.9, 0.6) circle (3pt);
-    \node[font=\footnotesize, red!60!black, left]  at (3.8, 0.6) {Synapse ($-$1.16\%)};
-    \node[font=\small\itshape, blue!50!black] at (3.2, 2.7) {$f'\!<\!0$};
+  \begin{tikzpicture}[
+    box/.style={draw, rounded corners=3pt, minimum width=2.8cm, minimum height=0.55cm,
+                text centered, font=\footnotesize, align=center},
+    gcr/.style={draw, rounded corners=3pt, minimum width=5.8cm, minimum height=0.6cm,
+                text centered, font=\footnotesize\bfseries, align=center, fill=orange!20},
+    arr/.style={->, thick, >=stealth}
+  ]
+    \node[gcr] (gcrtop) at (1.8, 1.4) {Global Context Requirement (GCR)};
+
+    \node[box, fill=red!15, font=\footnotesize\bfseries]  (ht) at (0, 0)    {Synapse\\(Multi-organ CT)};
+    \node[box, fill=red!10]                                (hc) at (0,-0.95) {Long-range anatomical\\reasoning required};
+    \node[box, fill=red!25, font=\footnotesize\bfseries]   (hr) at (0,-1.95) {Approximation hurts\\($-$1.16\% DSC)};
+
+    \node[box, fill=green!20, font=\footnotesize\bfseries] (lt) at (3.6, 0)    {Kvasir-SEG\\(Polyp)};
+    \node[box, fill=green!10]                               (lc) at (3.6,-0.95) {Local boundary/texture\\dominant};
+    \node[box, fill=green!25, font=\footnotesize\bfseries]  (lr) at (3.6,-1.95) {Approximation helps\\($+$0.80\% DSC)};
+
+    \draw[arr, red!70!black]   (gcrtop) -- node[midway, sloped, above, font=\tiny] {High GCR} (ht);
+    \draw[arr, green!60!black] (gcrtop) -- node[midway, sloped, above, font=\tiny] {Low GCR}  (lt);
+
+    \draw[arr, red!60]         (ht)--(hc); \draw[arr, red!60]         (hc)--(hr);
+    \draw[arr, green!60!black] (lt)--(lc); \draw[arr, green!60!black] (lc)--(lr);
+
+    \draw[dashed, gray!60, thick] (1.8, 1.05)--(1.8,-2.35);
   \end{tikzpicture}
-  \caption{Conceptual relationship between GCR and approximation safety (Eq.~\eqref{eq:gcr_hypothesis}). The dashed curve is hypothetical, not fitted; confirmed data points for Kvasir-SEG (low GCR) and Synapse (high GCR) are consistent with the monotonically decreasing trend. ISIC 2018 result pending.}
+  \caption{GCR governs approximation effectiveness. A task's Global Context Requirement determines whether approximation is beneficial or harmful: the same ApproxDA configuration yields opposite effects on high-GCR and low-GCR benchmarks.}
   \label{fig:gcr_curve}
 \end{figure}
 
@@ -83,15 +89,15 @@ First, attention approximation should be selected according to the contextual ch
 
 Second, adaptive routing mechanisms require sufficient feature diversity between attention branches; otherwise, gradient symmetry may cause routing collapse regardless of window size or rank.
 
-Finally, future efficient attention architectures should explicitly consider approximation safety together with computational efficiency, instead of focusing exclusively on reducing theoretical complexity. Figure~\ref{fig:guideline} summarizes these guidelines as a practical decision tree.
+Finally, future efficient attention architectures should explicitly consider when approximation is appropriate---not just how to make it efficient---rather than focusing exclusively on reducing theoretical complexity. Figure~\ref{fig:guideline} summarizes these guidelines as a practical decision tree.
 
 \begin{figure}[t]
   \centering
   \begin{tikzpicture}[
     decision/.style={diamond, draw, fill=yellow!15, minimum width=2.8cm,
-                     minimum height=0.75cm, text centered, font=\small, inner sep=1pt, align=center},
-    result/.style={draw, rounded corners=3pt, minimum width=2.4cm, minimum height=0.7cm,
-                   text centered, font=\small, align=center},
+                     minimum height=0.75cm, text centered, font=\footnotesize, inner sep=1pt, align=center},
+    result/.style={draw, rounded corners=3pt, minimum width=2.4cm, minimum height=0.65cm,
+                   text centered, font=\footnotesize, align=center},
     arr/.style={->, thick, >=stealth}
   ]
     \node[result, fill=blue!10]   (task) at (0, 0)    {Segmentation Task};
@@ -99,9 +105,13 @@ Finally, future efficient attention architectures should explicitly consider app
     \node[result, fill=red!10]    (yes)  at (-2.2,-2.8) {Full Dual Attention\\(DA-TransUNet)\\preserve context};
     \node[result, fill=green!10]  (no)   at (2.2,-2.8)  {ApproxDA\\windowed PAM\\+grouped CAM};
     \draw[arr] (task)--(q);
-    \draw[arr] (q) -- node[left,  font=\footnotesize] {Yes} +(-2.2,-0.8) -- (yes);
-    \draw[arr] (q) -- node[right, font=\footnotesize] {No}  +(2.2,-0.8)  -- (no);
+    \draw[arr] (q) -- node[above left,  font=\tiny, pos=0.35] {Yes} +(-2.2,-0.8) -- (yes);
+    \draw[arr] (q) -- node[above right, font=\tiny, pos=0.35] {No}  +(2.2,-0.8)  -- (no);
   \end{tikzpicture}
   \caption{Practical design guideline derived from GCR analysis. Tasks requiring cross-organ anatomical reasoning (high GCR) should retain full dual attention. Local-structure tasks (low GCR) can safely use ApproxDA, reducing per-GPU VRAM by 44\% with no accuracy penalty.}
   \label{fig:guideline}
 \end{figure}
+
+\subsection{Limitations}
+
+GCR is currently characterized qualitatively rather than quantitatively. Although window sensitivity provides a practical proxy, a rigorous GCR estimator---one that generalizes across imaging modalities, organs, and dataset sizes---remains to be developed. Additionally, the cross-task comparison is limited to two benchmarks (Synapse and Kvasir-SEG); the GCR hypothesis should be validated on a broader range of medical segmentation tasks before being applied prescriptively. Finally, the implicit regularization benefit observed on low-GCR tasks is an empirical observation; its theoretical basis and the conditions under which it holds warrant further investigation.

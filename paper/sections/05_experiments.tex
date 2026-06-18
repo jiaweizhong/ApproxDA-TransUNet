@@ -31,14 +31,14 @@ Table~\ref{tab:datasets} summarizes the three datasets alongside their contextua
   \end{tabular}
   \end{center}
   \vspace{-0.3em}
-  \footnotesize{High-GCR tasks require cross-organ anatomical reasoning; low-GCR tasks are dominated by local appearance cues. GCR governs approximation safety (Section~\ref{sec:analysis}).}
+  \footnotesize{High-GCR tasks require cross-organ anatomical reasoning; low-GCR tasks are dominated by local appearance cues. GCR governs approximation effectiveness (Section~\ref{sec:analysis}).}
 \end{table}
 
 \textbf{Implementation Details.} All experiments use an R50-ViT-B/16 backbone pretrained on ImageNet-21K. Training uses SGD (momentum 0.9, weight decay $10^{-4}$), initial learning rate 0.01 with polynomial decay, batch size 24, image size $224{\times}224$, 300 epochs, and seed 1234. The DA-TransUNet baseline runs on T4${\times}$1. ApproxDA-TransUNet runs on T4${\times}$2 via \texttt{torchrun} DDP with per-GPU batch 12 and NCCL all-reduce, under identical total batch size and base learning rate. Default ApproxDA configuration: $M{=}7$, $r{=}32$, $G{=}8$. Our DA-TransUNet re-run achieves validation DSC 0.795, consistent with the paper-reported 0.798, confirming faithful replication.
 
 \subsection{Computational Efficiency of ApproxDA}
 
-Table~\ref{tab:efficiency} compares the computational characteristics of ApproxDA and DA-TransUNet on Synapse. Although per-GPU VRAM is reduced substantially---from 11.5\,GB to 6.4\,GB---total GFLOPs are slightly higher (32.1 vs.\ 30.2) because the shared ViT backbone dominates total computation and Conv1d/Linear projection overhead partially offsets decoder-level savings. The reduced memory footprint enables multi-GPU distributed training via \texttt{torchrun} DDP, resolving the DataParallel failure described in Section~\ref{sec:method}.
+Table~\ref{tab:efficiency} compares the computational characteristics of ApproxDA and DA-TransUNet on Synapse. Although per-GPU VRAM is reduced substantially---from 11.5\,GB to 6.4\,GB---total GFLOPs are slightly higher (32.1 vs.\ 30.2) because the shared ViT backbone dominates total computation and Conv1d/Linear projection overhead partially offsets decoder-level savings. The reduced memory footprint enables multi-GPU distributed training via DDP, which DA-TransUNet does not support.
 
 \begin{table*}[t]
   \caption{Efficiency Comparison on Synapse (T4). GFLOPs measured by \texttt{fvcore} (single $224{\times}224$ slice, includes attention \texttt{bmm}).}
@@ -57,7 +57,7 @@ Table~\ref{tab:efficiency} compares the computational characteristics of ApproxD
   \end{tabular}
   \end{center}
   \vspace{-0.3em}
-  \footnotesize{$^\dagger$DA-TransUNet crashes DataParallel on T4$\times$2 due to a zero-element weight in DANetHead(64,64). ApproxDA uses DDP (torchrun, NCCL) which avoids this failure. DDP: per-GPU batch 12 (total 24), LR unchanged.}
+  \footnotesize{$^\dagger$DA-TransUNet does not support multi-GPU training. ApproxDA uses DDP (\texttt{torchrun}, NCCL); per-GPU batch 12 (total 24), LR unchanged.}
 \end{table*}
 
 \subsection{Task-dependent Behavior of Attention Approximation}
@@ -178,7 +178,7 @@ Although the learnable gate (\texttt{gate=learn}) was designed to dynamically ba
   \footnotesize{All rows: ApproxDA-TransUNet. $^*$Gate collapsed to $g{\approx}0.5$ throughout training; see Section~\ref{sec:collapse}. \textbf{Bold}: best; \underline{underline}: second best per column.}
 \end{table}
 
-\subsection{Understanding Approximation Safety}
+\subsection{GCR and Approximation Effectiveness}
 
 \textbf{Which approximation axis drives the performance gap?} Table~\ref{tab:window_ablation} isolates the contribution of spatial windowing by comparing windowed ($M{=}7$) against effectively global ($M{=}112$, window-clamped) attention under gate=pam. The $M{=}14$ result from the gate ablation (gate=learn) is also shown for reference to provide a denser sampling of window sizes.
 
@@ -207,7 +207,7 @@ Removing windowing yields only $+$0.29\% DSC improvement, while the $-$0.87\% ga
 \textbf{Cross-task summary.} Table~\ref{tab:cross_task} consolidates results across all benchmarks. The direction of approximation's effect reverses with GCR: $-$1.16\% DSC on high-GCR Synapse versus $+$0.80\% DSC on low-GCR Kvasir-SEG. Multi-organ CT requires cross-organ anatomical reasoning that spatial approximation disrupts, while polyp segmentation depends primarily on local boundary contrast where windowed attention acts as an implicit regularizer. Figure~\ref{fig:qualitative} illustrates this context-dependent pattern qualitatively.
 
 \begin{table}[t]
-  \caption{Cross-Task Approximation Safety vs.\ Global Context Requirement}
+  \caption{Cross-Task Approximation Effectiveness by GCR Level}
   \label{tab:cross_task}
   \begin{center}
   \setlength{\tabcolsep}{3pt}

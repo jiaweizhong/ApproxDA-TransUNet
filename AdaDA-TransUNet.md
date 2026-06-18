@@ -6,8 +6,8 @@
 |-------|------|
 | **Paper Title** | ApproxDA-TransUNet: Understanding Context-Dependent Attention Approximation for Medical Image Segmentation |
 | **Method Name** | ApproxDA-TransUNet (Approximate Dual Attention TransUNet) |
-| **Research Theme** | Approximation Safety |
-| **Design Principle** | Global Context Requirement (GCR) → Safe Approximation Strength |
+| **Research Theme** | GCR-Governed Approximation |
+| **Design Principle** | Global Context Requirement (GCR) → Approximation Effectiveness |
 | **Code directories** | `Ada-DA-TransUNet` / `AdaDA` (keep as-is; no rename needed) |
 
 ---
@@ -88,7 +88,7 @@ Confirmed at M=7 (gate range 0.4993–0.5010, Δ=0.0017) and M=14 (same pattern)
 
 The opposite directions (−1.16% vs +0.77%) confirm approximation safety is task-dependent (H1). GCR appears to be an important explanatory factor: high-GCR tasks require global spatial interaction that approximation disrupts; low-GCR tasks are robust to or benefit from the implicit regularization of approximation (H2).
 
-### Contribution 4: Approximation Safety Characterization
+### Contribution 4: GCR as Governing Factor
 
 GCR is a **latent task property** — not a directly measurable quantity. It describes the degree to which accurate segmentation relies on long-range spatial dependencies. Evidence for its role as a governing factor:
 
@@ -293,8 +293,8 @@ $$\mathcal{L} = \frac{1}{2} \mathcal{L}_{\text{Dice}} + \frac{1}{2} \mathcal{L}_
 
 ### Cross-Task Summary
 
-| Dataset | DA-TransUNet DSC | ApproxDA best DSC | Δ DSC | GCR Level | Approximation safe? |
-|---------|-----------------|---------------|-------|-----------|-------------------|
+| Dataset | DA-TransUNet DSC | ApproxDA best DSC | Δ DSC | GCR Level | Beneficial? |
+|---------|-----------------|---------------|-------|-----------|------------|
 | Synapse | 79.80% (paper reported) | 78.64% (gate=pam) | −1.17% | High GCR | ❌ No |
 | Kvasir | 88.44% | 89.24% (gate=learn) | **+0.80%** | Low GCR | ✅ Yes |
 | ISIC | TBD | TBD | TBD | Low GCR | ⏳ Expected Yes |
@@ -309,13 +309,13 @@ $$\mathcal{L} = \frac{1}{2} \mathcal{L}_{\text{Dice}} + \frac{1}{2} \mathcal{L}_
 
 2. **Gate collapse analysis (H3):** Theoretical derivation and empirical confirmation that symmetric two-branch gating collapses to a stable equilibrium — not a training failure, but a fundamental property of symmetric gradient flow. The collapse's effectiveness is task-dependent: the same fixed routing is harmful on high-GCR tasks and beneficial on low-GCR tasks. Applicable to any two-branch attention with symmetric initialization.
 
-3. **Cross-task approximation study (H1 + H2):** Same configuration, opposite effects: −1.16% DSC on high-GCR Synapse, +0.77% DSC on low-GCR Kvasir. First empirical demonstration that approximation safety reverses with task GCR characteristics.
+3. **Cross-task approximation study (H1 + H2):** Same configuration, opposite effects: −1.16% DSC on high-GCR Synapse, +0.80% DSC on low-GCR Kvasir. First empirical demonstration that approximation safety reverses with task GCR characteristics.
 
 4. **Approximation Safety characterization:** GCR, a latent task property describing reliance on long-range context, appears to be an important explanatory factor governing when approximation is safe. M=112 ablation further identifies representation approximation (low-rank) — not spatial windowing — as the dominant bottleneck for high-GCR tasks. Preliminary (2 confirmed datasets); formal GCR quantification is a journal goal.
 
 **Conference scope:** Understand and characterize context-dependent approximation behavior. No new gating mechanism — scientific analysis.
 
-**Journal scope:** Design non-collapsing routing; formally quantify GCR; expand dataset range across the GCR spectrum.
+**Journal scope:** Design non-collapsing routing; formally quantify GCR; expand dataset range across the GCR spectrum; validate the implicit regularization mechanism on low-GCR tasks (see `EXPERIMENT_PLAN.md` § *Mechanism Validation* for the four targeted experiments).
 
 ---
 

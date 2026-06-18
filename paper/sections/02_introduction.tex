@@ -1,92 +1,27 @@
 \section{Introduction}
 
-Accurate medical image segmentation is critical for clinical workflows in radiology, endoscopy, and dermatology, where precise delineation of anatomical structures drives diagnosis. CNN-based encoder-decoder architectures---including U-Net~\cite{ronneberger2015unet}, U-Net++~\cite{zhou2018unetpp}, Attention U-Net~\cite{oktay2018attention}, ResUNet~\cite{diakogiannis2020resunet}, and MultiResUNet~\cite{ibtehaz2020multiresunet}---established the foundational segmentation paradigm using skip connections for spatial detail recovery, yet their limited receptive fields constrain reasoning over long-range anatomical relationships. Transformer-based architectures have since transformed the field by capturing these long-range dependencies through dual attention---jointly modeling positional correlations via Position Attention Modules (PAM) and channel semantic correlations via Channel Attention Modules (CAM)~\cite{fu2019dual}. Representative methods such as DA-TransUNet~\cite{sun2024datransunet} integrate these into hybrid CNN-Transformer backbones, demonstrating state-of-the-art segmentation performance across multiple benchmarks. However, both PAM and CAM carry quadratic computational complexity ($\mathcal{O}(N^2C)$ and $\mathcal{O}(C^2N)$, respectively), making high-resolution deployment increasingly expensive.
-
-To address this challenge, a large body of recent research has focused on efficient attention approximations, including window-based attention~\cite{liu2021swin}, low-rank factorization~\cite{wang2020linformer}, sparse attention, linear attention~\cite{choromanski2020performer}, and grouped channel interaction~\cite{rahman2024emcad}. These approximation strategies have substantially reduced the theoretical computational complexity of attention while maintaining competitive performance in many computer vision tasks. Consequently, efficient attention has become a standard design paradigm for modern vision transformers~\cite{chen2021transunet,cao2022swinunet,azad2023daeformer}. Yet a fundamental assumption underlies all of these approaches: that approximation is universally applicable, with at most minor accuracy trade-offs.
-
-Despite these advances, an important scientific question remains largely unanswered:
+Transformer-based architectures have advanced medical image segmentation by capturing long-range spatial dependencies through dual attention---jointly modeling positional and channel correlations~\cite{fu2019dual}. Methods such as DA-TransUNet~\cite{sun2024datransunet} integrate these into hybrid CNN-Transformer backbones, achieving strong performance across multiple benchmarks. However, dual attention carries quadratic computational complexity, and a large body of efficient approximations---windowed attention~\cite{liu2021swin}, low-rank factorization~\cite{wang2020linformer}, grouped channel interaction~\cite{rahman2024emcad}---has emerged as a standard design response. These strategies share a common assumption: that approximation is universally applicable, with at most minor accuracy trade-offs. For medical image segmentation, which spans tasks with fundamentally different spatial reasoning requirements, this assumption has rarely been examined:
 
 \begin{quote}
 \emph{When is attention approximation safe for medical image segmentation?}
 \end{quote}
 
-We hypothesize that the answer is governed by a task-level property we call \textbf{Global Context Requirement (GCR)}---the degree to which accurate segmentation depends on long-range spatial dependencies. Tasks with high GCR (multi-organ CT) require global anatomical reasoning; tasks with low GCR (polyp, skin lesion) are dominated by local appearance. We predict an inverse relationship: \textbf{Approximation Safety} $\approx f(\text{GCR})$, $f'<0$. To test this hypothesis empirically, we design \textbf{ApproxDA-TransUNet}, an efficient dual-attention architecture with three orthogonal approximation operators (windowed PAM, low-rank projection, grouped CAM), each independently controllable, so that any axis can be varied in isolation.
+To investigate this systematically, we propose \textbf{ApproxDA-TransUNet}, a dual-attention architecture with three orthogonal approximation operators---windowed PAM, low-rank projection, and grouped CAM---each independently controllable. Rather than optimizing for peak performance, the design serves as a \emph{scientific instrument}: any single approximation axis can be varied while the others remain fixed, enabling isolation of each operator's contribution.
 
-During this investigation, we obtain two unexpected observations.
+Experiments reveal a consistent and task-dependent pattern. On multi-organ CT segmentation (Synapse), where reasoning over long-range anatomical relationships is essential, attention approximation reliably degrades performance relative to the full dual-attention baseline. On polyp segmentation (Kvasir-SEG), where local boundary appearance dominates, the same configuration is competitive with or surpasses state-of-the-art methods. We additionally find that learnable routing mechanisms for weighting attention branches consistently collapse to a fixed equilibrium due to gradient symmetry---a fundamental property of symmetric two-branch architectures, not a training artifact.
 
-First, attention approximation exhibits clear task-dependent behavior. Although ApproxDA achieves competitive performance on local-structure-dominant datasets such as Kvasir (and ISIC, if confirmed), the same approximation consistently degrades performance on the multi-organ Synapse benchmark, providing empirical evidence that high-GCR tasks cannot tolerate aggressive spatial approximation.
+Motivated by these observations, we hypothesize that a latent task property---which we term \textbf{Global Context Requirement (GCR)}---governs the direction of this effect: high-GCR tasks require global reasoning and are degraded by approximation; low-GCR tasks are dominated by local structure and tolerate or benefit from it. We formalize this hypothesis precisely in Section~\ref{sec:analysis}.
 
-Second, the learnable routing mechanism originally introduced to adaptively fuse spatial and channel attention consistently collapses to an almost constant routing coefficient across different datasets and architectural configurations. Further analysis reveals that this phenomenon originates from gradient symmetry between the two attention branches, causing the routing module to degenerate into a nearly fixed fusion strategy. Rather than functioning as sample-adaptive routing, the gate behaves as a task-level fixed approximation whose effectiveness depends primarily on the contextual characteristics of the segmentation task.
-
-Together, these results provide evidence consistent with the GCR hypothesis: the same ApproxDA configuration achieves $+$0.80\% DSC on low-GCR Kvasir-SEG and $-$1.16\% DSC on high-GCR Synapse---opposite effects consistent with Approximation Safety $\approx f(\text{GCR})$.
-
-This paper is organized around three explicit hypotheses:
-\begin{itemize}
-  \item \textbf{H1:} Attention approximation effectiveness depends on task characteristics and is not universally safe.
-  \item \textbf{H2:} Global Context Requirement (GCR)---a latent task property describing the degree to which segmentation relies on long-range spatial dependencies---is an important explanatory factor governing approximation safety.
-  \item \textbf{H3:} Symmetric dual-attention routing naturally collapses to a fixed equilibrium during optimization, independent of window size or rank.
-\end{itemize}
-
-The main contributions of this paper are summarized as follows:
+The main contributions of this paper are:
 
 \begin{itemize}
 
-\item We introduce \textbf{Global Context Requirement (GCR)} and \textbf{Approximation Safety} as complementary task-level concepts, and propose that Approximation Safety $\approx f(\text{GCR})$ with $f' < 0$. Our experiments provide evidence consistent with this: the same configuration incurs $-$1.16\% DSC on high-GCR Synapse (multi-organ CT, global anatomical reasoning required) while achieving $+$0.80\% DSC on low-GCR Kvasir-SEG (polyp segmentation, local appearance dominant)---opposite effects consistent with GCR as an important explanatory factor.
+\item We design \textbf{ApproxDA-TransUNet}, a controllable dual-attention architecture with three independently adjustable approximation operators---windowed PAM, low-rank projection, and grouped CAM---each independently controllable to isolate individual approximation effects. The design serves as a scientific instrument for studying when approximation is appropriate across tasks with different contextual requirements.
 
-\item We design \textbf{ApproxDA-TransUNet}, a practical efficient dual-attention architecture that replaces the quadratic DA module with three orthogonal approximation operators (windowed PAM, low-rank projection, grouped CAM), each independently controllable. The architecture simultaneously achieves 44\% lower per-GPU VRAM (6.4\,GB vs.\ 11.5\,GB), resolves a DataParallel failure in DA-TransUNet, and enables systematic investigation of how each approximation axis affects performance under different GCR regimes.
+\item We introduce \textbf{Global Context Requirement (GCR)} as a task-level concept and show that it governs the direction of approximation's effect: high-GCR tasks are degraded while low-GCR tasks benefit, providing evidence for GCR as an explanatory factor governing when efficient attention is appropriate.
 
-\item We derive the gradient dynamics of symmetric dual-branch gating and empirically verify \textbf{gradient symmetry collapse}: at initialization $g{\approx}0.5$, PAM and CAM receive equal gradients and converge to similar representations, driving the gate gradient to zero and fixing $g{\approx}0.5$ regardless of window size---confirmed independently at both $M{=}7$ and $M{=}14$.
+\item We derive the gradient dynamics of symmetric dual-branch gating and empirically verify \textbf{gradient symmetry collapse}: the routing gate converges to a near-constant value regardless of window size or rank---a fundamental limitation of symmetric two-branch attention design with broad implications for routing mechanism design.
 
 \end{itemize}
-
-\begin{figure}[t]
-  \centering
-  \begin{tikzpicture}[
-    fbox/.style={draw, rounded corners=3pt, minimum width=3.2cm, minimum height=0.65cm,
-                 text centered, font=\small, align=center},
-    arr/.style={->, thick, >=stealth}
-  ]
-    \node[fbox, fill=blue!10]   (task)   at (0, 0)    {Medical Segmentation Task};
-    \node[fbox, fill=orange!15] (gcr)    at (0,-1.1)  {Global Context Requirement (GCR)\\{\scriptsize[task-level property]}};
-    \node[fbox, fill=yellow!15] (safe)   at (0,-2.3)  {Approximation Safety\\{\scriptsize[predicted outcome]}};
-    \node[fbox, fill=red!10]    (full)   at (-2.0,-3.7) {Full Dual Attention\\(DA-TransUNet)};
-    \node[fbox, fill=green!10]  (approx) at (2.0,-3.7)  {ApproxDA\\(windowed PAM\\+grouped CAM)};
-    \draw[arr] (task)--(gcr);
-    \draw[arr] (gcr)--(safe);
-    \draw[arr] (safe) -- node[left,  font=\footnotesize] {High GCR} (full);
-    \draw[arr] (safe) -- node[right, font=\footnotesize] {Low GCR}  (approx);
-  \end{tikzpicture}
-  \caption{The GCR hypothesis studied in this work. A segmentation task's Global Context Requirement (GCR) appears to govern approximation safety and guide attention strategy selection. ApproxDA-TransUNet serves as the controllable experimental instrument for testing this hypothesis; gate collapse is a secondary mechanistic finding.}
-  \label{fig:framework_concept}
-\end{figure}
-
-\begin{figure}[t]
-  \centering
-  \begin{tikzpicture}[
-    box/.style={draw, rounded corners=3pt, minimum width=2.8cm, minimum height=0.6cm,
-                text centered, font=\small, align=center},
-    harr/.style={->, thick, >=stealth}
-  ]
-    \node[box, fill=red!15, font=\small\bfseries]  (ht) at (0, 0)    {Synapse\\(Multi-organ CT)};
-    \node[box, fill=red!10]                         (hg) at (0,-0.9)  {High GCR};
-    \node[box, fill=red!10]                         (hc) at (0,-1.8)  {Long-range context\\required};
-    \node[box, fill=red!25, font=\small\bfseries]   (hr) at (0,-2.9)  {Approximation hurts\\($-$1.16\% DSC)};
-    \draw[harr,red!60]        (ht)--(hg);
-    \draw[harr,red!60]        (hg)--(hc);
-    \draw[harr,red!60]        (hc)--(hr);
-
-    \node[box, fill=green!20, font=\small\bfseries] (lt) at (3.6, 0)   {Kvasir-SEG\\(Polyp)};
-    \node[box, fill=green!10]                        (lg) at (3.6,-0.9) {Low GCR};
-    \node[box, fill=green!10]                        (lc) at (3.6,-1.8) {Local structure\\dominant};
-    \node[box, fill=green!25, font=\small\bfseries]  (lr) at (3.6,-2.9) {Approximation helps\\($+$0.80\% DSC)};
-    \draw[harr,green!60!black] (lt)--(lg);
-    \draw[harr,green!60!black] (lg)--(lc);
-    \draw[harr,green!60!black] (lc)--(lr);
-
-    \draw[dashed, gray!60, thick] (1.8, 0.45)--(1.8,-3.35);
-  \end{tikzpicture}
-  \caption{Context-dependent approximation safety governed by Global Context Requirement (GCR). The same ApproxDA configuration yields opposite effects depending on how much the task relies on long-range spatial context. This is the central empirical finding of this paper.}
-  \label{fig:gcr}
-\end{figure}
 
 \noindent The remainder of this paper is organized as follows: Section~\ref{sec:related_work} reviews related work; Section~\ref{sec:method} presents the ApproxDA framework; Section~\ref{sec:experiments} reports experimental results; Section~\ref{sec:analysis} provides discussion and analysis; Section~\ref{sec:conclusion} concludes.

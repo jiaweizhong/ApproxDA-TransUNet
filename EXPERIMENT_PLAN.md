@@ -8,8 +8,8 @@ Both DA-TransUNet (baseline) and AdaDA-TransUNet are run under identical conditi
 **Paper title:** "ApproxDA-TransUNet: Understanding Context-Dependent Attention Approximation for Medical Image Segmentation"
 **Method name:** **ApproxDA-TransUNet** (Approximate Dual Attention TransUNet — describes the mechanism; code directories retain `Ada-DA-TransUNet` name)
 **Scientific question:** *"When is attention approximation safe under different global context requirements?"*
-**Design principle:** Global Context Requirement (GCR) → Safe Approximation Strength
-**4 contributions:** efficient approximation framework, gate-collapse theory, cross-task empirical study, preliminary GCR→safety evidence
+**Design principle:** Global Context Requirement (GCR) → Approximation Effectiveness
+**4 contributions:** efficient approximation framework, gate-collapse theory, cross-task empirical study, preliminary GCR→effectiveness evidence
 
 ---
 
@@ -155,6 +155,173 @@ python test.py \
   --groups 8 \
   --gate_mode pam \
   2>&1 | tee ../../results/AdaDA-TransUNet/M112R64-PAM-06172026/test_M112_r64_pam.txt
+```
+
+---
+
+### Phase C — GCR Context Sensitivity (Inference-Only, No Retraining)
+
+**Goal:** Provide empirical support for GCR as a measurable task property without any new training.
+
+**Why NOT window sensitivity (Option 3):**
+Varying M at inference time by slicing `proj_r.weight` is invalid — a checkpoint trained with M=7 has weight shape `[r, 49]`; you cannot test it at M=28 (784 tokens). Going the other way (M=112 checkpoint → test at smaller M) produces arbitrary results because the sliced weight columns correspond to no meaningful learned structure. Window sensitivity requires separate training runs for each M, defeating the inference-only goal.
+
+**Approach — Context Radius Sensitivity (Option 1 variant):**
+Use existing best checkpoints. For each test image, center-crop to radius R, resize back to 224×224, then run inference unchanged. The key insight: Synapse requires cross-organ spatial reasoning → DSC drops sharply when distant context is removed. Kvasir/ISIC rely on local boundary appearance → DSC stays flat. Slope difference = empirical GCR signal.
+
+**Checkpoint to use:** DA-TransUNet (full attention, same model for all datasets). This is the most principled choice — we're measuring the task's information dependency, not the approximation model's behavior.
+
+| Dataset | Checkpoint | Status |
+|---------|-----------|--------|
+| Synapse | DA-TransUNet best (✅ done, DSC 79.80%) | Ready |
+| Kvasir | DA-TransUNet best (✅ done, DSC 88.44%) | Ready |
+| ISIC 2018 | DA-TransUNet best (🔄 training) | Wait for finish |
+
+#### Context Radii
+
+| Radius R (px) | Crop size | % of 224×224 image |
+|---------------|-----------|---------------------|
+| 56 | 56×56 | 25% |
+| 112 | 112×112 | 50% |
+| 168 | 168×168 | 75% |
+| 224 | 224×224 | 100% (full, no crop) |
+
+Each image: center-crop → resize to 224×224 → run test.py → compute DSC.
+
+**Inference time estimate:** ~30 min total across all 3 datasets × 4 radii.
+- Synapse: 12 test volumes × 4 radii × ~30s/vol ≈ 24 min
+- Kvasir: 200 test images × 4 radii × 0.12s/img ≈ 2 min
+- ISIC: 519 test images × 4 radii × 0.12s/img ≈ 4 min
+
+#### Implementation
+
+New analysis script: `experiments/analyze_gcr_context.py`
+
+```python
+# Pseudocode — center crop + resize before inference
+def apply_context_mask(image, radius):
+    H, W = image.shape[-2:]
+    cx, cy = W // 2, H // 2
+    x1 = max(0, cx - radius)
+    x2 = min(W, cx + radius)
+    y1 = max(0, cy - radius)
+    y2 = min(H, cy + radius)
+    cropped = image[..., y1:y2, x1:x2]
+    return F.interpolate(cropped, size=(H, W), mode='bilinear', align_corners=False)
+
+# Loop over radii, run existing model.forward() unchanged
+for R in [56, 112, 168, 224]:
+    masked_input = apply_context_mask(image, R)
+    pred = model(masked_input)
+    dsc = compute_dice(pred, label)
+```
+
+For Synapse (3D volumes processed slice-by-slice), apply crop per 2D slice before feeding to model.
+
+**⚠️ Synapse centroid note:** Organs are generally in the abdominal center of 224×224 CT slices, so center crop is reasonable. If results are noisy, try crop centered on the union of ground-truth organ bounding boxes instead.
+
+#### Expected Output
+
+One figure: DSC (%) vs context radius R for three datasets.
+
+```
+DSC (%)
+100 |          Kvasir-SEG ────────────────●─── (flat ~88–89%)
+    |          ISIC 2018  ─────────────────●── (flat ~88–89%)
+ 85 |
+    |          Synapse   ──────────────●
+ 80 |                        ──────●
+    |               ────●
+ 75 |         ●
+    +-------+-------+-------+-------+--> R
+            56     112     168     224
+```
+
+- Synapse curve: steep negative slope → high GCR
+- Kvasir/ISIC curves: near-flat → low GCR
+- Visual definition of GCR without any equations
+
+If Synapse drop is less than 1% across all radii, the signal is too weak for a figure — fall back to a 1-sentence note referencing the existing window ablation data (M=7 vs M=112).
+
+#### Run Commands (from experiments/DA-TransUNet/)
+
+```bash
+# Synapse — ready now (~24 min)
+python analyze_gcr_context.py --dataset Synapse --max_epochs 300
+
+# Kvasir — ready now (~2 min)
+python analyze_gcr_context.py --dataset Kvasir --max_epochs 300
+
+# ISIC — run after training finishes (~5 min)
+python analyze_gcr_context.py --dataset ISIC --max_epochs 300
+```
+
+Results written to `experiments/DA-TransUNet/gcr_analysis/gcr_context_{dataset}.csv` and `.log`.
+
+#### Status
+
+| Step | Status |
+|------|--------|
+| Write analyze_gcr_context.py | ✅ Done |
+| Run Synapse inference (4 crop sizes) | ❌ (ready — checkpoint exists) |
+| Run Kvasir inference (4 crop sizes) | ❌ (ready — checkpoint exists) |
+| Run ISIC inference (4 crop sizes) | ❌ (blocked — wait for ISIC training to finish) |
+| Plot figure (DSC vs crop size, 3 datasets) | ❌ |
+
+---
+
+### Phase D — Window Sensitivity Ablation (Requires Training)
+
+**Goal:** Complementary to Phase C. Where Phase C varies context at the input level,
+Phase D varies the attention window M to measure sensitivity within the model.
+Together they corroborate the GCR proxy from two independent angles.
+
+**Why this requires training:** Each M value requires a separately trained checkpoint
+because `proj_r.weight` shape is `[r, M*M]` — you cannot test a M=7 checkpoint at M=28.
+
+**Config:** gate=pam, r=32, groups=8 (single branch, consistent rank across all M).
+Run from `experiments/Ada-DA-TransUNet/`.
+
+| # | Dataset | M | Config | Status | Est. Time |
+|---|---------|---|--------|--------|-----------|
+| D1 | Synapse | 28 | gate=pam, r=32 | ❌ | ~8h T4×1 |
+| D2 | Synapse | 56 | gate=pam, r=32 | ❌ | ~8h T4×1 |
+| D3 | Kvasir | 7 | gate=pam, r=32 | ❌ | ~4h T4×1 (have gate=learn only) |
+| D4 | Kvasir | 28 | gate=pam, r=32 | ❌ | ~4h T4×1 |
+| D5 | Kvasir | 56 | gate=pam, r=32 | ❌ | ~4h T4×1 |
+| D6 | Kvasir | 112 | gate=pam, r=32 | ❌ | ~4h T4×1 |
+
+Existing data reused (no new training):
+- Synapse M=7: gate=pam, r=32 ✅ 78.64%
+- Synapse M=112: gate=pam, r=64 ✅ 78.93% (note: r differs, flag in figure caption)
+
+**Minimum viable (D1+D2+D3+D6):** Gives anchor points at both ends of the M sweep
+for both datasets — 4 training runs, ~24h total.
+
+**Recommended:** All D1–D6 for full 4-point curves — 6 training runs, ~40h total.
+
+#### Training Commands (from experiments/Ada-DA-TransUNet/)
+
+```bash
+# Synapse, M=28
+python train.py --dataset Synapse --vit_name R50-ViT-B_16 \
+  --max_epochs 300 --batch_size 12 \
+  --gate_mode pam --window_size 28 --rank 32 --groups 8 \
+  --val_interval 15
+
+# Synapse, M=56
+python train.py --dataset Synapse --vit_name R50-ViT-B_16 \
+  --max_epochs 300 --batch_size 12 \
+  --gate_mode pam --window_size 56 --rank 32 --groups 8 \
+  --val_interval 15
+
+# Kvasir, M=7 (gate=pam — anchors the comparison vs existing gate=learn result)
+python train.py --dataset Kvasir --vit_name R50-ViT-B_16 \
+  --max_epochs 300 --batch_size 12 \
+  --gate_mode pam --window_size 7 --rank 32 --groups 8 \
+  --val_interval 15
+
+# Kvasir, M=28, M=56, M=112 — same pattern, change --window_size
 ```
 
 ---
@@ -396,3 +563,20 @@ Night 5:  AdaDA         ISIC     (T4 x2, ~2.5h)
 - Add broader dataset range to widen GCR spectrum (Chest X-Ray, CVC-ClinicDB)
 - Add sensitivity curves (rank r, window M, groups G) and per-organ analysis for Synapse
 - Extend to ~12 pages
+
+#### Engineering Implementation Details (Journal Appendix)
+The following implementation specifics are omitted from the conference paper but should be documented in a journal appendix:
+- **DataParallel incompatibility in DA-TransUNet:** The public codebase silently bypasses the 64-channel (112×112) skip connection via a guard that checks the wrong tensor dimension. If executed, `DANetHead(64,64)` creates a `Conv2d` with a zero-element weight, causing `DataParallel` to raise a `BroadcastBackward` gradient error at first backward call (confirmed on T4×2). Full N×N PAM at 112×112 (N=12,544) would also require ≈7 GB for the attention matrix alone.
+- **GroupedCAM integer-division fix:** The original `DANetHead` at C=64 channels produces an integer-division underflow; grouped decomposition (G=8) avoids this.
+- **ApproxDA resolution:** Both issues are resolved simultaneously by the windowed PAM (no N×N matrix) and grouped CAM (no C=64 underflow), enabling DDP via `torchrun` (NCCL, avoids `BroadcastBackward`).
+
+#### Mechanism Validation: Why Approximation Helps on Low-GCR Tasks
+The conference paper attributes low-GCR improvement to two factors: (i) near-zero information cost (local context is sufficient) and (ii) implicit regularization (spatial constraints reduce overfitting). The regularization interpretation is currently stated as hypothesis. The following experiments are needed to elevate it to a validated finding:
+
+1. **Train/test generalization gap analysis** — Plot train DSC vs. test DSC learning curves for DA-TransUNet and ApproxDA on Kvasir. If ApproxDA has a smaller generalization gap (train DSC − test DSC), this directly supports the regularization interpretation. Cheap: just log train metrics during existing training runs.
+
+2. **Dataset size sensitivity study** — Train both models on Kvasir subsets (20%, 40%, 60%, 80% of training data) and measure the ApproxDA−DA-TransUNet DSC delta at each split. If the benefit scales inversely with training set size (larger gap on smaller splits), regularization is the plausible mechanism. Requires ~8 additional training runs.
+
+3. **Attention map visualization** — Generate spatial attention heatmaps (averaged over PAM heads) on Kvasir polyp images for both models. If DA-TransUNet attends to distant background regions while ApproxDA concentrates on local lesion boundaries, this provides visual evidence of spurious long-range attention in the full model. Cheap: inference-only analysis of saved checkpoints.
+
+4. **Controlled explicit regularization baseline** *(optional)* — Add dropout or L2 weight decay to DA-TransUNet tuned to match ApproxDA's Kvasir DSC. If DA-TransUNet+explicit-reg reaches the same level, this confirms the gain is regularization-driven rather than architectural. Useful for reviewer skeptics; adds ~4 training runs.

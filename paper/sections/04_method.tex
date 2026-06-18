@@ -9,9 +9,6 @@ ApproxDA-TransUNet adopts the hybrid CNN--ViT encoder-decoder structure of DA-Tr
 
 ApproxDA-TransUNet is designed around an explicit hypothesis: that three orthogonal approximation operators---windowed PAM, low-rank projection, and grouped CAM---can replace the quadratic DA module to yield both a practical efficient architecture and a systematic framework for studying when approximation is appropriate. Each operator targets a distinct approximation axis (spatial scope, representation fidelity, channel scope), so any two can be held fixed while the third varies. This makes ApproxDA not merely a faster model, but a model whose design enables controlled ablation of approximation effects across tasks with different contextual requirements.
 
-\noindent\textbf{Engineering fix.}
-The publicly released DA-TransUNet code silently bypasses the 64-channel ($112{\times}112$) skip connection via a guard condition that checks the wrong tensor dimension. If executed, \texttt{DANetHead(64,64)} creates a \texttt{Conv2d} layer with a zero-element weight that causes \texttt{DataParallel} to raise an invalid-gradient error at the first backward call, confirmed on T4${\times}$2. Full $N{\times}N$ PAM at $112{\times}112$ ($N{=}12{,}544$) would also require ${\approx}7$\,GB for the attention matrix alone. ApproxDA-TransUNet resolves both issues simultaneously.
-
 \begin{figure}[t]
   \centering
   \fbox{\rule{0pt}{2.5cm}\rule{\columnwidth}{0pt}}
@@ -47,7 +44,7 @@ These axes correspond to three distinct types of approximation: \emph{spatial ap
     \draw[axis, green!60!black] (c) -- ++(2.0,-1.1)
       node[lab, below right] {Semantic\\Interaction};
   \end{tikzpicture}
-  \caption{ApproxDA's three-dimensional approximation space. Each axis is independently controllable. Spatial scope ($M$) most directly governs long-range context capture and thereby approximation safety on high-GCR tasks.}
+  \caption{ApproxDA's three-dimensional approximation space. Each axis is independently controllable. Spatial scope ($M$) most directly governs long-range context capture and thereby approximation effectiveness on high-GCR tasks.}
   \label{fig:approx_space}
 \end{figure}
 
@@ -73,7 +70,7 @@ The original Channel Attention Module computes a $C{\times}C$ channel attention 
   X^{(g)}_{ji} = \frac{\exp(\mathbf{A}^{(g)}_i \cdot \mathbf{A}^{(g)}_j)}{\sum_{k=1}^{C_g}\exp(\mathbf{A}^{(g)}_k \cdot \mathbf{A}^{(g)}_j)},
   \label{eq:groupedcam}
 \end{equation}
-with total cost $\mathcal{O}(C^2N/G)$. Compared with dense channel interaction, grouped attention significantly reduces computational complexity while preserving local channel dependency. Grouped decomposition also eliminates an integer-division underflow that occurs in the original DANetHead at $C{=}64$.
+with total cost $\mathcal{O}(C^2N/G)$. Compared with dense channel interaction, grouped attention significantly reduces computational complexity while preserving local channel dependency.
 
 The grouping number $G$ provides another controllable approximation dimension, allowing the influence of channel approximation to be studied independently from spatial approximation.
 
@@ -106,24 +103,4 @@ The training objective combines Dice loss and cross-entropy loss with equal weig
   \label{eq:loss}
 \end{equation}
 
-\subsection{Complexity Analysis}
-
-Table~\ref{tab:complexity} summarizes the theoretical complexity reduction of the proposed approximation. Windowed PAM reduces spatial attention complexity from $\mathcal{O}(N^2C)$ to $\mathcal{O}(NM^2C)$, and low-rank projection further reduces it to $\mathcal{O}(NrC)$ where $r \ll C$. Grouped CAM reduces channel interaction from $\mathcal{O}(C^2N)$ to $\mathcal{O}(C^2N/G)$.
-
-\begin{table}[t]
-  \caption{Theoretical Complexity of Attention Modules}
-  \label{tab:complexity}
-  \begin{center}
-  \begin{tabular}{lcc}
-    \toprule
-    Module & Original & Proposed \\
-    \midrule
-    PAM & $\mathcal{O}(N^2 C)$ & $\mathcal{O}(N r C)$ \quad [$r \ll N$] \\
-    CAM & $\mathcal{O}(C^2 N)$ & $\mathcal{O}(C^2 N / G)$ \\
-    Routing & Fixed sum & Configurable gate \\
-    \bottomrule
-  \end{tabular}
-  \end{center}
-\end{table}
-
-It should be emphasized that these reductions correspond to layer-level attention complexity rather than end-to-end network complexity. Since convolutional and transformer backbone operations still dominate the overall computation, theoretical complexity reduction does not necessarily translate into proportional reductions in whole-network FLOPs. Instead, ApproxDA provides a controllable approximation formulation that enables systematic investigation of the trade-off between approximation strength and segmentation performance.
+These approximations reduce layer-level attention complexity: windowed PAM from $\mathcal{O}(N^2C)$ to $\mathcal{O}(NrC)$ ($r \ll N$); grouped CAM from $\mathcal{O}(C^2N)$ to $\mathcal{O}(C^2N/G)$. Since backbone operations dominate end-to-end computation, the primary value of ApproxDA is not whole-network FLOPs reduction but a controllable formulation for systematically isolating each approximation operator's effect on segmentation performance (Section~\ref{sec:experiments}).
