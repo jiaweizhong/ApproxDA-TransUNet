@@ -249,8 +249,8 @@ Uses best AdaDA checkpoints — no DA-TransUNet checkpoint needed.
 The GCR signal (slope of DSC vs crop size) is a task property independent of which model measures it.
 
 ```bash
-# Synapse — best AdaDA is gate=pam, M=7, r=32 (~24 min)
-python analyze_gcr_context.py --dataset Synapse --gate_mode pam --window_size 7 --rank 32 --max_epochs 300
+# Synapse — best AdaDA is gate=pam, M=7, r=32, bs=12
+python analyze_gcr_context.py --dataset Synapse --gate_mode pam --window_size 7 --rank 32 --batch_size 12 --max_epochs 300
 
 # Kvasir — best AdaDA is gate=learn, M=7, r=32 (~2 min)
 python analyze_gcr_context.py --dataset Kvasir --gate_mode learn --window_size 7 --rank 32 --max_epochs 300
@@ -261,23 +261,33 @@ python analyze_gcr_context.py --dataset ISIC --gate_mode learn --window_size 7 -
 
 Results written to `experiments/Ada-DA-TransUNet/gcr_analysis/gcr_context_{dataset}_M7_r32_{gate}.csv` and `.log`.
 
+#### ⚠️ Methodological Limitation — Kvasir/ISIC Center-Crop is INVALID
+
+**Finding (2026-06-18):** Kvasir result shows +70.8% DSC drop (0.892 → 0.185) at 25% crop, falsely signaling high GCR.
+
+**Root cause:** Polyps are randomly positioned in the image. A 25% center crop often excludes the polyp entirely. The model correctly predicts "no polyp in the center region," but the ground truth has a polyp elsewhere — DSC collapses to near 0. This is not a context dependency signal; it is a target-location artifact.
+
+**Rule:** Center-crop GCR proxy is only valid when the target structure has a consistent location in the image. For Synapse, organs are anatomically fixed → center crop tests context dependency. For Kvasir/ISIC, polyps/lesions are randomly located → center crop tests "is the target in the center?" not GCR.
+
+**Consequence:** Phase C data is usable for Synapse only. Kvasir and ISIC center-crop results should not be used. **Phase D (window sensitivity) is the only valid GCR proxy for Kvasir/ISIC** because it varies the attention window inside the model independently of target position.
+
 #### Status
 
 | Step | Status |
 |------|--------|
 | Write analyze_gcr_context.py | ✅ Done |
-| Run Synapse inference (4 crop sizes) | ❌ (ready — checkpoint exists) |
-| Run Kvasir inference (4 crop sizes) | ❌ (ready — checkpoint exists) |
-| Run ISIC inference (4 crop sizes) | ❌ (blocked — wait for ISIC training to finish) |
-| Plot figure (DSC vs crop size, 3 datasets) | ❌ |
+| Run Synapse inference (4 crop sizes) | ⛔ Drop — no comparison possible without valid Kvasir; see Phase D instead |
+| Run Kvasir inference (4 crop sizes) | ✅ Done — ⚠️ INVALID (target-location artifact, not GCR) |
+| Run ISIC inference (4 crop sizes) | ⛔ Skip — same artifact as Kvasir |
+| Plot figure (DSC vs crop size, Synapse only) | ⛔ Drop — single-dataset curve has no comparative value without valid Kvasir data |
 
 ---
 
 ### Phase D — Window Sensitivity Ablation (Requires Training)
 
-**Goal:** Complementary to Phase C. Where Phase C varies context at the input level,
-Phase D varies the attention window M to measure sensitivity within the model.
-Together they corroborate the GCR proxy from two independent angles.
+**Goal:** Primary GCR proxy for Kvasir/ISIC (Phase C is invalid for randomly-positioned targets).
+Phase D varies the attention window M inside the model, which tests whether the model needs
+large spatial attention range regardless of where the target is located in the image.
 
 **Why this requires training:** Each M value requires a separately trained checkpoint
 because `proj_r.weight` shape is `[r, M*M]` — you cannot test a M=7 checkpoint at M=28.
