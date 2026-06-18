@@ -243,20 +243,23 @@ DSC (%)
 
 If Synapse drop is less than 1% across all radii, the signal is too weak for a figure — fall back to a 1-sentence note referencing the existing window ablation data (M=7 vs M=112).
 
-#### Run Commands (from experiments/DA-TransUNet/)
+#### Run Commands (from experiments/Ada-DA-TransUNet/)
+
+Uses best AdaDA checkpoints — no DA-TransUNet checkpoint needed.
+The GCR signal (slope of DSC vs crop size) is a task property independent of which model measures it.
 
 ```bash
-# Synapse — ready now (~24 min)
-python analyze_gcr_context.py --dataset Synapse --max_epochs 300
+# Synapse — best AdaDA is gate=pam, M=7, r=32 (~24 min)
+python analyze_gcr_context.py --dataset Synapse --gate_mode pam --window_size 7 --rank 32 --max_epochs 300
 
-# Kvasir — ready now (~2 min)
-python analyze_gcr_context.py --dataset Kvasir --max_epochs 300
+# Kvasir — best AdaDA is gate=learn, M=7, r=32 (~2 min)
+python analyze_gcr_context.py --dataset Kvasir --gate_mode learn --window_size 7 --rank 32 --max_epochs 300
 
 # ISIC — run after training finishes (~5 min)
-python analyze_gcr_context.py --dataset ISIC --max_epochs 300
+python analyze_gcr_context.py --dataset ISIC --gate_mode learn --window_size 7 --rank 32 --max_epochs 300
 ```
 
-Results written to `experiments/DA-TransUNet/gcr_analysis/gcr_context_{dataset}.csv` and `.log`.
+Results written to `experiments/Ada-DA-TransUNet/gcr_analysis/gcr_context_{dataset}_M7_r32_{gate}.csv` and `.log`.
 
 #### Status
 
@@ -323,6 +326,63 @@ python train.py --dataset Kvasir --vit_name R50-ViT-B_16 \
 
 # Kvasir, M=28, M=56, M=112 — same pattern, change --window_size
 ```
+
+---
+
+### Phase E — Attention Map Visualization (Inference-Only, Conference Paper)
+
+**Goal:** Provide direct visual evidence for the inductive bias hypothesis.
+The claim: DA-TransUNet attends to spurious distant regions on Kvasir (unnecessary global attention)
+while ApproxDA concentrates on local polyp/lesion boundaries (correct local prior).
+If this is visible in attention maps, reviewers have a concrete reason to believe the inductive bias explanation — not just a hypothesis.
+
+**Uses existing checkpoints — no new training needed:**
+
+| Model | Dataset | Checkpoint | Status |
+|-------|---------|-----------|--------|
+| DA-TransUNet | Kvasir | `TU_Kvasir224/.../best_model.pth` | ✅ Ready |
+| ApproxDA gate=learn, M=7 | Kvasir | `AdaDA_Kvasir224/.../best_model.pth` | ✅ Ready |
+
+ApproxDA gate=learn uses gate=collapse (g≈0.5, 50/50 PAM+CAM). For the attention map, we extract **only the PAM branch** — the windowed PAM attention heatmap directly shows the locality constraint.
+
+**Implementation:** New script `experiments/Ada-DA-TransUNet/analyze_attention_maps.py`
+
+```python
+# Forward hook to capture PAM attention scores before softmax
+attention_cache = {}
+def hook_fn(module, input, output):
+    attention_cache['scores'] = output  # (B*nW, N, r) within-window scores
+
+# Register on the PAM module of the last active AdaDABlock
+hook = model.decoder.pam_blocks[-1].pam.register_forward_hook(hook_fn)
+
+# Run inference on 5-10 representative Kvasir test images
+# Aggregate per-pixel attention: sum attention weight a pixel receives across all query positions
+# → higher = more attended, regardless of which query
+# Resize to original image size and overlay as heatmap
+```
+
+**Quantitative complement — attention distance:**
+Per test image, compute mean spatial distance between attended pixel pairs (weighted by attention score).
+- DA-TransUNet: expect higher mean distance (global attention → far-away pixels)
+- ApproxDA: expect lower mean distance (windowed → neighboring pixels)
+Report as a one-row table: `Mean Attention Distance (pixels): DA-TransUNet XX | ApproxDA XX`
+This converts the visual into a number reviewers can cite.
+
+**Expected output:**
+1. 2×3 panel figure: top row = DA-TransUNet (attention overlay on 3 Kvasir images), bottom row = ApproxDA
+2. One-row attention distance table
+
+**Time estimate:** ~4h implementation + 30 min inference. No GPU training.
+
+#### Status
+
+| Step | Status |
+|------|--------|
+| Write analyze_attention_maps.py | ❌ |
+| Run on Kvasir (DA-TransUNet + ApproxDA) | ❌ (checkpoints ready) |
+| Extract mean attention distance metric | ❌ |
+| Produce figure panels | ❌ |
 
 ---
 

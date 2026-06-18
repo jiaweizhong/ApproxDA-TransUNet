@@ -46,7 +46,7 @@ DANet [1] models **spatial dependencies** (Position Attention Module, PAM) and *
 | # | Hypothesis | Evidence |
 |---|-----------|---------|
 | **H1** | Attention approximation effectiveness depends on task characteristics — not universally safe | Synapse −1.16% vs Kvasir +0.77% (opposite directions) |
-| **H2** | Global Context Requirement (GCR), a **latent task property** describing reliance on long-range contextual information, appears to be an important explanatory factor governing approximation safety | High-GCR Synapse: approximation harmful; Low-GCR Kvasir/ISIC: approximation safe |
+| **H2** | Global Context Requirement (GCR), a **latent task property** describing reliance on long-range contextual information, appears to be an important explanatory factor governing approximation effectiveness. For low-GCR tasks, windowed PAM imposes an **inductive bias** (locality prior) that matches the intrinsic task structure, explaining why approximation helps rather than merely tolerating it | High-GCR Synapse: approximation harmful (global anatomy disrupted); Low-GCR Kvasir/ISIC: approximation beneficial via inductive bias alignment |
 | **H3** | Symmetric dual-attention routing naturally collapses to a fixed 50/50 blend — a stable equilibrium of dual-branch gradient symmetry | Confirmed at M=7 and M=14; collapse independent of window size |
 
 Everything in the paper maps to H1, H2, or H3.
@@ -86,15 +86,19 @@ Confirmed at M=7 (gate range 0.4993–0.5010, Δ=0.0017) and M=14 (same pattern)
 | Kvasir-SEG | Polyp segmentation (binary) | Low GCR | gate=learn, M=7, r=32 | **+0.77%** |
 | ISIC 2018 | Skin lesion (binary) | Low GCR | TBD | TBD (expected +) |
 
-The opposite directions (−1.16% vs +0.77%) confirm approximation safety is task-dependent (H1). GCR appears to be an important explanatory factor: high-GCR tasks require global spatial interaction that approximation disrupts; low-GCR tasks are robust to or benefit from the implicit regularization of approximation (H2).
+The opposite directions (−1.16% vs +0.77%) confirm approximation safety is task-dependent (H1). GCR appears to be an important explanatory factor (H2): high-GCR tasks require global spatial interaction that approximation disrupts. For low-GCR tasks, the improvement should **not** be interpreted as approximation creating additional information. Rather, windowed PAM imposes an **inductive bias** (locality prior) that better matches the intrinsic structure of local-boundary tasks — simultaneously reducing overfitting to spurious long-range correlations. This parallels the effectiveness of local-receptive-field CNNs on texture-dominant tasks: enforcing locality is a correct prior, not just tolerance of approximation.
 
-### Contribution 4: GCR as Governing Factor
+### Contribution 4: GCR as Governing Factor + Inductive Bias Hypothesis
 
 GCR is a **latent task property** — not a directly measurable quantity. It describes the degree to which accurate segmentation relies on long-range spatial dependencies. Evidence for its role as a governing factor:
 
 - **High GCR** (Synapse): inter-organ anatomical reasoning requires global context → approximation harmful
-- **Low GCR** (Kvasir, ISIC): local boundary/texture dominant → approximation safe or beneficial
+- **Low GCR** (Kvasir, ISIC): local boundary/texture dominant → windowed PAM's locality prior aligns with task structure → approximation beneficial
 - **M=112 ablation:** Recovering global receptive fields alone does not recover DA-TransUNet accuracy (78.93% vs 79.80%), suggesting representation approximation (low-rank) — not spatial windowing — is the dominant bottleneck on high-GCR tasks
+
+**Inductive bias hypothesis (new):** The Kvasir improvement is not approximation "tolerating" limited context but an **inductive bias alignment** effect: windowed PAM enforces a locality prior matching the local-structure nature of polyp segmentation. This is the correct prior for low-GCR tasks (analogous to convolutional locality on texture tasks). The implicit regularization framing (reducing spurious long-range correlations) follows from this.
+
+**Conference-scope empirical validation (Phase E):** Attention-map visualization comparing DA-TransUNet vs ApproxDA attention heatmaps on Kvasir images. If DA-TransUNet shows diffuse global attention to irrelevant background while ApproxDA concentrates on lesion boundaries, this directly supports the inductive bias hypothesis. Uses existing checkpoints — no additional training required. Produces Figure 5 (attention panel) and a mean attention-distance metric table.
 
 Framed as preliminary evidence (2 confirmed datasets, 1 pending) because GCR is not yet formally quantified. Formal quantification is a journal extension goal.
 
@@ -309,13 +313,13 @@ $$\mathcal{L} = \frac{1}{2} \mathcal{L}_{\text{Dice}} + \frac{1}{2} \mathcal{L}_
 
 2. **Gate collapse analysis (H3):** Theoretical derivation and empirical confirmation that symmetric two-branch gating collapses to a stable equilibrium — not a training failure, but a fundamental property of symmetric gradient flow. The collapse's effectiveness is task-dependent: the same fixed routing is harmful on high-GCR tasks and beneficial on low-GCR tasks. Applicable to any two-branch attention with symmetric initialization.
 
-3. **Cross-task approximation study (H1 + H2):** Same configuration, opposite effects: −1.16% DSC on high-GCR Synapse, +0.80% DSC on low-GCR Kvasir. First empirical demonstration that approximation safety reverses with task GCR characteristics.
+3. **Cross-task approximation study (H1 + H2):** Same configuration, opposite effects: −1.16% DSC on high-GCR Synapse, +0.80% DSC on low-GCR Kvasir. First empirical demonstration that approximation effectiveness reverses with task GCR. The low-GCR improvement is explained by **inductive bias alignment**: windowed PAM imposes a locality prior matching local-boundary task structure, not merely tolerating limited context.
 
-4. **Approximation Safety characterization:** GCR, a latent task property describing reliance on long-range context, appears to be an important explanatory factor governing when approximation is safe. M=112 ablation further identifies representation approximation (low-rank) — not spatial windowing — as the dominant bottleneck for high-GCR tasks. Preliminary (2 confirmed datasets); formal GCR quantification is a journal goal.
+4. **GCR as governing factor + inductive bias hypothesis:** GCR predicts approximation direction; M=112 ablation identifies low-rank (not windowing) as the binding constraint for high-GCR tasks. Conference-scope validation via attention-map visualization (Phase E, inference-only, existing checkpoints): DA-TransUNet attention heatmaps on Kvasir vs ApproxDA, with mean attention-distance metric to quantify the locality difference.
 
-**Conference scope:** Understand and characterize context-dependent approximation behavior. No new gating mechanism — scientific analysis.
+**Conference scope:** Characterize context-dependent approximation behavior + inductive bias hypothesis validation (Phase E: attention maps; Phase C: context-radius sensitivity). No new gating mechanism — scientific analysis.
 
-**Journal scope:** Design non-collapsing routing; formally quantify GCR; expand dataset range across the GCR spectrum; validate the implicit regularization mechanism on low-GCR tasks (see `EXPERIMENT_PLAN.md` § *Mechanism Validation* for the four targeted experiments).
+**Journal scope:** Design non-collapsing routing; formally quantify GCR; expand dataset range across the GCR spectrum; validate inductive bias mechanism systematically (attention-distance analysis across M sweep; see `EXPERIMENT_PLAN.md` § *Phase D* and § *Phase E* for targeted experiments).
 
 ---
 
@@ -338,9 +342,20 @@ If global PAM closes the gap → "windowing is the bottleneck"; if not → "low-
 DSC comparison: gate=pam / gate=cam / gate=learn (M=7) / gate=learn (M=14) on Synapse.
 Shows gate=pam best; gate=learn worst; ordering is consistent with the collapse explanation.
 
-**Figure 5 — Case Visualization** (highest paper value per reviewer)
-Side-by-side segmentation output on one Synapse CT slice (where ApproxDA loses) and one Kvasir image (where ApproxDA wins). Overlaid with attention maps from the PAM and CAM branches.
-Intuition: on Synapse, ApproxDA loses organ boundaries because windowed attention misses global anatomy; on Kvasir, local attention is sufficient for polyp contours.
+**Figure 5 — Attention Map Visualization (Phase E, inductive bias evidence)**
+2×3 panel: top row = DA-TransUNet PAM attention overlaid on 3 Kvasir polyp images; bottom row = ApproxDA (gate=learn, M=7) PAM attention on same images.
+If DA-TransUNet shows diffuse global attention to irrelevant background while ApproxDA concentrates on lesion boundaries → direct visual support for the inductive bias hypothesis.
+Accompanies a one-row mean attention-distance table (per-image weighted-average pixel distance between attended pairs).
+Generated by `analyze_attention_maps.py` on existing Kvasir checkpoints — **no new training needed**.
+
+**Figure 6 — Case Visualization** (segmentation quality)
+Side-by-side segmentation output on one Synapse CT slice (where ApproxDA loses) and one Kvasir image (where ApproxDA wins).
+Intuition: on Synapse, ApproxDA loses organ boundaries because windowed attention misses global anatomy; on Kvasir, local attention is not only sufficient but imposes the correct prior.
+
+**Figure 7 — GCR Context Sensitivity (Phase C, if results support)**
+Line plot: DSC vs center-crop size (56 / 112 / 168 / 224 px) for Synapse and Kvasir.
+Expected: steep Synapse drop (high GCR) vs flat Kvasir curve (low GCR).
+Generated by `analyze_gcr_context.py` on existing checkpoints — inference-only.
 
 ---
 

@@ -35,7 +35,7 @@ Although ApproxDA adopts the same approximation operators across all experiments
 
 We attribute this phenomenon to the different global contextual requirements of the underlying segmentation tasks. Multi-organ abdominal CT segmentation requires reasoning over long-range anatomical relationships among multiple organs. Aggressive attention approximation inevitably weakens such global dependency modeling, leading to performance degradation.
 
-In contrast, polyp and skin lesion segmentation are primarily determined by local appearance, boundary contrast, and texture consistency. Consequently, restricting attention to local regions introduces only limited information loss while simultaneously acting as an implicit regularizer, which explains the improved generalization observed on Kvasir. This interpretation motivates a more precise characterization in terms of Global Context Requirement, formalized below.
+In contrast, polyp and skin lesion segmentation are primarily determined by local appearance, boundary contrast, and texture consistency. The performance improvement on Kvasir-SEG should not be interpreted as approximation creating additional discriminative information. Rather, we hypothesize that attention approximation introduces an \emph{inductive bias} favoring local interactions while suppressing unnecessary long-range dependencies. For low-GCR tasks, where segmentation is primarily governed by local boundary appearance and texture, this bias better matches the intrinsic structure of the problem and may simultaneously act as an implicit regularizer, reducing overfitting to spurious long-range correlations. This parallels the known effectiveness of local-receptive-field architectures on texture-dominant tasks, where enforcing locality is not a limitation but a correct prior. Validating this inductive bias hypothesis---for example, through attention-distance analysis showing that DA-TransUNet attends to distant irrelevant regions on Kvasir---is an important direction for future work. This interpretation motivates the more precise characterization below.
 
 \subsection{The GCR Hypothesis}
 
@@ -79,7 +79,7 @@ where $\Delta_\text{DSC}$ = DSC(ApproxDA) $-$ DSC(DA-TransUNet). Equation~\eqref
   \label{fig:gcr_curve}
 \end{figure}
 
-Attention approximation should not be regarded as a binary design choice but as a space whose safety \emph{appears to depend} on GCR. Different approximation configurations (Figure~\ref{fig:approx_space}) suit different GCR regimes. The gate=learn improvement on Kvasir ($+$0.80\%) further suggests that on low-GCR tasks, the implicit regularization of a collapsed 50/50 gate may confer a generalization benefit that PAM-only routing does not. That the same collapsed routing strategy helps low-GCR tasks but hurts high-GCR tasks underscores that the fixed equilibrium is not inherently harmful---its effect is task-dependent.
+Attention approximation should not be regarded as a binary design choice but as a configurable inductive bias whose appropriateness depends on GCR. Different approximation strengths suit different GCR regimes (Figure~\ref{fig:approx_space}). That the same collapsed gate=learn routing helps on low-GCR Kvasir ($+$0.80\%) but hurts on high-GCR Synapse further underscores this task-dependence: the fixed equilibrium is not inherently harmful---whether it helps or hurts is determined by whether the task demands global reasoning.
 
 \subsection{Design Principles}
 
