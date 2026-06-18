@@ -277,7 +277,13 @@ def main():
 
     model = AdaDATransUNet(config_vit, img_size=args.img_size,
                            num_classes=config_vit.n_classes).cuda()
-    model.load_state_dict(torch.load(snapshot, map_location='cuda'))
+    try:
+        state_dict = torch.load(snapshot, map_location='cuda')
+    except RuntimeError:
+        import pickle
+        with open(snapshot, 'rb') as f:
+            state_dict = pickle.load(f, encoding='latin1')
+    model.load_state_dict(state_dict)
     logging.info(f"Model loaded. Params: {sum(p.numel() for p in model.parameters())/1e6:.2f} M")
 
     # Run sweep
