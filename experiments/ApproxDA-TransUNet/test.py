@@ -14,8 +14,8 @@ from datasets.dataset_synapse import Synapse_dataset
 from datasets.dataset_kvasir import Kvasir_dataset
 from datasets.dataset_isic import ISIC_dataset
 from utils import test_single_volume
-from Architecture.AdaDATransUNet import AdaDATransUNet
-from Architecture.AdaDATransUNet import CONFIGS as CONFIGS_ViT_seg
+from Architecture.ApproxDATransUNet import ApproxDATransUNet
+from Architecture.ApproxDATransUNet import CONFIGS as CONFIGS_ViT_seg
 try:
     from fvcore.nn import FlopCountAnalysis
     _FLOP_LIB = 'fvcore'
@@ -162,8 +162,8 @@ if __name__ == "__main__":
     args.is_pretrain = True
 
     # name the same snapshot defined in train script!
-    args.exp = 'AdaDA_' + dataset_name + str(args.img_size)
-    snapshot_path = "../model/{}/{}".format(args.exp, 'AdaDA')
+    args.exp = 'ApproxDA_' + dataset_name + str(args.img_size)
+    snapshot_path = "../model/{}/{}".format(args.exp, 'ApproxDA')
     snapshot_path = snapshot_path + '_pretrain' if args.is_pretrain else snapshot_path
     snapshot_path += '_' + args.vit_name
     snapshot_path = snapshot_path + '_skip' + str(args.n_skip)
@@ -189,7 +189,7 @@ if __name__ == "__main__":
     config_vit.patches.size = (args.vit_patches_size, args.vit_patches_size)
     if args.vit_name.find('R50') !=-1:
         config_vit.patches.grid = (int(args.img_size/args.vit_patches_size), int(args.img_size/args.vit_patches_size))
-    net = AdaDATransUNet(config_vit, img_size=args.img_size, num_classes=config_vit.n_classes).cuda()
+    net = ApproxDATransUNet(config_vit, img_size=args.img_size, num_classes=config_vit.n_classes).cuda()
 
     snapshot = os.path.join(snapshot_path, 'best_model.pth')
     if not os.path.exists(snapshot): snapshot = snapshot.replace('best_model', 'epoch_'+str(args.max_epochs-1))

@@ -5,7 +5,7 @@ This folder contains two models:
 | Folder | Description |
 |---|---|
 | `DA-TransUNet/` | Original baseline — reproduce paper results |
-| `Ada-DA-TransUNet/` | Our model — AdaDA-TransUNet implementation |
+| `ApproxDA-TransUNet/` | Our model — AdaDA-TransUNet implementation |
 
 Shared resources at the experiment root:
 
@@ -27,7 +27,7 @@ The Synapse dataset is already publicly available on Kaggle — no need to uploa
 
 1. Go to [kaggle.com/datasets](https://www.kaggle.com/datasets) → **New Dataset**
 2. Create a dataset for the weights: upload `model/` → name it e.g. `vit-pretrained-weights`
-3. Create a dataset for the code: upload `DA-TransUNet/` and `Ada-DA-TransUNet/` → name it e.g. `adada-transunet-code`
+3. Create a dataset for the code: upload `DA-TransUNet/` and `ApproxDA-TransUNet/` → name it e.g. `adada-transunet-code`
 
 ### Step 2 — Create a Kaggle Notebook
 
@@ -56,7 +56,7 @@ Run all of the following in a single cell. These only need to be done once per s
 ```python
 # 1. Copy code and weights to writable directory
 !cp -r /kaggle/input/datasets/deepsotaai/adada-transunet-code/DA-TransUNet     /kaggle/working/DA-TransUNet
-!cp -r /kaggle/input/datasets/deepsotaai/adada-transunet-code/Ada-DA-TransUNet /kaggle/working/Ada-DA-TransUNet
+!cp -r /kaggle/input/datasets/deepsotaai/adada-transunet-code/ApproxDA-TransUNet /kaggle/working/ApproxDA-TransUNet
 !cp -r /kaggle/input/datasets/deepsotaai/vit-pretrained-weights/model           /kaggle/working/model
 
 # 2. Kaggle strips '+' from filenames on upload — rename the weights file back
@@ -65,7 +65,7 @@ Run all of the following in a single cell. These only need to be done once per s
 
 # 3. Fix conflict with Kaggle's pre-installed HuggingFace 'datasets' library
 !touch /kaggle/working/DA-TransUNet/datasets/__init__.py
-!touch /kaggle/working/Ada-DA-TransUNet/datasets/__init__.py
+!touch /kaggle/working/ApproxDA-TransUNet/datasets/__init__.py
 
 # 4. Symlink Synapse data — train.py hardcodes '../data/Synapse/' and ignores --root_path
 !mkdir -p /kaggle/working/data/Synapse
@@ -116,7 +116,7 @@ To test with the original paper's pretrained weights instead of your own checkpo
 
 ---
 
-## Run AdaDA-TransUNet (Our Model)
+## Run ApproxDA-TransUNet (Our Model)
 
 ### Smoke test first
 
@@ -124,7 +124,7 @@ Run before committing GPU hours to training — verifies all module shapes are c
 
 ```bash
 %%bash
-cd /kaggle/working/Ada-DA-TransUNet
+cd /kaggle/working/ApproxDA-TransUNet
 python quick_test.py
 ```
 
@@ -133,7 +133,7 @@ Expected output:
 === window_partition / window_reverse ===  PASS
 === LowRankWindowedPAM ===  C=768 H=14 PASS  ...
 === GroupedCAM ===           C=768 H=14 PASS  ...
-=== AdaDABlock ===           C=768 H=14 PASS  ...
+=== ApproxDABlock ===        C=768 H=14 PASS  ...
 === hardware_config ===      PASS
 === Full model forward pass ===
   Output shape: torch.Size([1, 9, 224, 224])  PASS
@@ -144,7 +144,7 @@ All tests passed.
 
 ```bash
 %%bash
-cd /kaggle/working/Ada-DA-TransUNet
+cd /kaggle/working/ApproxDA-TransUNet
 
 python train.py \
   --dataset Synapse \
@@ -160,7 +160,7 @@ python train.py \
   --groups 8
 ```
 
-**AdaDA-specific arguments:**
+**ApproxDA-specific arguments:**
 
 | Argument | Default | Description |
 |---|---|---|
@@ -182,7 +182,7 @@ python train.py \
 
 ```bash
 %%bash
-cd /kaggle/working/Ada-DA-TransUNet
+cd /kaggle/working/ApproxDA-TransUNet
 
 python test.py \
   --dataset Synapse \
@@ -201,8 +201,8 @@ python test.py \
 | Model | batch=24 | batch=12 |
 |---|---|---|
 | DA-TransUNet (baseline) | ~13 GB | ~7 GB |
-| AdaDA (rank=32, window=7, groups=8) — default | ~11 GB | ~6 GB |
-| AdaDA (rank=16, window=7, groups=16) — lean | ~9 GB | ~5 GB |
+| ApproxDA (rank=32, window=7, groups=8) — default | ~11 GB | ~6 GB |
+| ApproxDA (rank=16, window=7, groups=16) — lean | ~9 GB | ~5 GB |
 
 - **Use `--n_gpu 1` on T4**. The O(N²) PAM in DA-TransUNet makes multi-GPU DataParallel OOM during backward. Use T4 x1 for both models to ensure a fair comparison.
 - **P100 is not supported**: Kaggle's current PyTorch (2.x) requires sm_70+ and P100 is sm_60 — use T4 instead.
@@ -218,7 +218,7 @@ python test.py \
 ```python
 import shutil
 # In a notebook cell — copy to the persistent output folder
-shutil.copytree('/kaggle/working/Ada-DA-TransUNet/model_out', '/kaggle/output/ada_checkpoints')
+shutil.copytree('/kaggle/working/ApproxDA-TransUNet/model_out', '/kaggle/output/ada_checkpoints')
 ```
 
 Download from the notebook's **Output** tab after the session.

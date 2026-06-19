@@ -162,7 +162,7 @@ class ResNetV2(nn.Module):
 
 
 # ---------------------------------------------------------------------------
-# AdaDA-TransUNet: windowed low-rank PAM, grouped CAM, adaptive DA block
+# ApproxDA-TransUNet: windowed low-rank PAM, grouped CAM, adaptive DA block
 # ---------------------------------------------------------------------------
 
 def window_partition(x, window_size):
@@ -246,10 +246,10 @@ class GroupedCAM(nn.Module):
         return E.contiguous().view(B, C, H, W)
 
 
-class AdaDABlock(nn.Module):
+class ApproxDABlock(nn.Module):
     """
-    Adaptive Dual Attention Block: LowRankWindowedPAM + GroupedCAM blended
-    via a soft gate. gate_mode controls routing for ablation:
+    ApproxDA Block: LowRankWindowedPAM + GroupedCAM blended via a soft gate.
+    gate_mode controls routing for ablation:
       'learn' — per-channel learned gate (default)
       'fixed' — fixed 0.5 blend
       'pam'   — PAM only (g=1)

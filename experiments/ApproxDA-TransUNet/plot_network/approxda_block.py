@@ -1,5 +1,5 @@
 """
-ApproxDA-TransUNet — AdaDABlock Detail Diagram
+ApproxDA-TransUNet — ApproxDABlock Detail Diagram
 ===============================================
         ┌─→ LowRankWindowedPAM ──→ g  ────────┐
   x ────┤                                      ├─→ Fusion Conv ─→ + x ─→ out

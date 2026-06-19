@@ -21,7 +21,7 @@ Usage — single model (run now, gate=learn M=7 checkpoint exists):
 Usage — comparison (M=7 vs M=112, once Phase D D3+D6 checkpoints are ready):
   python analyze_attention_maps.py --dataset Kvasir \\
     --gate_mode pam --window_size 7 --rank 32 --max_epochs 300 \\
-    --compare_snapshot ../model/AdaDA_Kvasir224/AdaDA_pretrain_R50-ViT-B_16_skip3_epo300_bs24_224_M112_pam/best_model.pth \\
+    --compare_snapshot ../model/ApproxDA_Kvasir224/ApproxDA_pretrain_R50-ViT-B_16_skip3_epo300_bs24_224_M112_pam/best_model.pth \\
     --compare_label "M=112 (global)"
 
 Outputs (in ./attention_maps/):
@@ -47,8 +47,8 @@ from matplotlib.transforms import Bbox
 
 from datasets.dataset_kvasir import Kvasir_dataset
 from datasets.dataset_isic import ISIC_dataset
-from Architecture.AdaDATransUNet import AdaDATransUNet
-from Architecture.AdaDATransUNet import CONFIGS as CONFIGS_ViT_seg
+from Architecture.ApproxDATransUNet import ApproxDATransUNet
+from Architecture.ApproxDATransUNet import CONFIGS as CONFIGS_ViT_seg
 from Architecture.block import LowRankWindowedPAM
 
 
@@ -74,8 +74,8 @@ def load_checkpoint(path, map_location='cuda'):
 # ---------------------------------------------------------------------------
 
 def build_snapshot_path(args):
-    exp  = 'AdaDA_' + args.dataset + str(args.img_size)
-    snap = f'../model/{exp}/AdaDA_pretrain_{args.vit_name}_skip{args.n_skip}'
+    exp  = 'ApproxDA_' + args.dataset + str(args.img_size)
+    snap = f'../model/{exp}/ApproxDA_pretrain_{args.vit_name}_skip{args.n_skip}'
     if args.vit_patches_size != 16:
         snap += f'_vitpatch{args.vit_patches_size}'
     if args.max_epochs != 30:
@@ -113,7 +113,7 @@ def build_model(args, num_classes, window_size, gate_mode, snapshot_path):
         g = args.img_size // args.vit_patches_size
         config_vit.patches.grid = (g, g)
 
-    model = AdaDATransUNet(config_vit, img_size=args.img_size,
+    model = ApproxDATransUNet(config_vit, img_size=args.img_size,
                            num_classes=num_classes).cuda()
     if not os.path.exists(snapshot_path):
         print(f'[ERROR] Checkpoint not found: {snapshot_path}')

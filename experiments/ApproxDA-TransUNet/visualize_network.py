@@ -22,11 +22,11 @@ import argparse
 
 import torch
 
-# Allow running from the experiments/Ada-DA-TransUNet directory or from repo root
+# Allow running from the experiments/ApproxDA-TransUNet directory or from repo root
 _HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, _HERE)
 
-from Architecture.AdaDATransUNet import AdaDATransUNet, CONFIGS
+from Architecture.ApproxDATransUNet import ApproxDATransUNet, CONFIGS
 
 
 PRESETS = {
@@ -49,7 +49,7 @@ def build_model(gate_mode="pam", n_classes=9, window_size=7, rank=32, groups=8):
     config.pretrained_path = None
     config.resnet_pretrained_path = None
 
-    model = AdaDATransUNet(config, img_size=224, num_classes=n_classes)
+    model = ApproxDATransUNet(config, img_size=224, num_classes=n_classes)
     model.eval()
     return model
 

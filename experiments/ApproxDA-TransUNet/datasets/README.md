@@ -6,7 +6,7 @@
 
 ```bash
 .
-├── Ada-DA-TransUNet
+├── ApproxDA-TransUNet
 │   ├── datasets
 │   │   └── dataset_*.py
 │   ├── lists

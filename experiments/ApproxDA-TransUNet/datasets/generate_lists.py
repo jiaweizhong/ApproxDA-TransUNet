@@ -4,7 +4,7 @@ Generate train.txt / test.txt list files for Kvasir-SEG and ISIC 2018.
 
 Run ONCE on Lightning AI after attaching the dataset volumes:
 
-  cd experiments/Ada-DA-TransUNet
+  cd experiments/ApproxDA-TransUNet
 
   # Kvasir-SEG (all 1000 images; 80/20 split)
   python datasets/generate_lists.py --dataset Kvasir --data_dir ../data/Kvasir-SEG

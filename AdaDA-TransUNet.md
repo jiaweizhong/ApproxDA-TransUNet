@@ -8,7 +8,7 @@
 | **Method Name** | ApproxDA-TransUNet (Approximate Dual Attention TransUNet) |
 | **Research Theme** | Context Sensitivity (CS) as Governing Factor |
 | **Design Principle** | Context Sensitivity (CS) → Window Selection Importance → Optimal Approximation Scale |
-| **Code directories** | `Ada-DA-TransUNet` / `AdaDA` (keep as-is; no rename needed) |
+| **Code directories** | `experiments/ApproxDA-TransUNet/` |
 
 ---
 
@@ -197,10 +197,10 @@ class GroupedCAM(nn.Module):
         return E.contiguous().view(B, C, H, W)
 ```
 
-### 6.3 AdaDABlock with gate_mode Routing
+### 6.3 ApproxDABlock with gate_mode Routing
 
 ```python
-class AdaDABlock(nn.Module):
+class ApproxDABlock(nn.Module):
     def __init__(self, channels, window_size=7, rank=32, groups=8, gate_mode='learn'):
         super().__init__()
         self.gate_mode = gate_mode

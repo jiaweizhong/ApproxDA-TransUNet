@@ -1,3 +1,4 @@
+% !TEX root = ../ApproxDA-TransUNet_v4.tex
 \section{Method}
 \label{sec:method}
 
@@ -11,7 +12,7 @@ ApproxDA-TransUNet is designed around an explicit hypothesis: that three orthogo
 
 \begin{figure*}[t]
   \centering
-  \includegraphics[width=0.85\textwidth]{figures/approxda_overview}
+  \includegraphics[width=\textwidth]{figures/approxda_overview}
   \caption{ApproxDA-TransUNet architecture. ApproxDABlocks (Low-Rank Windowed PAM + Grouped CAM + gate routing) replace dual-attention modules at all skip connections and the bottleneck. \texttt{gate\_mode} controls the routing during ablation.}
   \label{fig:framework}
 \end{figure*}
@@ -97,7 +98,7 @@ This single-parameter design enables systematic ablation of routing strategy wit
 
 \begin{figure*}[t]
   \centering
-  \includegraphics[width=0.85\textwidth]{figures/approxda_block}
+  \includegraphics[width=\textwidth]{figures/approxda_block}
   \caption{ApproxDABlock internals. Input $\mathbf{x}$ splits into two branches: Low-Rank Windowed PAM (blue, upper) via window partition, low-rank projection, and attention; Grouped CAM (green, lower) via group split and channel attention. A learned gate $g$ fuses the outputs; $\mathbf{x}$ is added as a residual.}
   \label{fig:approxda_block}
 \end{figure*}

@@ -47,10 +47,10 @@ arch = [
                     width=(5, 5), height=24, depth=24),
     to_Pool('p3', offset="(1.2,-6.5,0)", to="(cr3-east)", height=14, depth=14),
 
-    # Stage 4: Block3 + PatchEmbed + AdaDA  14x14, 768ch
+    # Stage 4: Block3 + PatchEmbed + ApproxDA  14x14, 768ch
     to_ConvConvRelu('cr4', 14, (768, 768),
                     offset="(0,0,0)", to="(p3-east)",
-                    width=(6, 6), height=14, depth=14, caption="AdaDA"),
+                    width=(6, 6), height=14, depth=14, caption="ApproxDA"),
 
     # ── ViT Bottleneck (12 Transformer layers)  14x14 ──────────────────────
     to_Conv('vit', ' ', 768,

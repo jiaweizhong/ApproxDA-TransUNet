@@ -94,7 +94,7 @@ Expected: `R50+ViT-B_16.npz` (with `+` intact — Lightning AI does not strip it
 ```bash
 REPO=/teamspace/studios/this_studio/AdaDA-TransUNet/experiments
 touch $REPO/DA-TransUNet/datasets/__init__.py
-touch $REPO/Ada-DA-TransUNet/datasets/__init__.py
+touch $REPO/ApproxDA-TransUNet/datasets/__init__.py
 ```
 
 ---
@@ -150,7 +150,7 @@ python -u test.py \
 
 ```bash
 # Inside tmux:
-cd /teamspace/studios/this_studio/AdaDA-TransUNet/experiments/Ada-DA-TransUNet
+cd /teamspace/studios/this_studio/AdaDA-TransUNet/experiments/ApproxDA-TransUNet
 
 python -u train.py \
   --dataset Synapse --vit_name R50-ViT-B_16 \
@@ -174,7 +174,7 @@ python -u test.py \
 
 ```bash
 # Inside tmux:
-cd /teamspace/studios/this_studio/AdaDA-TransUNet/experiments/Ada-DA-TransUNet
+cd /teamspace/studios/this_studio/AdaDA-TransUNet/experiments/ApproxDA-TransUNet
 
 CUDA_VISIBLE_DEVICES=0,1 torchrun --nproc_per_node=2 train.py \
   --dataset Synapse --vit_name R50-ViT-B_16 \
@@ -201,7 +201,7 @@ python -u test.py \
 Run **after** `best_model.pth` exists from either single-GPU or 2-GPU run:
 
 ```bash
-cd /teamspace/studios/this_studio/AdaDA-TransUNet/experiments/Ada-DA-TransUNet
+cd /teamspace/studios/this_studio/AdaDA-TransUNet/experiments/ApproxDA-TransUNet
 
 python analyze_gate_entropy.py \
   --vit_name R50-ViT-B_16 --n_skip 3 \
@@ -209,7 +209,7 @@ python analyze_gate_entropy.py \
   --window_size 7 --rank 32 --groups 8
 ```
 
-Output: Spearman r (entropy) and r (variance) per AdaDA block + `gate_entropy_scatter.png`.
+Output: Spearman r (entropy) and r (variance) per ApproxDA block + `gate_entropy_scatter.png`.
 
 See `AdaDA-TransUNet.md §10–11` for the 4-case decision table and backup plans (B1/B2/B3).
 
@@ -235,7 +235,7 @@ See `AdaDA-TransUNet.md §10–11` for the 4-case decision table and backup plan
 
 ```bash
 # Inside tmux:
-cd /teamspace/studios/this_studio/AdaDA-TransUNet/experiments/Ada-DA-TransUNet
+cd /teamspace/studios/this_studio/AdaDA-TransUNet/experiments/ApproxDA-TransUNet
 
 CUDA_VISIBLE_DEVICES=0,1 torchrun --nproc_per_node=2 train.py --dataset Synapse --vit_name R50-ViT-B_16 --max_epochs 300 --batch_size 12 --base_lr 0.01 --n_skip 3 --img_size 224 --gate_mode pam --window_size 112 --rank 64 --groups 8 --seed 1234 --val_interval 15 2>&1 | tee run_adada_global_pam.log
 
@@ -254,25 +254,25 @@ python -u test.py --dataset Synapse --vit_name R50-ViT-B_16 --num_classes 9 --ma
 ps aux | grep -E 'train\.py|torchrun' | grep -v grep
 
 # Tail a specific log
-tail -f /teamspace/studios/this_studio/AdaDA-TransUNet/experiments/Ada-DA-TransUNet/run_adada_2gpu.log
+tail -f /teamspace/studios/this_studio/AdaDA-TransUNet/experiments/ApproxDA-TransUNet/run_adada_2gpu.log
 
 # Quick status across all logs
 BASE=/teamspace/studios/this_studio/AdaDA-TransUNet/experiments
 for f in $BASE/DA-TransUNet/run_da.log \
           $BASE/DA-TransUNet/run_da_kvasir.log \
           $BASE/DA-TransUNet/run_da_isic.log \
-          $BASE/Ada-DA-TransUNet/run_adada_1gpu.log \
-          $BASE/Ada-DA-TransUNet/run_adada_2gpu.log \
-          $BASE/Ada-DA-TransUNet/run_adada_kvasir.log \
-          $BASE/Ada-DA-TransUNet/run_adada_isic.log \
-          $BASE/Ada-DA-TransUNet/run_adada_global_pam.log; do
+          $BASE/ApproxDA-TransUNet/run_adada_1gpu.log \
+          $BASE/ApproxDA-TransUNet/run_adada_2gpu.log \
+          $BASE/ApproxDA-TransUNet/run_adada_kvasir.log \
+          $BASE/ApproxDA-TransUNet/run_adada_isic.log \
+          $BASE/ApproxDA-TransUNet/run_adada_global_pam.log; do
   echo "=== $(basename $f) ===";
   tail -3 "$f" 2>/dev/null || echo "(not started)";
 done
 
 # Final DSC numbers
 grep "Testing performance" $BASE/DA-TransUNet/run_da*.log 2>/dev/null
-grep "Testing performance" $BASE/Ada-DA-TransUNet/run_*.log 2>/dev/null
+grep "Testing performance" $BASE/ApproxDA-TransUNet/run_*.log 2>/dev/null
 ```
 
 ---
@@ -283,14 +283,14 @@ grep "Testing performance" $BASE/Ada-DA-TransUNet/run_*.log 2>/dev/null
 |---|---|
 | AdaDA best checkpoint | `experiments/model/AdaDA_Synapse224/AdaDA/AdaDA_pretrain_R50-ViT-B_16_skip3_epo300_bs*/best_model.pth` |
 | DA-TransUNet best checkpoint | `experiments/model/TU_Synapse224/TU/TU_pretrain_R50-ViT-B_16_skip3_epo300_bs24_224/best_model.pth` |
-| Test logs | `experiments/{DA-TransUNet,Ada-DA-TransUNet}/test_log/` |
-| Gate entropy scatter | `experiments/Ada-DA-TransUNet/gate_entropy_scatter.png` |
+| Test logs | `experiments/{DA-TransUNet,ApproxDA-TransUNet}/test_log/` |
+| Gate entropy scatter | `experiments/ApproxDA-TransUNet/gate_entropy_scatter.png` |
 
 To pull a file to your local machine:
 
 ```bash
 # From your LOCAL terminal:
-scp <studio-ssh>:/teamspace/studios/this_studio/AdaDA-TransUNet/experiments/Ada-DA-TransUNet/gate_entropy_scatter.png .
+scp <studio-ssh>:/teamspace/studios/this_studio/AdaDA-TransUNet/experiments/ApproxDA-TransUNet/gate_entropy_scatter.png .
 ```
 
 (Find the SSH address in Lightning AI → Studio settings → SSH.)
@@ -356,10 +356,10 @@ ls $BASE/data/ISIC2018/masks/  | wc -l   # expect 2594
 Run once after downloading (creates `train.txt` and `test.txt`):
 
 ```bash
-cd /teamspace/studios/this_studio/AdaDA-TransUNet/experiments/Ada-DA-TransUNet
+cd /teamspace/studios/this_studio/AdaDA-TransUNet/experiments/ApproxDA-TransUNet
 
 # Use absolute paths — relative ../data/ fails because the symlink is in experiments/data/,
-# not in the script's CWD (experiments/Ada-DA-TransUNet/).
+# not in the script's CWD (experiments/ApproxDA-TransUNet/).
 python datasets/generate_lists.py --dataset Kvasir \
   --data_dir /teamspace/studios/this_studio/data/Kvasir-SEG
 # Output: lists/lists_Kvasir/train.txt (800) + test.txt (200)  [seed=42, 80/20]
@@ -373,10 +373,10 @@ Copy the same list files to DA-TransUNet so both models use identical splits:
 
 ```bash
 REPO=/teamspace/studios/this_studio/AdaDA-TransUNet/experiments
-cp $REPO/Ada-DA-TransUNet/lists/lists_Kvasir/train.txt $REPO/DA-TransUNet/lists/lists_Kvasir/train.txt
-cp $REPO/Ada-DA-TransUNet/lists/lists_Kvasir/test.txt  $REPO/DA-TransUNet/lists/lists_Kvasir/test.txt
-cp $REPO/Ada-DA-TransUNet/lists/lists_ISIC/train.txt   $REPO/DA-TransUNet/lists/lists_ISIC/train.txt
-cp $REPO/Ada-DA-TransUNet/lists/lists_ISIC/test.txt    $REPO/DA-TransUNet/lists/lists_ISIC/test.txt
+cp $REPO/ApproxDA-TransUNet/lists/lists_Kvasir/train.txt $REPO/DA-TransUNet/lists/lists_Kvasir/train.txt
+cp $REPO/ApproxDA-TransUNet/lists/lists_Kvasir/test.txt  $REPO/DA-TransUNet/lists/lists_Kvasir/test.txt
+cp $REPO/ApproxDA-TransUNet/lists/lists_ISIC/train.txt   $REPO/DA-TransUNet/lists/lists_ISIC/train.txt
+cp $REPO/ApproxDA-TransUNet/lists/lists_ISIC/test.txt    $REPO/DA-TransUNet/lists/lists_ISIC/test.txt
 ```
 
 ### 3. Training + inference commands
@@ -418,7 +418,7 @@ python -u test.py \
 #### AdaDA — Kvasir, gate=pam, 2×T4 (~2h)
 
 ```bash
-cd /teamspace/studios/this_studio/AdaDA-TransUNet/experiments/Ada-DA-TransUNet
+cd /teamspace/studios/this_studio/AdaDA-TransUNet/experiments/ApproxDA-TransUNet
 
 CUDA_VISIBLE_DEVICES=0,1 torchrun --nproc_per_node=2 train.py \
   --dataset Kvasir --vit_name R50-ViT-B_16 \
@@ -437,7 +437,7 @@ python -u test.py \
 #### AdaDA — ISIC, gate=pam, 2×T4 (~2.5h)
 
 ```bash
-cd /teamspace/studios/this_studio/AdaDA-TransUNet/experiments/Ada-DA-TransUNet
+cd /teamspace/studios/this_studio/AdaDA-TransUNet/experiments/ApproxDA-TransUNet
 
 CUDA_VISIBLE_DEVICES=0,1 torchrun --nproc_per_node=2 train.py \
   --dataset ISIC --vit_name R50-ViT-B_16 \
@@ -456,7 +456,7 @@ python -u test.py \
 #### AdaDA — Global PAM (M=112, r=64), 2×T4 (~8h, after Kvasir/ISIC)
 
 ```bash
-cd /teamspace/studios/this_studio/AdaDA-TransUNet/experiments/Ada-DA-TransUNet
+cd /teamspace/studios/this_studio/AdaDA-TransUNet/experiments/ApproxDA-TransUNet
 
 CUDA_VISIBLE_DEVICES=0,1 torchrun --nproc_per_node=2 train.py \
   --dataset Synapse --vit_name R50-ViT-B_16 \

@@ -6,7 +6,7 @@ Run experiments on 3 datasets to support conference submission (**BIBM 2026**, p
 Both DA-TransUNet (baseline) and AdaDA-TransUNet are run under identical conditions for fair comparison.
 
 **Paper title:** "ApproxDA-TransUNet: Understanding Context Sensitivity of Attention Approximation in Medical Image Segmentation"
-**Method name:** **ApproxDA-TransUNet** (Approximate Dual Attention TransUNet — describes the mechanism; code directories retain `Ada-DA-TransUNet` name)
+**Method name:** **ApproxDA-TransUNet** (Approximate Dual Attention TransUNet — describes the mechanism; code directory: `experiments/ApproxDA-TransUNet/`)
 **Scientific question:** *"How sensitive are different medical image segmentation tasks to attention approximation, and what determines this sensitivity?"*
 **Design principle:** Context Sensitivity (CS) governs window selection importance → optimal approximation scale is task-dependent
 **4 contributions:** efficient approximation framework, gate-collapse theory, cross-task empirical study (both tasks improved), CS operationalized as DSC window sensitivity range (CS = max(DSC) − min(DSC))
@@ -142,7 +142,7 @@ python train.py \
 
 Snapshot path: `AdaDA_pretrain_R50-ViT-B_16_skip3_epo300_bs12_224_M112_r64_pam`
 
-**Inference command (run from `experiments/Ada-DA-TransUNet/`):**
+**Inference command (run from `experiments/ApproxDA-TransUNet/`):**
 ```bash
 python test.py \
   --dataset Synapse \
@@ -243,7 +243,7 @@ DSC (%)
 
 If Synapse drop is less than 1% across all radii, the signal is too weak for a figure — fall back to a 1-sentence note referencing the existing window ablation data (M=7 vs M=112).
 
-#### Run Commands (from experiments/Ada-DA-TransUNet/)
+#### Run Commands (from experiments/ApproxDA-TransUNet/)
 
 Uses best AdaDA checkpoints — no DA-TransUNet checkpoint needed.
 The GCR signal (slope of DSC vs crop size) is a task property independent of which model measures it.
@@ -259,7 +259,7 @@ python analyze_gcr_context.py --dataset Kvasir --gate_mode learn --window_size 7
 python analyze_gcr_context.py --dataset ISIC --gate_mode learn --window_size 7 --rank 32 --max_epochs 300
 ```
 
-Results written to `experiments/Ada-DA-TransUNet/gcr_analysis/gcr_context_{dataset}_M7_r32_{gate}.csv` and `.log`.
+Results written to `experiments/ApproxDA-TransUNet/gcr_analysis/gcr_context_{dataset}_M7_r32_{gate}.csv` and `.log`.
 
 #### ⚠️ Phase C INVALID for ALL datasets — DROP ENTIRELY
 
@@ -305,7 +305,7 @@ large spatial attention range regardless of where the target is located in the i
 because `proj_r.weight` shape is `[r, M*M]` — you cannot test a M=7 checkpoint at M=28.
 
 **Config:** gate=pam, r=32, groups=8 (single branch, consistent rank across all M).
-Run from `experiments/Ada-DA-TransUNet/`.
+Run from `experiments/ApproxDA-TransUNet/`.
 
 | # | Dataset | M | Config | Status | Est. Time |
 |---|---------|---|--------|--------|-----------|
@@ -336,7 +336,7 @@ for both datasets — 4 training runs, ~24h total.
 
 **Recommended:** All D1–D6 for full 4-point curves — 6 training runs, ~40h total.
 
-#### Training Commands (from experiments/Ada-DA-TransUNet/)
+#### Training Commands (from experiments/ApproxDA-TransUNet/)
 
 ```bash
 # Synapse, M=28
@@ -381,7 +381,7 @@ same architecture, same training procedure. No confound from architectural diffe
 | ApproxDA gate=pam, M=7 (D3) | Kvasir | `AdaDA_Kvasir224/..._pam/best_model.pth` | ✅ Done (Phase D complete) |
 | ApproxDA gate=pam, M=112 (D6) | Kvasir | `AdaDA_Kvasir224/..._M112_pam/best_model.pth` | ✅ Done (Phase D complete) |
 
-**Implementation:** `experiments/Ada-DA-TransUNet/analyze_attention_maps.py` ✅ Done.
+**Implementation:** `experiments/ApproxDA-TransUNet/analyze_attention_maps.py` ✅ Done.
 Hooks `(output - input).norm(dim=1)` on all active `LowRankWindowedPAM` modules across
 4 decoder scales (14×14, 28×28, 56×56, 112×112), upsamples to 224×224 and averages.
 
@@ -429,7 +429,7 @@ Hooks `(output - input).norm(dim=1)` on all active `LowRankWindowedPAM` modules 
 
 ### 1. Synapse (done)
 - `DA-TransUNet/datasets/dataset_synapse.py` — existing, no changes
-- `Ada-DA-TransUNet/datasets/dataset_synapse.py` — existing, no changes
+- `ApproxDA-TransUNet/datasets/dataset_synapse.py` — existing, no changes
 
 ### 2. Kvasir-SEG ✅ Done
 - `datasets/dataset_kvasir.py` — added to both Ada-DA and DA-TransUNet

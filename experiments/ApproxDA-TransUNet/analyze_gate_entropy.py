@@ -1,9 +1,9 @@
 """
 Verify whether feature entropy H(F) correlates with learned gate value g
-in AdaDABlock. Uses register_forward_hook on an existing checkpoint —
-no changes to block.py or AdaDATransUNet.py.
+in ApproxDABlock. Uses register_forward_hook on an existing checkpoint —
+no changes to block.py or ApproxDATransUNet.py.
 
-Usage (from experiments/Ada-DA-TransUNet/):
+Usage (from experiments/ApproxDA-TransUNet/):
   # Synapse (default)
   python analyze_gate_entropy.py \\
     --vit_name R50-ViT-B_16 --n_skip 3 --max_epochs 300 --batch_size 24 \\
@@ -38,9 +38,9 @@ from scipy import stats
 from scipy.ndimage import zoom as nd_zoom
 from torch.utils.data import DataLoader
 
-from Architecture.AdaDATransUNet import AdaDATransUNet
-from Architecture.AdaDATransUNet import CONFIGS as CONFIGS_ViT_seg
-from Architecture.block import AdaDABlock
+from Architecture.ApproxDATransUNet import ApproxDATransUNet
+from Architecture.ApproxDATransUNet import CONFIGS as CONFIGS_ViT_seg
+from Architecture.block import ApproxDABlock
 from datasets.dataset_synapse import Synapse_dataset
 
 # ── organ map (Synapse) ────────────────────────────────────────────────────────
@@ -80,8 +80,8 @@ if args.gate_mode != 'learn':
 
 # ---------- build snapshot path (mirrors train.py logic exactly) ----------
 dataset_tag = {'Synapse': 'Synapse224', 'Kvasir': 'Kvasir224', 'ISIC': 'ISIC224'}[args.dataset]
-args.exp = 'AdaDA_' + dataset_tag
-snapshot_path = '../model/{}/{}'.format(args.exp, 'AdaDA')
+args.exp = 'ApproxDA_' + dataset_tag
+snapshot_path = '../model/{}/{}'.format(args.exp, 'ApproxDA')
 snapshot_path += '_pretrain'
 snapshot_path += '_' + args.vit_name
 snapshot_path += '_skip' + str(args.n_skip)
@@ -114,21 +114,21 @@ if args.vit_name.find('R50') != -1:
         args.img_size // args.vit_patches_size,
     )
 
-net = AdaDATransUNet(config_vit, img_size=args.img_size, num_classes=args.num_classes)
+net = ApproxDATransUNet(config_vit, img_size=args.img_size, num_classes=args.num_classes)
 state = torch.load(checkpoint, map_location='cpu')
 net.load_state_dict(state)
 net.eval()
 if torch.cuda.is_available():
     net = net.cuda()
 
-# ---------- find all AdaDABlock instances ----------
-adada_blocks = [(name, m) for name, m in net.named_modules() if isinstance(m, AdaDABlock)]
-print("Found {} AdaDABlock(s):".format(len(adada_blocks)))
-for name, _ in adada_blocks:
+# ---------- find all ApproxDABlock instances ----------
+approxda_blocks = [(name, m) for name, m in net.named_modules() if isinstance(m, ApproxDABlock)]
+print("Found {} ApproxDABlock(s):".format(len(approxda_blocks)))
+for name, _ in approxda_blocks:
     print(" ", name)
 
 # ---------- register hooks ----------
-records = {i: {'H': [], 'Var': [], 'g': []} for i in range(len(adada_blocks))}
+records = {i: {'H': [], 'Var': [], 'g': []} for i in range(len(approxda_blocks))}
 
 def make_hook(idx, blk):
     def hook(module, inp, out):
@@ -145,7 +145,7 @@ def make_hook(idx, blk):
     return hook
 
 hooks = []
-for i, (name, blk) in enumerate(adada_blocks):
+for i, (name, blk) in enumerate(approxda_blocks):
     hooks.append(blk.register_forward_hook(make_hook(i, blk)))
 
 # ---------- run inference slice-by-slice, recording organ context ----------
@@ -222,10 +222,10 @@ for h in hooks:
 # ---------- filter to only blocks actually called during forward ----------
 # DecoderBlock.forward routes skip to da/da2/da3 based on channel count, so
 # only 1 of the 3 DA blocks per DecoderBlock fires per forward pass.
-active_idx = [i for i in range(len(adada_blocks)) if len(records[i]['H']) > 0]
-print(f"\n{len(active_idx)} of {len(adada_blocks)} blocks active during inference:")
+active_idx = [i for i in range(len(approxda_blocks)) if len(records[i]['H']) > 0]
+print(f"\n{len(active_idx)} of {len(approxda_blocks)} blocks active during inference:")
 for i in active_idx:
-    print(f"  [{i}] {adada_blocks[i][0]}")
+    print(f"  [{i}] {approxda_blocks[i][0]}")
 
 if not active_idx:
     import sys; sys.exit("No hooks fired — check that best_model.pth loaded correctly.")
@@ -244,7 +244,7 @@ g_avg /= len(active_idx)
 print("\n=== Spearman correlation: H(F) vs gate g (per block) ===")
 spearman_results = []
 for i in active_idx:
-    name = adada_blocks[i][0]
+    name = approxda_blocks[i][0]
     H_all   = torch.cat(records[i]['H']).numpy()
     Var_all = torch.cat(records[i]['Var']).numpy()
     g_all   = torch.cat(records[i]['g']).numpy()
@@ -342,7 +342,7 @@ try:
     for patch in bp['boxes']:
         patch.set_facecolor('#a8c8e8')
     ax.set_ylabel('Mean gate value $g$', fontsize=FS)
-    ax.set_xlabel('AdaDA block', fontsize=FS)
+    ax.set_xlabel('ApproxDA block', fontsize=FS)
     ax.tick_params(axis='x', rotation=25, labelsize=FS - 1)
     fig.tight_layout()
     path_A = os.path.join(args.out_dir, 'fig_A_gate_distribution.png')
@@ -398,7 +398,7 @@ try:
     ax.set_xticks(x)
     ax.set_xticklabels(labels, rotation=25, ha='right', fontsize=FS - 1)
     ax.set_ylabel('Spearman $r_s$', fontsize=FS)
-    ax.set_xlabel('AdaDA block', fontsize=FS)
+    ax.set_xlabel('ApproxDA block', fontsize=FS)
     ax.legend(fontsize=FS - 1)
     fig.tight_layout()
     path_C = os.path.join(args.out_dir, 'fig_C_spearman_bars.png')
@@ -415,7 +415,7 @@ try:
     ax.set_xticks(x)
     ax.set_xticklabels(labels, rotation=25, ha='right', fontsize=FS - 1)
     ax.set_ylabel('Mean gate value $g$', fontsize=FS)
-    ax.set_xlabel('AdaDA block', fontsize=FS)
+    ax.set_xlabel('ApproxDA block', fontsize=FS)
     ax.legend(fontsize=FS - 1)
     for xi, (g_hi, g_lo, delta) in zip(x, figD_data):
         ymax = max(g_hi, g_lo)

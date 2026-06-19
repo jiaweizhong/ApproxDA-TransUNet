@@ -18,7 +18,7 @@ from torch.nn.modules.utils import _pair
 from scipy import ndimage
 from . import configs as configs
 from .block import ResNetV2
-from .block import AdaDABlock
+from .block import ApproxDABlock
 
 from torch.nn import Module, Sequential, Conv2d, ReLU,AdaptiveMaxPool2d, AdaptiveAvgPool2d, \
     NLLLoss, BCELoss, CrossEntropyLoss, AvgPool2d, MaxPool2d, Parameter, Linear, Sigmoid, Softmax, Dropout, Embedding
@@ -134,7 +134,7 @@ class Embeddings(nn.Module):
         self.config = config
         img_size = _pair(img_size)
         
-        self.ada_block = AdaDABlock(768, window_size=config.window_size, rank=config.rank, groups=config.groups, gate_mode=config.gate_mode)
+        self.approx_block = ApproxDABlock(768, window_size=config.window_size, rank=config.rank, groups=config.groups, gate_mode=config.gate_mode)
 
         if config.patches.get("grid") is not None:   # ResNet
             grid_size = config.patches["grid"]
@@ -167,7 +167,7 @@ class Embeddings(nn.Module):
         else:
             features = None
         x = self.patch_embeddings(x)  # (B, hidden. n_patches^(1/2), n_patches^(1/2))
-        x = self.ada_block(x)
+        x = self.approx_block(x)
         x = x.flatten(2)
         x = x.transpose(-1, -2).contiguous()  # (B, n_patches, hidden)
 
@@ -320,9 +320,9 @@ class DecoderBlock(nn.Module):
             use_batchnorm=use_batchnorm,
         )
         self.up = nn.UpsamplingBilinear2d(scale_factor=2)
-        self.da  = AdaDABlock(64,  window_size=window_size, rank=rank, groups=groups, gate_mode=gate_mode)
-        self.da2 = AdaDABlock(256, window_size=window_size, rank=rank, groups=groups, gate_mode=gate_mode)
-        self.da3 = AdaDABlock(512, window_size=window_size, rank=rank, groups=groups, gate_mode=gate_mode)
+        self.da  = ApproxDABlock(64,  window_size=window_size, rank=rank, groups=groups, gate_mode=gate_mode)
+        self.da2 = ApproxDABlock(256, window_size=window_size, rank=rank, groups=groups, gate_mode=gate_mode)
+        self.da3 = ApproxDABlock(512, window_size=window_size, rank=rank, groups=groups, gate_mode=gate_mode)
 
     def forward(self, x, skip=None):
         x = self.up(x)
@@ -398,9 +398,9 @@ class DecoderCup(nn.Module):
         return x
 
 
-class AdaDATransUNet(nn.Module):
+class ApproxDATransUNet(nn.Module):
     def __init__(self, config, img_size=224, num_classes=21843, zero_head=False, vis=False):
-        super(AdaDATransUNet, self).__init__()
+        super(ApproxDATransUNet, self).__init__()
         self.num_classes = num_classes
         self.zero_head = zero_head
         self.classifier = config.classifier
