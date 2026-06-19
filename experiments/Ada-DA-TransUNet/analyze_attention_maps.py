@@ -43,6 +43,7 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
+from matplotlib.transforms import Bbox
 
 from datasets.dataset_kvasir import Kvasir_dataset
 from datasets.dataset_isic import ISIC_dataset
@@ -269,6 +270,9 @@ def main():
                         help='Plot only these 0-based indices from the collected samples '
                              '(e.g. --select_samples 0 7 9). Runs inference on all '
                              'n_samples but saves a figure with only the chosen rows.')
+    parser.add_argument('--split_rows',       action='store_true',
+                        help='Save each row as a separate PNG (row0.png, row1.png, …) '
+                             'instead of one combined grid. Useful for per-sample LaTeX figures.')
     args = parser.parse_args()
 
     torch.manual_seed(args.seed)
@@ -425,9 +429,21 @@ def main():
     os.makedirs(out_dir, exist_ok=True)
     fig_suffix = f'_sel{"_".join(str(i) for i in args.select_samples)}' if args.select_samples else ''
     fig_path = os.path.join(out_dir, f'attn_{tag}{fig_suffix}.png')
-    plt.savefig(fig_path, dpi=200, bbox_inches='tight')
-    plt.close(fig)
-    print(f'\nFigure saved: {fig_path}')
+    if args.split_rows:
+        row_dir = os.path.join(out_dir, f'attn_{tag}{fig_suffix}_rows')
+        os.makedirs(row_dir, exist_ok=True)
+        fig.canvas.draw()
+        renderer = fig.canvas.get_renderer()
+        for row in range(n_rows):
+            tight_bboxes = [axes[row, c].get_tightbbox(renderer) for c in range(n_cols)]
+            bbox_inches = Bbox.union(tight_bboxes).transformed(fig.dpi_scale_trans.inverted())
+            fig.savefig(os.path.join(row_dir, f'row{row}.png'), dpi=200, bbox_inches=bbox_inches)
+        plt.close(fig)
+        print(f'\nRows saved to: {row_dir}')
+    else:
+        plt.savefig(fig_path, dpi=200, bbox_inches='tight')
+        plt.close(fig)
+        print(f'\nFigure saved: {fig_path}')
 
     # --- CSV stats ---
     csv_path = os.path.join(out_dir, f'attn_{tag}_stats.csv')
