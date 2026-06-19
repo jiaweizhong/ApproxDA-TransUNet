@@ -249,7 +249,8 @@ $$\mathcal{L} = \frac{1}{2} \mathcal{L}_{\text{Dice}} + \frac{1}{2} \mathcal{L}_
 | ApproxDA gate=learn, M=14, r=64 | 78.04 | 29.09 | 32.4 (fvcore) | Gate collapsed at larger window too |
 | ApproxDA gate=pam, M=7, r=32 | 78.64 | 31.09 | 32.1 (fvcore) | Gate ablation baseline |
 | ApproxDA Global PAM, M=112, r=64 | 78.93 | 31.21 | 32.4 (fvcore) | SUPERSEDED — rank mismatch with Phase D |
-| ApproxDA Global PAM, M=112, r=32 | 79.44 | 27.26 | 32.1 (fvcore) | Phase D high-M anchor — SUPERSEDED by M=28 |
+| ApproxDA gate=pam, M=56, r=32 | 78.90 | 35.23 | 32.1 (fvcore) | Phase D D2 |
+| ApproxDA Global PAM, M=112, r=32 | 79.44 | 27.26 | 32.1 (fvcore) | Phase D high-M anchor |
 | **ApproxDA Phase D peak, M=28, r=32** | **80.94** | **27.49** | 32.1 (fvcore) | **New best AdaDA on Synapse** — non-monotonic peak; **+1.14% vs DA-TransUNet** |
 
 ### Kvasir-SEG Polyp (low GCR)
@@ -268,8 +269,8 @@ $$\mathcal{L} = \frac{1}{2} \mathcal{L}_{\text{Dice}} + \frac{1}{2} \mathcal{L}_
 
 | Method | DSC (%) | mIoU (%) | Notes |
 |--------|---------|---------|-------|
-| DA-TransUNet (ours, 300ep SGD, 80/20) | 🔄 Training | — | — |
-| ApproxDA gate=learn, M=7, r=32 | 🔄 Training | — | — |
+| DA-TransUNet (ours, 300ep SGD, 80/20) | ⏳ test pending | — | Train done: 83.00h, T4×1, best val DSC 0.8771 ep75, VRAM 11.5 GB, Params 107.95M, GFLOPs 30.2 (fvcore) |
+| ApproxDA gate=learn, M=7, r=32 | ⏳ test pending | — | Train done: 83.26h, T4×1, best val DSC **0.8956** ep90, VRAM 10.5 GB |
 
 ### Efficiency (Synapse, T4)
 
@@ -306,6 +307,7 @@ $$\mathcal{L} = \frac{1}{2} \mathcal{L}_{\text{Dice}} + \frac{1}{2} \mathcal{L}_
 | ApproxDA | 7 | 32 | pam | 78.64 | 31.09 | 32.1 |
 | ApproxDA | 14 | 64 | learn | 78.04 | **29.09** | 32.4 |
 | ApproxDA Global PAM | 112 | 64 | pam | 78.93 | 31.21 | 32.4 | ← SUPERSEDED |
+| ApproxDA | 56 | 32 | pam | 78.90 | 35.23 | 32.1 | Phase D D2 |
 | ApproxDA Global PAM | 112 | 32 | pam | 79.44 | 27.26 | 32.1 | Phase D high-M anchor |
 | **ApproxDA Phase D peak** | **28** | **32** | **pam** | **80.94** | **27.49** | 32.1 | **BEST — +1.14% vs DA-TransUNet** |
 

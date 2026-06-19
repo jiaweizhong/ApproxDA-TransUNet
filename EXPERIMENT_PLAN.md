@@ -29,7 +29,7 @@ Both DA-TransUNet (baseline) and AdaDA-TransUNet are run under identical conditi
 |---------|-------------------|-------------------|-------------|------------|
 | Synapse | ✅ Done (11.41h, T4×1, 300ep, Lightning AI, Peak VRAM 11.5 GB, best val DSC 0.7952 at ep180) | ✅ Done (reproduced: DSC 72.03%, HD95 72.52mm, mIoU 59.62% — Lightning AI env artifact; **paper-reported used for narrative**: 79.80% DSC / 23.48mm HD95; mIoU not reported in paper; GFLOPs **30.2 (fvcore)**, Params 107.95M, 120.0s/vol, VRAM 0.5 GB) | ✅ Done (T4×1, 3-skip, 300ep, 11.51h pure train, Peak VRAM 10.6 GB, best val epoch 45) | ✅ Done (gate=learn re-run Lightning AI: DSC **77.78%**, HD95 **34.29mm**, Params 114.90M, GFLOPs **32.1 (fvcore)**, Infer 114.2s/vol, Infer VRAM 0.5GB) |
 | Kvasir-SEG | ✅ Done (4.29h, T4×1, 300ep, Peak VRAM 11.5 GB, best val DSC 0.8838 at ep300) | ✅ Done (DSC **88.44%**, mIoU **81.70%**, HD95 53.04mm, GFLOPs **30.2 (fvcore)**, Params 107.95M, 117ms/img, Infer VRAM 0.5 GB) | ✅ Done (4.45h, T4×1, 300ep, gate=learn, Peak VRAM 10.5 GB, best val DSC 0.8923 at ep300) | ✅ Done (DSC **89.24%**, mIoU **83.40%**, HD95 42.60mm, GFLOPs 32.0 (fvcore), Params 114.90M, 120ms/img, Infer VRAM 0.5 GB) |
-| ISIC 2018 | 🔄 Training | ⏳ Pending | 🔄 Training | ⏳ Pending |
+| ISIC 2018 | ✅ Done (83.00h, T4×1, 300ep, best val DSC 0.8771 at ep75, Peak VRAM 11.5 GB, Params 107.95M, GFLOPs 30.2 fvcore) | ⚠️ Failed — Lightning AI had stale `h, w = sampled_batch["image"].size()[2:]` in test.py; local code is fixed — rerun needed | ✅ Done (gate=learn, M=7, r=32, G=8; 83.26h, T4×1, 300ep, best val DSC **0.8956** at ep90, Peak VRAM 10.5 GB) | ⏳ Pending (run after re-upload) |
 
 ---
 
@@ -311,7 +311,7 @@ Run from `experiments/Ada-DA-TransUNet/`.
 |---|---------|---|--------|--------|-----------|
 | # | Dataset | M | Config | Status | Est. Time |
 | D1 | Synapse | 28 | gate=pam, r=32 | ✅ **test DSC 80.94%, HD95 27.49mm, IoU 71.21%** (val 0.8102 ep300, 11.59h T4×1, 5.6GB, 113.29M, 32.1 GFLOPs, 118.8s/case, 491MB) — **NEW BEST AdaDA Synapse; +1.14% vs DA-TransUNet** | 11.59h T4×1 |
-| D2 | Synapse | 56 | gate=pam, r=32 | ❌ | ~8h T4×1 |
+| D2 | Synapse | 56 | gate=pam, r=32 | ✅ **test DSC 78.90%, HD95 35.23mm, IoU 68.66%** (val 0.7900 ep45, 11.51h T4×1, 5.6 GB, 114.27M params, 32.1 GFLOPs, 117.1s/case, 0.5 GB VRAM) | 11.51h T4×1 |
 | D3 | Kvasir | 7 | gate=pam, r=32 | ✅ test DSC 89.53%, HD95 43.87mm, IoU 83.52% | 4.52h T4×1 |
 | D4 | Kvasir | 28 | gate=pam, r=32 | ✅ test DSC 89.54%, HD95 45.39mm, IoU 83.66% | 4.45h T4×1 |
 | D5 | Kvasir | 56 | gate=pam, r=32 | ✅ test DSC **90.17%** (BEST), HD95 44.35mm, IoU 84.27% | 4.51h T4×1 |
@@ -604,9 +604,9 @@ Night 5:  AdaDA         ISIC     (T4 x2, ~2.5h)
 > |---|---------|------|--------------------------|
 > | 7 | 78.64% | 31.09mm | −1.16% |
 > | 28 | **80.94%** | 27.49mm | **+1.14%** ← PEAK |
-> | 56 | TBD | TBD | TBD |
+> | 56 | 78.90% | 35.23mm | −0.90% |
 > | 112 | 79.44% | 27.26mm | −0.36% |
-> Non-monotonic: peak at M=28, both M=7 (too local) and M=112 (too global) underperform. DSC range: 80.94−78.64 = **2.30%** (3.6× Kvasir range 0.64%).
+> Non-monotonic: peak at M=28, all others underperform. DSC range: 80.94−78.64 = **2.30%** (3.6× Kvasir range 0.64%). M=56 (78.90%) sits between M=7 and M=112, confirming the non-monotonic shape.
 >
 > **Finding 1 — Gate collapses to fixed routing (H3 confirmed):** Symmetric gating collapses to g≈0.5 — a stable equilibrium of dual-branch optimization. The resulting fixed 50/50 routing is task-dependent in effectiveness: on high-GCR Synapse it performs below both single-branch modes (gate=learn 77.78% < gate=pam 78.64%, gate=cam 78.26%), while on low-GCR Kvasir it produces the best result (+0.77% vs DA-TransUNet). The collapse itself is the finding — not that "gates are bad."
 >

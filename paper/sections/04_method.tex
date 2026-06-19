@@ -9,14 +9,14 @@ ApproxDA-TransUNet adopts the hybrid CNN--ViT encoder-decoder structure of DA-Tr
 
 ApproxDA-TransUNet is designed around an explicit hypothesis: that three orthogonal approximation operators---windowed PAM, low-rank projection, and grouped CAM---can replace the quadratic DA module to yield both a practical efficient architecture and a systematic framework for studying when approximation is appropriate. Each operator targets a distinct approximation axis (spatial scope, representation fidelity, channel scope), so any two can be held fixed while the third varies. This makes ApproxDA not merely a faster model, but a model whose design enables controlled ablation of approximation effects across tasks with different contextual requirements.
 
-\begin{figure}[t]
+\begin{figure*}[t]
   \centering
-  \fbox{\rule{0pt}{2.5cm}\rule{\columnwidth}{0pt}}
+  \includegraphics[width=0.85\textwidth]{figures/approxda_overview}
   \caption{ApproxDA-TransUNet architecture. ApproxDABlocks (Low-Rank Windowed PAM + Grouped CAM + gate routing) replace dual-attention modules at all skip connections and the bottleneck. \texttt{gate\_mode} controls the routing during ablation.}
   \label{fig:framework}
-\end{figure}
+\end{figure*}
 
-Figure~\ref{fig:framework} illustrates the overall ApproxDA architecture.
+Figure~\ref{fig:framework} illustrates the overall ApproxDA architecture. Figure~\ref{fig:approxda_block} details the internal structure of each ApproxDABlock.
 
 \subsection{Attention Approximation Formulation}
 
@@ -94,6 +94,13 @@ where $\hat{\mathbf{P}}$ and $\hat{\mathbf{C}}$ are the normalized PAM and CAM o
 \end{center}
 
 This single-parameter design enables systematic ablation of routing strategy without any other architectural change. ApproxDA does not treat this routing module as a primary architectural contribution; instead, it serves as an analyzable component whose optimization behavior is investigated in Section~\ref{sec:analysis}. As demonstrated later, the routing coefficient consistently converges to an almost constant value, revealing an unexpected optimization phenomenon.
+
+\begin{figure*}[t]
+  \centering
+  \includegraphics[width=0.85\textwidth]{figures/approxda_block}
+  \caption{ApproxDABlock internals. Input $\mathbf{x}$ splits into two branches: Low-Rank Windowed PAM (blue, upper) via window partition, low-rank projection, and attention; Grouped CAM (green, lower) via group split and channel attention. A learned gate $g$ fuses the outputs; $\mathbf{x}$ is added as a residual.}
+  \label{fig:approxda_block}
+\end{figure*}
 
 \subsection{Loss Function}
 
