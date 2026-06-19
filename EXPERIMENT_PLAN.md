@@ -5,11 +5,11 @@
 Run experiments on 3 datasets to support conference submission (**BIBM 2026**, primary target, ~Aug 2026 deadline).
 Both DA-TransUNet (baseline) and AdaDA-TransUNet are run under identical conditions for fair comparison.
 
-**Paper title:** "ApproxDA-TransUNet: Understanding Context-Dependent Attention Approximation for Medical Image Segmentation"
+**Paper title:** "ApproxDA-TransUNet: Understanding Context Sensitivity of Attention Approximation in Medical Image Segmentation"
 **Method name:** **ApproxDA-TransUNet** (Approximate Dual Attention TransUNet — describes the mechanism; code directories retain `Ada-DA-TransUNet` name)
-**Scientific question:** *"When is attention approximation safe under different global context requirements?"*
-**Design principle:** Global Context Requirement (GCR) → Approximation Effectiveness
-**4 contributions:** efficient approximation framework, gate-collapse theory, cross-task empirical study, preliminary GCR→effectiveness evidence
+**Scientific question:** *"How sensitive are different medical image segmentation tasks to attention approximation, and what determines this sensitivity?"*
+**Design principle:** Context Sensitivity (CS) governs window selection importance → optimal approximation scale is task-dependent
+**4 contributions:** efficient approximation framework, gate-collapse theory, cross-task empirical study (both tasks improved), CS operationalized as DSC window sensitivity range (CS = max(DSC) − min(DSC))
 
 ---
 
@@ -656,7 +656,7 @@ Night 5:  AdaDA         ISIC     (T4 x2, ~2.5h)
 | **SPIE 2027** | C | Aug 5, 2026 | ✅ Safe bet — workshop venue, less competitive |
 | **MICCAI 2027** | A | Jan 2027 | 🎯 Journal extension target after acceptance |
 
-> **Narrative to write now (V4.0, updated with Phase D D1 result):** "When is attention approximation safe, and what task properties determine this? We introduce ApproxDA-TransUNet as a controllable approximation framework — a scientific instrument with three independently controllable approximation axes. Phase D window sensitivity ablation (M∈{7,28,56,112}, gate=pam, r=32) reveals: (1) ApproxDA with task-appropriate windows outperforms DA-TransUNet on BOTH benchmarks — Synapse +1.14% (M=28) and Kvasir +1.73% (M=56); (2) the DSC-vs-M curve is non-monotonic on Synapse (peak at M=28, not M=112); (3) GCR governs window *sensitivity* rather than direction — Synapse range 2.30% vs Kvasir 0.64% (3.6× ratio). High-GCR tasks need careful window tuning; low-GCR tasks are window-robust. Gate collapse (H3): symmetric gating collapses to g≈0.5, a stable equilibrium. This work shifts the discussion from *how* to approximate attention toward *when* and *how much* (window size) to approximate."
+> **Narrative to write now (V5.0):** "Every segmentation task has an optimal attention context scale; Context Sensitivity CS (= DSC range across M values) determines how important it is to find it. ApproxDA-TransUNet is the scientific instrument enabling this analysis. Key finding: the DSC-vs-M curve is non-monotonic on Synapse (peak M=28: 80.94%, +1.14% vs DA-TransUNet); the curve is near-flat on Kvasir (peak M=56: 90.17%, +1.73%). The 3.6× sensitivity ratio (GCR=2.30 vs 0.64) operationalizes GCR directly from the ablation. Mechanistically: approximation is not a capability reduction but an inductive bias adjustment — windowed attention's locality prior suppresses spurious long-range correlations (over-context suppression on high-GCR; inductive bias alignment on low-GCR). Phase E evidence: M=7 pam concentrates 62.3% on-mask vs M=112's 34.2% (1.82×). Gate collapse (H3) is a secondary mechanistic finding. This work shifts the question from *how to approximate* toward *when and at what scale*."
 > This story needs ISIC results to be complete (expected to reinforce low-GCR tolerance).
 
 ### Journal Extension (after conference acceptance)

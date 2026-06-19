@@ -4,10 +4,10 @@
 
 | Layer | Name |
 |-------|------|
-| **Paper Title** | ApproxDA-TransUNet: Understanding Context-Dependent Attention Approximation for Medical Image Segmentation |
+| **Paper Title** | ApproxDA-TransUNet: Understanding Context Sensitivity of Attention Approximation in Medical Image Segmentation |
 | **Method Name** | ApproxDA-TransUNet (Approximate Dual Attention TransUNet) |
-| **Research Theme** | GCR-Governed Approximation |
-| **Design Principle** | Global Context Requirement (GCR) → Approximation Effectiveness |
+| **Research Theme** | Context Sensitivity (CS) as Governing Factor |
+| **Design Principle** | Context Sensitivity (CS) → Window Selection Importance → Optimal Approximation Scale |
 | **Code directories** | `Ada-DA-TransUNet` / `AdaDA` (keep as-is; no rename needed) |
 
 ---
@@ -45,8 +45,8 @@ DANet [1] models **spatial dependencies** (Position Attention Module, PAM) and *
 
 | # | Hypothesis | Evidence |
 |---|-----------|---------|
-| **H1** | Attention approximation effectiveness depends on task characteristics — window sensitivity differs by task | Synapse window range 2.30% (high sensitivity) vs Kvasir 0.64% (low sensitivity); both improved with optimal M |
-| **H2** | Global Context Requirement (GCR), a **latent task property** describing reliance on long-range contextual information, appears to govern **window sensitivity**: high-GCR tasks exhibit steep DSC-vs-M curves (sensitive to window choice); low-GCR tasks are near-flat (window-robust). For low-GCR tasks, windowed PAM imposes an **inductive bias** (locality prior) that matches the intrinsic task structure | Synapse window range 2.30% (high sensitivity) vs Kvasir 0.64% (low sensitivity); 3.6× ratio confirms GCR governs sensitivity to M |
+| **H1** | Attention approximation effectiveness depends on task characteristics — every task has an optimal approximation scale, and Context Sensitivity (CS) determines how important it is to find it | Synapse CS=2.30% (high sensitivity); Kvasir CS=0.64% (low sensitivity); both improved +1.14%/+1.73% at optimal M |
+| **H2** | CS is operationally defined as DSC range across the window sensitivity ablation: CS = max(DSC) − min(DSC). High-CS tasks exhibit steep non-monotonic DSC-vs-M curves (bias-variance tradeoff: under-context → high bias; over-context → high variance; optimal M = sweet spot); low-CS tasks show a broad plateau. Mechanism: approximation changes **inductive bias** (locality prior alignment), causes **over-context suppression** (reduces spurious long-range correlations), and may act as **implicit regularization** | CS(Synapse)=2.30pp; CS(Kvasir)=0.64pp; Phase E: M=7 pam 62.3% on-mask vs M=112 34.2% (1.82× ratio, 9/10 samples) |
 | **H3** | Symmetric dual-attention routing naturally collapses to a fixed 50/50 blend — a stable equilibrium of dual-branch gradient symmetry | Confirmed at M=7 and M=14; collapse independent of window size |
 
 Everything in the paper maps to H1, H2, or H3.
@@ -80,27 +80,33 @@ Confirmed at M=7 (gate range 0.4993–0.5010, Δ=0.0017) and M=14 (same pattern)
 
 ### Contribution 3: Cross-Task Empirical Study (H1 + H2 evidence)
 
-| Dataset | Task | GCR Level | Best ApproxDA Config | Δ DSC vs DA |
+| Dataset | Task | CS Level | Best ApproxDA Config | Δ DSC vs DA |
 |---------|------|-----------|-------------------|-------------|
-| Synapse | Multi-organ CT (9 classes) | High GCR | gate=pam, M=28, r=32 | **+1.14%** |
-| Kvasir-SEG | Polyp segmentation (binary) | Low GCR | gate=pam, M=56, r=32 | **+1.73%** |
-| ISIC 2018 | Skin lesion (binary) | Low GCR | TBD | TBD (expected +) |
+| Synapse | Multi-organ CT (9 classes) | High CS (2.30pp) | gate=pam, M=28, r=32 | **+1.14%** |
+| Kvasir-SEG | Polyp segmentation (binary) | Low CS (0.64pp) | gate=pam, M=56, r=32 | **+1.73%** |
+| ISIC 2018 | Skin lesion (binary) | Low CS (TBD) | TBD | TBD (expected +) |
 
 The opposite directions (−0.36% vs +1.73%) confirm approximation safety is task-dependent (H1). GCR appears to be an important explanatory factor (H2): high-GCR tasks require global spatial interaction that approximation disrupts. For low-GCR tasks, the improvement should **not** be interpreted as approximation creating additional information. Rather, windowed PAM imposes an **inductive bias** (locality prior) that better matches the intrinsic structure of local-boundary tasks — simultaneously reducing overfitting to spurious long-range correlations. This parallels the effectiveness of local-receptive-field CNNs on texture-dominant tasks: enforcing locality is a correct prior, not just tolerance of approximation.
 
-### Contribution 4: GCR as Governing Factor + Inductive Bias Hypothesis
+### Contribution 4: CS Operationalized + Mechanisms for Why Approximation Improves
 
-GCR is a **latent task property** — not a directly measurable quantity. It describes the degree to which accurate segmentation relies on long-range spatial dependencies. Evidence for its role as a governing factor:
+**Context Sensitivity (CS) is operationally defined**:
+$$\text{CS} \triangleq \max_M \text{DSC}(M) - \min_M \text{DSC}(M)$$
+measured under fixed gate=pam, r=32. Values: CS(Synapse) = 2.30 pp; CS(Kvasir) = 0.64 pp; ratio = 3.6×.
 
-- **High GCR** (Synapse): inter-organ anatomical reasoning requires global context → approximation harmful
-- **Low GCR** (Kvasir, ISIC): local boundary/texture dominant → windowed PAM's locality prior aligns with task structure → approximation beneficial
-- **M=112 ablation (gate=pam, r=32):** Recovering global receptive fields yields 79.44% vs 79.80% — removing windowing yields +0.80% DSC and closes 78% of the DA-TransUNet gap. **Spatial windowing is the dominant bottleneck on high-GCR tasks**; low-rank projection alone costs only −0.36% residual. (Earlier r=64 result 78.93% was SUPERSEDED — rank mismatch made windowing appear weaker than it is.)
+**Key insight:** High CS does NOT mean approximation is harmful. It means performance is *sensitive* to window choice. With the right window (M=28), ApproxDA *beats* DA-TransUNet on Synapse (+1.14%). Every task has an optimal attention context scale; CS determines how critical it is to find it.
 
-**Inductive bias hypothesis (new):** The Kvasir improvement is not approximation "tolerating" limited context but an **inductive bias alignment** effect: windowed PAM enforces a locality prior matching the local-structure nature of polyp segmentation. This is the correct prior for low-GCR tasks (analogous to convolutional locality on texture tasks). The implicit regularization framing (reducing spurious long-range correlations) follows from this.
+**The non-monotonic Synapse curve is the central result.** The DSC-vs-M curve (M=7: 78.64% → M=28: 80.94% → M=112: 79.44%) is a direct analogue of the **bias-variance tradeoff**:
+- Under-context (M=7): high bias — missing inter-organ dependencies
+- Optimal (M=28): sweet spot — sufficient cross-organ context, suppressed background noise
+- Over-context (M=112): high variance — spurious long-range correlations from unrelated regions
 
-**Conference-scope empirical validation (Phase E):** Attention-map visualization comparing DA-TransUNet vs ApproxDA attention heatmaps on Kvasir images. If DA-TransUNet shows diffuse global attention to irrelevant background while ApproxDA concentrates on lesion boundaries, this directly supports the inductive bias hypothesis. Uses existing checkpoints — no additional training required. Produces Figure 5 (attention panel) and a mean attention-distance metric table.
+**Three mechanisms explaining why approximation improves (in priority order):**
+1. **Inductive bias alignment** (strongest, direct Phase E evidence): windowed PAM enforces locality prior matching low-GCR task structure. Evidence: M=7 pam 62.3% on-mask vs M=112 34.2% (1.82×, 9/10 samples). Analogous to CNN locality being a feature, not a bug.
+2. **Over-context suppression** (Synapse M=28 > M=112 as direct evidence): fully-global attention introduces spurious variance. Intermediate window suppresses this.
+3. **Implicit regularization** (hypothesis, no direct evidence yet): constrained receptive field reduces attention degrees of freedom → regularization effect. Requires train/test DSC gap analysis (journal goal).
 
-Framed as preliminary evidence (2 confirmed datasets, 1 pending) because GCR is not yet formally quantified. Formal quantification is a journal extension goal.
+**Conference-scope empirical validation (Phase E):** M=7 pam vs M=112 global, 10 Kvasir images. Result: 62.3% vs 34.2% on-mask concentration, 1.82× ratio, 9/10 samples confirm. Directly supports mechanism 1.
 
 ---
 

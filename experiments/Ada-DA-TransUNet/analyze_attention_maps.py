@@ -213,17 +213,22 @@ def run_single_image(image_np, label_np, model, collector):
 def overlay_heatmap(ax, image_224, heatmap, title, alpha=0.55):
     ax.imshow(image_224, cmap='gray', vmin=0, vmax=1)
     ax.imshow(heatmap, cmap='hot', alpha=alpha, vmin=0, vmax=1)
-    ax.set_title(title, fontsize=8)
+    ax.set_title(title, fontsize=13, fontweight='bold', pad=4)
     ax.axis('off')
 
 
+def _contour_with_halo(ax, mask, color, linewidth=2.0, halo_width=3.5):
+    """Draw a contour with a dark halo for contrast on any background."""
+    ax.contour(mask, levels=[0.5], colors=['black'], linewidths=halo_width,  zorder=2)
+    ax.contour(mask, levels=[0.5], colors=[color],  linewidths=linewidth,    zorder=3)
+
+
 def show_mask(ax, image_224, gt_224, pred_224, title):
-    """Overlay GT (green) and prediction (red) contours on image."""
+    """Overlay GT (green) and prediction (cyan) contours on image."""
     ax.imshow(image_224, cmap='gray', vmin=0, vmax=1)
-    # GT in green, prediction in cyan
-    ax.contour(gt_224,   levels=[0.5], colors=['lime'],  linewidths=0.8)
-    ax.contour(pred_224, levels=[0.5], colors=['cyan'],  linewidths=0.8)
-    ax.set_title(title, fontsize=8)
+    _contour_with_halo(ax, gt_224,   'lime', linewidth=2.0)
+    _contour_with_halo(ax, pred_224, 'cyan', linewidth=2.0)
+    ax.set_title(title, fontsize=13, fontweight='bold', pad=4)
     ax.axis('off')
 
 
@@ -377,7 +382,7 @@ def main():
         n_cols = 3   # image | model_a heatmap | model_b heatmap
 
     n_rows = len(plot_samples)
-    fig, axes = plt.subplots(n_rows, n_cols, figsize=(n_cols * 3, n_rows * 3))
+    fig, axes = plt.subplots(n_rows, n_cols, figsize=(n_cols * 3.8, n_rows * 3.8))
     if n_rows == 1:
         axes = axes[np.newaxis, :]
 
@@ -389,9 +394,9 @@ def main():
         # Column 0: image + GT contour
         ax = axes[row, col]
         ax.imshow(s['img224'], cmap='gray', vmin=0, vmax=1)
-        ax.contour(s['gt224'], levels=[0.5], colors=['lime'], linewidths=1.0)
+        _contour_with_halo(ax, s['gt224'], 'lime', linewidth=2.0)
         if row == 0:
-            ax.set_title('Image + GT', fontsize=9)
+            ax.set_title('Image + GT', fontsize=13, fontweight='bold', pad=4)
         ax.axis('off')
         col += 1
 
@@ -399,7 +404,7 @@ def main():
         ax = axes[row, col]
         overlay_heatmap(ax, s['img224'], s['attn_a'],
                         title=primary_label if row == 0 else '')
-        ax.contour(s['pred224_a'], levels=[0.5], colors=['cyan'], linewidths=0.8)
+        _contour_with_halo(ax, s['pred224_a'], 'cyan', linewidth=2.0)
         col += 1
 
         # Column 2 (optional): comparison model attention heatmap
@@ -407,11 +412,11 @@ def main():
             ax = axes[row, col]
             overlay_heatmap(ax, s['img224'], s['attn_b'],
                             title=compare_label if row == 0 else '')
-            ax.contour(s['pred224_b'], levels=[0.5], colors=['cyan'], linewidths=0.8)
+            _contour_with_halo(ax, s['pred224_b'], 'cyan', linewidth=2.0)
 
     fig.suptitle(
         f'PAM Attention Effect — {args.dataset}  |  hot=high PAM modification  |  cyan=prediction  |  green=GT',
-        fontsize=9, y=1.01
+        fontsize=12, y=1.01
     )
     plt.tight_layout()
 
@@ -420,7 +425,7 @@ def main():
     os.makedirs(out_dir, exist_ok=True)
     fig_suffix = f'_sel{"_".join(str(i) for i in args.select_samples)}' if args.select_samples else ''
     fig_path = os.path.join(out_dir, f'attn_{tag}{fig_suffix}.png')
-    plt.savefig(fig_path, dpi=150, bbox_inches='tight')
+    plt.savefig(fig_path, dpi=200, bbox_inches='tight')
     plt.close(fig)
     print(f'\nFigure saved: {fig_path}')
 
