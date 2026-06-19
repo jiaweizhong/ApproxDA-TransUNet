@@ -260,6 +260,10 @@ def main():
     parser.add_argument('--n_samples',        type=int,  default=N_SAMPLES)
     parser.add_argument('--seed_sample',      type=int,  default=42,
                         help='Random seed for image selection')
+    parser.add_argument('--select_samples',   type=int,  nargs='+', default=None,
+                        help='Plot only these 0-based indices from the collected samples '
+                             '(e.g. --select_samples 0 7 9). Runs inference on all '
+                             'n_samples but saves a figure with only the chosen rows.')
     args = parser.parse_args()
 
     torch.manual_seed(args.seed)
@@ -358,6 +362,13 @@ def main():
     if collector_b is not None:
         collector_b.remove()
 
+    # --- Filter samples for figure ---
+    if args.select_samples is not None:
+        plot_samples = [samples[i] for i in args.select_samples if i < len(samples)]
+        print(f'Plotting {len(plot_samples)}/{len(samples)} selected samples: {args.select_samples}')
+    else:
+        plot_samples = samples
+
     # --- Build figure ---
     has_compare = model_b is not None
     # Columns: image+GT | pred_a+attn_a | [pred_b+attn_b]
@@ -365,14 +376,14 @@ def main():
     if has_compare:
         n_cols = 3   # image | model_a heatmap | model_b heatmap
 
-    n_rows = len(samples)
+    n_rows = len(plot_samples)
     fig, axes = plt.subplots(n_rows, n_cols, figsize=(n_cols * 3, n_rows * 3))
     if n_rows == 1:
         axes = axes[np.newaxis, :]
 
     primary_label = f'M={args.window_size} {args.gate_mode}'
 
-    for row, s in enumerate(samples):
+    for row, s in enumerate(plot_samples):
         col = 0
 
         # Column 0: image + GT contour
@@ -407,7 +418,8 @@ def main():
     # --- Save ---
     out_dir = './attention_maps'
     os.makedirs(out_dir, exist_ok=True)
-    fig_path = os.path.join(out_dir, f'attn_{tag}.png')
+    fig_suffix = f'_sel{"_".join(str(i) for i in args.select_samples)}' if args.select_samples else ''
+    fig_path = os.path.join(out_dir, f'attn_{tag}{fig_suffix}.png')
     plt.savefig(fig_path, dpi=150, bbox_inches='tight')
     plt.close(fig)
     print(f'\nFigure saved: {fig_path}')

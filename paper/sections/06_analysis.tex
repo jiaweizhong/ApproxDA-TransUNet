@@ -31,22 +31,29 @@ At initialization $g{\approx}0.5$, both branches receive equal gradient $\tfrac{
 
 \subsection{Observation 2: Task-Dependent Approximation Effectiveness}
 
-Although ApproxDA adopts the same approximation operators across all experiments, its effectiveness varies considerably among different segmentation datasets. ApproxDA consistently underperforms the original dual-attention module on Synapse, while achieving competitive or improved performance on Kvasir.
+Although ApproxDA adopts the same approximation operators across all experiments, its effectiveness varies considerably among different segmentation datasets. Window sensitivity ablation (Phase~D, gate=pam, $r{=}32$, $M{\in}\{7,28,56,112\}$) reveals that performance depends critically on window selection, and that the optimal window size differs by task: $M{=}28$ on Synapse (80.94\% DSC, $+$1.14\% vs.\ DA-TransUNet) and $M{=}56$ on Kvasir-SEG (90.17\% DSC, $+$1.73\%). Importantly, the \emph{sensitivity} to window choice differs dramatically: the Synapse DSC-vs-$M$ curve spans 2.30\% across measured $M$ values (non-monotonic: $M{=}7$ 78.64\%, $M{=}28$ 80.94\%, $M{=}112$ 79.44\%), while the Kvasir curve spans only 0.64\%---a 3.6$\times$ ratio.
 
-We attribute this phenomenon to the different global contextual requirements of the underlying segmentation tasks. Multi-organ abdominal CT segmentation requires reasoning over long-range anatomical relationships among multiple organs. Aggressive attention approximation inevitably weakens such global dependency modeling, leading to performance degradation.
+We attribute this sensitivity difference to the different global contextual requirements of the underlying segmentation tasks. Multi-organ abdominal CT segmentation requires reasoning over long-range anatomical relationships among multiple organs. The high sensitivity to window size (2.30\% range) reflects that both too-local windows (insufficient cross-organ context) and fully-global windows (noise from unrelated background) degrade performance; an intermediate scope ($M{=}28$) provides the optimal balance.
 
-In contrast, polyp and skin lesion segmentation are primarily determined by local appearance, boundary contrast, and texture consistency. The performance improvement on Kvasir-SEG should not be interpreted as approximation creating additional discriminative information. Rather, we hypothesize that attention approximation introduces an \emph{inductive bias} favoring local interactions while suppressing unnecessary long-range dependencies. For low-GCR tasks, where segmentation is primarily governed by local boundary appearance and texture, this bias better matches the intrinsic structure of the problem and may simultaneously act as an implicit regularizer, reducing overfitting to spurious long-range correlations. This parallels the known effectiveness of local-receptive-field architectures on texture-dominant tasks, where enforcing locality is not a limitation but a correct prior. Validating this inductive bias hypothesis---for example, through attention-distance analysis showing that DA-TransUNet attends to distant irrelevant regions on Kvasir---is an important direction for future work. This interpretation motivates the more precise characterization below.
+In contrast, polyp and skin lesion segmentation are primarily determined by local appearance, boundary contrast, and texture consistency. The performance improvement on Kvasir-SEG should not be interpreted as approximation creating additional discriminative information. Rather, we hypothesize that attention approximation introduces an \emph{inductive bias} favoring local interactions while suppressing unnecessary long-range dependencies. For low-GCR tasks, where segmentation is primarily governed by local boundary appearance and texture, this bias better matches the intrinsic structure of the problem and may simultaneously act as an implicit regularizer. The near-flat curve (0.64\% range) confirms low sensitivity: any reasonable window achieves competitive performance. We validate the locality bias hypothesis via controlled attention-map analysis: comparing gate=pam $M{=}7$ (windowed) versus $M{=}112$ (global) attention effects on 10 Kvasir polyp images, windowed attention concentrates $62.3\%$ of its effect on the polyp region versus only $34.2\%$ for global attention---a $1.82{\times}$ difference confirmed in $9/10$ samples (Figure~\ref{fig:attn_map}). Windowed attention focuses on polyp boundaries while global attention disperses to surrounding tissue, providing direct evidence for the inductive bias alignment hypothesis. This interpretation motivates the more precise characterization below.
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\columnwidth]{figures/attn_Kvasir_M7_r32_pam_vs_M112_sel0_7_9.png}
+  \caption{Attention-map analysis on three representative Kvasir-SEG polyp images (selected from 10; samples with largest M=7 vs.\ M=112 on-mask gap). Each row: input image with GT contour (left), windowed PAM heatmap ($M{=}7$, gate=pam; center), global PAM heatmap ($M{=}112$, gate=pam; right). Windowed attention concentrates $62.3\%$ of its effect on the polyp region vs.\ $34.2\%$ for global attention---a $1.82{\times}$ difference confirmed in $9/10$ samples. Heatmap intensities reflect $\|\text{output} - \text{input}\|_2$ averaged across decoder scales and upsampled to $224{\times}224$.}
+  \label{fig:attn_map}
+\end{figure}
 
 \subsection{The GCR Hypothesis}
 
 \textbf{Global Context Requirement (GCR)} is a latent task property: the degree to which accurate segmentation depends on long-range spatial dependencies between distant anatomical elements. High-GCR tasks (multi-organ CT) require cross-organ anatomical reasoning---liver position relative to spleen, aorta relative to vena cava---where disrupting global spatial interaction degrades delineation. Low-GCR tasks (polyp, skin lesion) are dominated by local boundary contrast and texture, with minimal dependence on distant context.
 
-We propose that GCR governs the direction and magnitude of approximation's effect, which we treat as a predictive claim rather than a proven causal law:
+We propose that GCR governs the \emph{sensitivity} of performance to window size, which we treat as a predictive claim rather than a proven causal law:
 \begin{equation}
   \Delta_\text{DSC} \approx f(\text{GCR}), \quad f'(\cdot) < 0,
   \label{eq:gcr_hypothesis}
 \end{equation}
-where $\Delta_\text{DSC}$ = DSC(ApproxDA) $-$ DSC(DA-TransUNet). Equation~\eqref{eq:gcr_hypothesis} is a conceptual claim, not an analytic proof. It summarizes the empirical pattern: the same ApproxDA configuration achieves $\Delta_\text{DSC}{=}{+}0.80\%$ on low-GCR Kvasir-SEG and $\Delta_\text{DSC}{=}{-}1.16\%$ on high-GCR Synapse---opposite signs consistent with a monotonically decreasing relationship. Figure~\ref{fig:gcr_curve} illustrates this GCR-governed pattern with the two confirmed benchmarks. A natural experimental proxy for GCR is \emph{window sensitivity}: the slope of DSC as attention window $M$ decreases. Because larger $M$ captures more global context, a steep drop as $M$ shrinks signals high GCR, while a near-flat curve indicates low GCR---consistent with the window ablation in Table~\ref{tab:window_ablation}. We treat systematic GCR estimation as a direction for future work.
+where $\Delta_\text{DSC}$ = DSC(ApproxDA) $-$ DSC(DA-TransUNet) at the \emph{optimal window} for each task. Equation~\eqref{eq:gcr_hypothesis} is a conceptual claim, not an analytic proof. With task-appropriate windows, ApproxDA achieves $\Delta_\text{DSC}{=}{+}1.73\%$ on low-GCR Kvasir-SEG ($M{=}56$) and $\Delta_\text{DSC}{=}{+}1.14\%$ on high-GCR Synapse ($M{=}28$)---both positive, but the gain is larger on the low-GCR task. Figure~\ref{fig:gcr_curve} illustrates the GCR-governed pattern. The key distinction between tasks lies not in the sign of approximation's effect but in its \emph{sensitivity to window choice}: the Phase~D ablation ($M{\in}\{7,28,56,112\}$, gate=pam, $r{=}32$) measures this directly. Synapse DSC spans 2.30\% across measured $M$ values (non-monotonic peak at $M{=}28$---high sensitivity, high GCR), while Kvasir spans only 0.64\% (near-flat---low sensitivity, low GCR). The sensitivity ratio (${\approx}3.6{\times}$) operationalizes the GCR difference: high-GCR tasks require careful window tuning to unlock gains; low-GCR tasks are window-robust. We treat systematic multi-task GCR quantification as a direction for future work.
 
 \begin{figure}[t]
   \centering
@@ -61,11 +68,11 @@ where $\Delta_\text{DSC}$ = DSC(ApproxDA) $-$ DSC(DA-TransUNet). Equation~\eqref
 
     \node[box, fill=red!15, font=\footnotesize\bfseries]  (ht) at (0, 0)    {Synapse\\(Multi-organ CT)};
     \node[box, fill=red!10]                                (hc) at (0,-0.95) {Long-range anatomical\\reasoning required};
-    \node[box, fill=red!25, font=\footnotesize\bfseries]   (hr) at (0,-1.95) {Approximation hurts\\($-$1.16\% DSC)};
+    \node[box, fill=orange!25, font=\footnotesize\bfseries]   (hr) at (0,-1.95) {Window-sensitive\\($+$1.14\% at $M{=}28$)};
 
     \node[box, fill=green!20, font=\footnotesize\bfseries] (lt) at (3.6, 0)    {Kvasir-SEG\\(Polyp)};
     \node[box, fill=green!10]                               (lc) at (3.6,-0.95) {Local boundary/texture\\dominant};
-    \node[box, fill=green!25, font=\footnotesize\bfseries]  (lr) at (3.6,-1.95) {Approximation helps\\($+$0.80\% DSC)};
+    \node[box, fill=green!25, font=\footnotesize\bfseries]  (lr) at (3.6,-1.95) {Approximation helps\\($+$1.73\% DSC)};
 
     \draw[arr, red!70!black]   (gcrtop) -- node[midway, sloped, above, font=\tiny] {High GCR} (ht);
     \draw[arr, green!60!black] (gcrtop) -- node[midway, sloped, above, font=\tiny] {Low GCR}  (lt);
@@ -75,11 +82,11 @@ where $\Delta_\text{DSC}$ = DSC(ApproxDA) $-$ DSC(DA-TransUNet). Equation~\eqref
 
     \draw[dashed, gray!60, thick] (1.8, 1.05)--(1.8,-2.35);
   \end{tikzpicture}
-  \caption{GCR governs approximation effectiveness. A task's Global Context Requirement determines whether approximation is beneficial or harmful: the same ApproxDA configuration yields opposite effects on high-GCR and low-GCR benchmarks.}
+  \caption{GCR governs approximation sensitivity. Both tasks benefit from ApproxDA with the appropriate window ($+$1.14\% on Synapse at $M{=}28$; $+$1.73\% on Kvasir at $M{=}56$), but performance sensitivity to window size is 3.6$\times$ higher on the high-GCR benchmark (Synapse range 2.30\% vs.\ Kvasir 0.64\%).}
   \label{fig:gcr_curve}
 \end{figure}
 
-Attention approximation should not be regarded as a binary design choice but as a configurable inductive bias whose appropriateness depends on GCR. Different approximation strengths suit different GCR regimes (Figure~\ref{fig:approx_space}). That the same collapsed gate=learn routing helps on low-GCR Kvasir ($+$0.80\%) but hurts on high-GCR Synapse further underscores this task-dependence: the fixed equilibrium is not inherently harmful---whether it helps or hurts is determined by whether the task demands global reasoning.
+Attention approximation should not be regarded as a binary design choice but as a configurable inductive bias whose appropriateness depends on GCR. Different window sizes suit different GCR regimes (Figure~\ref{fig:approx_space}). That the same collapsed gate=learn routing helps on low-GCR Kvasir ($+$0.77\% vs.\ DA-TransUNet at $M{=}7$) while underperforming gate=pam on high-GCR Synapse ($+$1.14\% with tuned $M{=}28$) further underscores this task-dependence: the effectiveness of a fixed routing strategy is determined by the task's global context requirements.
 
 \subsection{Design Principles}
 
@@ -102,16 +109,16 @@ Finally, future efficient attention architectures should explicitly consider whe
   ]
     \node[result, fill=blue!10]   (task) at (0, 0)    {Segmentation Task};
     \node[decision]               (q)    at (0,-1.2)  {High GCR?};
-    \node[result, fill=red!10]    (yes)  at (-2.2,-2.8) {Full Dual Attention\\(DA-TransUNet)\\preserve context};
-    \node[result, fill=green!10]  (no)   at (2.2,-2.8)  {ApproxDA\\windowed PAM\\+grouped CAM};
+    \node[result, fill=orange!15] (yes)  at (-2.2,-2.8) {ApproxDA\\tune window carefully\\($M{=}28$, $+$1.14\%)};
+    \node[result, fill=green!10]  (no)   at (2.2,-2.8)  {ApproxDA\\window-robust\\($M{=}56$, $+$1.73\%)};
     \draw[arr] (task)--(q);
     \draw[arr] (q) -- node[above left,  font=\tiny, pos=0.35] {Yes} +(-2.2,-0.8) -- (yes);
     \draw[arr] (q) -- node[above right, font=\tiny, pos=0.35] {No}  +(2.2,-0.8)  -- (no);
   \end{tikzpicture}
-  \caption{Practical design guideline derived from GCR analysis. Tasks requiring cross-organ anatomical reasoning (high GCR) should retain full dual attention. Local-structure tasks (low GCR) can safely use ApproxDA, reducing per-GPU VRAM by 44\% with no accuracy penalty.}
+  \caption{Practical design guideline derived from GCR analysis. ApproxDA outperforms DA-TransUNet on both task types with appropriate window selection. High-GCR tasks require careful window tuning ($M{=}28$, $+$1.14\%); low-GCR tasks are window-robust ($M{=}56$, $+$1.73\%). Both cases reduce per-GPU training VRAM by 44\% (6.4\,GB vs.\ 11.5\,GB).}
   \label{fig:guideline}
 \end{figure}
 
 \subsection{Limitations}
 
-GCR is currently characterized qualitatively rather than quantitatively. Although window sensitivity provides a practical proxy, a rigorous GCR estimator---one that generalizes across imaging modalities, organs, and dataset sizes---remains to be developed. A natural candidate proxy, center-cropping the input to restrict visible context, is valid only when target structures occupy a consistent image location. For tasks such as polyp or skin lesion segmentation, where targets appear at arbitrary positions, small center crops exclude the target entirely, causing DSC to collapse regardless of the model's actual context dependence. This means center-crop sensitivity cannot serve as a GCR probe for randomly-positioned targets; window sensitivity within the model is the appropriate substitute. Additionally, the cross-task comparison is limited to two benchmarks (Synapse and Kvasir-SEG); the GCR hypothesis should be validated on a broader range of medical segmentation tasks before being applied prescriptively. Finally, the inductive bias benefit observed on low-GCR tasks is an empirical observation; its theoretical basis and the conditions under which it holds warrant further investigation.
+GCR is currently characterized qualitatively rather than quantitatively. Although window sensitivity provides a practical proxy, a rigorous GCR estimator---one that generalizes across imaging modalities, organs, and dataset sizes---remains to be developed. A natural candidate proxy, center-cropping the input to restrict visible context, is invalidated by a more fundamental issue: evaluation against the full-resolution label penalises the crop for missing structures that lie outside the crop window, regardless of the model's actual context reasoning. For randomly-positioned targets (polyps, lesions), small crops frequently exclude the target entirely. For anatomically-fixed but spatially-extended targets (abdominal organs), crops exclude large fractions of each organ. In both cases DSC collapses not because the model lacks global reasoning but because the crop removes the target itself. Center-crop sensitivity therefore cannot serve as a GCR proxy under standard full-label evaluation; window sensitivity within the model---where target visibility is unchanged---is the appropriate substitute. Additionally, the cross-task comparison is limited to two benchmarks (Synapse and Kvasir-SEG); the GCR hypothesis should be validated on a broader range of medical segmentation tasks before being applied prescriptively. Finally, the inductive bias benefit observed on low-GCR tasks is an empirical observation; its theoretical basis and the conditions under which it holds warrant further investigation.

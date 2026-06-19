@@ -1,0 +1,38 @@
+================================================================
+  Phase D4 — Kvasir  gate=pam  M=28  r=32
+  Started: Thu Jun 18 12:23:27 UTC 2026
+  Full combined log: phase_d_kvasir_20260618_074439.log (lines 394-741)
+================================================================
+Namespace(root_path='../data/Kvasir-SEG', dataset='Kvasir', list_dir='./lists/lists_Kvasir',
+  num_classes=2, max_iterations=30000, max_epochs=300, batch_size=24, n_gpu=1,
+  deterministic=1, base_lr=0.01, img_size=224, seed=1234, n_skip=3,
+  vit_name='R50-ViT-B_16', vit_patches_size=16,
+  window_size=28, rank=32, groups=8, gate_mode='pam', val_interval=15)
+
+Snapshot: AdaDA_pretrain_R50-ViT-B_16_skip3_epo300_bs24_224_M28_pam
+
+Val DSC progression (selected best saves):
+  ep15:  0.8302  *
+  ep30:  0.8593  *
+  ep45:  0.8749  *
+  ep60:  0.8814  *
+  ep75:  0.8850  *
+  ep90:  0.8877  *
+  ep120: 0.8896  *
+  ep135: 0.8917  *
+  (skipped saves)
+  0.8926  *
+  0.8932  *
+  0.8946  *
+  0.8956  * BEST
+  ep300: 0.8949  (final)
+
+Best val DSC: 0.8956
+Total training time: 4.45 hours (excl. 7.5 min validation overhead)
+Peak train VRAM: 10088 MB (9.9 GB)
+
+Inference: ✅ Done
+Test DSC:  89.54% (0.895355)
+Test HD95: 45.39 mm
+Test IoU:  83.66% (0.836639)
+Params: 113.29M  |  GFLOPs: 32.0  |  Infer: 22.3s / 111.5ms per image  |  VRAM: 489MB
