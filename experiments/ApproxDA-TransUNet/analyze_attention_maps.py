@@ -118,7 +118,9 @@ def build_model(args, num_classes, window_size, gate_mode, snapshot_path):
     if not os.path.exists(snapshot_path):
         print(f'[ERROR] Checkpoint not found: {snapshot_path}')
         sys.exit(1)
-    model.load_state_dict(load_checkpoint(snapshot_path))
+    ckpt = load_checkpoint(snapshot_path)
+    ckpt = {k.replace('.ada_block.', '.approx_block.'): v for k, v in ckpt.items()}
+    model.load_state_dict(ckpt)
     model.eval()
     print(f'  Loaded: {snapshot_path}')
     return model
