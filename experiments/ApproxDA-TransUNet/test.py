@@ -193,7 +193,7 @@ if __name__ == "__main__":
 
     snapshot = os.path.join(snapshot_path, 'best_model.pth')
     if not os.path.exists(snapshot): snapshot = snapshot.replace('best_model', 'epoch_'+str(args.max_epochs-1))
-    state_dict = torch.load(snapshot)
+    state_dict = torch.load(snapshot, weights_only=False)
     state_dict = {k.replace('.ada_block.', '.approx_block.'): v for k, v in state_dict.items()}
     net.load_state_dict(state_dict)
     snapshot_name = snapshot_path.split('/')[-1]

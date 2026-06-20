@@ -61,7 +61,7 @@ def _build_model(ckpt_path, window_size, rank=32):
     config.patches.grid = (args.img_size // 16, args.img_size // 16)
 
     net = ApproxDATransUNet(config, img_size=args.img_size, num_classes=9)
-    state = torch.load(ckpt_path, map_location='cpu')
+    state = torch.load(ckpt_path, map_location='cpu', weights_only=False)
     state = {k.replace('.ada_block.', '.approx_block.'): v for k, v in state.items()}
     net.load_state_dict(state)
     net.eval()

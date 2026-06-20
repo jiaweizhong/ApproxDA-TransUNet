@@ -115,7 +115,7 @@ if args.vit_name.find('R50') != -1:
     )
 
 net = ApproxDATransUNet(config_vit, img_size=args.img_size, num_classes=args.num_classes)
-state = torch.load(checkpoint, map_location='cpu')
+state = torch.load(checkpoint, map_location='cpu', weights_only=False)
 state = {k.replace('.ada_block.', '.approx_block.'): v for k, v in state.items()}
 net.load_state_dict(state)
 net.eval()
