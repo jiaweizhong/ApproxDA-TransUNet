@@ -1,27 +1,25 @@
-% !TEX root = ../ApproxDA-TransUNet_v4.tex
+% !TEX root = ../ApproxDA-TransUNet.tex
 \section{Method}
 \label{sec:method}
 
-This section introduces the overall architecture of ApproxDA, then describes the three controllable approximation operators used to reformulate the dual-attention module, and finally analyzes their computational complexity.
+This section introduces the overall architecture of ApproxDA-TransUNet, then describes the three controllable approximation operators used to reformulate the dual-attention module, and finally analyzes their computational complexity.
 
 \subsection{Architecture Overview}
 
 ApproxDA-TransUNet adopts the hybrid CNN--ViT encoder-decoder structure of DA-TransUNet~\cite{sun2024datransunet}, with an R50-ViT-B/16 backbone pretrained on ImageNet-21K. Three CNN encoder stages produce multi-scale features at strides 4, 8, and 16; a 12-layer ViT processes $14{\times}14$ patch tokens. ApproxDABlocks replace all dual-attention modules at three skip connections---512 channels at $28{\times}28$, 256 at $56{\times}56$, and 64 at $112{\times}112$---and at the bottleneck.
 
-ApproxDA-TransUNet is designed around an explicit hypothesis: that three orthogonal approximation operators---windowed PAM, low-rank projection, and grouped CAM---can replace the quadratic DA module to yield both a practical efficient architecture and a systematic framework for studying when approximation is appropriate. Each operator targets a distinct approximation axis (spatial scope, representation fidelity, channel scope), so any two can be held fixed while the third varies. This makes ApproxDA not merely a faster model, but a model whose design enables controlled ablation of approximation effects across tasks with different contextual requirements.
-
-\begin{figure*}[t]
+\begin{figure*}[tbp]
   \centering
   \includegraphics[width=\textwidth]{figures/approxda_overview}
   \caption{ApproxDA-TransUNet architecture. ApproxDABlocks (Low-Rank Windowed PAM + Grouped CAM + gate routing) replace dual-attention modules at all skip connections and the bottleneck. \texttt{gate\_mode} controls the routing during ablation.}
   \label{fig:framework}
 \end{figure*}
 
-Figure~\ref{fig:framework} illustrates the overall ApproxDA architecture. Figure~\ref{fig:approxda_block} details the internal structure of each ApproxDABlock.
+Figure~\ref{fig:framework} illustrates the overall ApproxDA-TransUNet architecture. Figure~\ref{fig:approxda_block} details the internal structure of each ApproxDABlock.
 
 \subsection{Attention Approximation Formulation}
 
-The original DA module performs dense spatial and channel attention over the full feature map, with quadratic complexity in both spatial resolution and channel dimension. ApproxDA reduces this cost along three independent axes, each targeting a distinct aspect of the approximation:
+The original DA module performs dense spatial and channel attention over the full feature map, with quadratic complexity in both spatial resolution and channel dimension. ApproxDA-TransUNet reduces this cost along three independent axes, each targeting a distinct aspect of the approximation:
 
 \textbf{Spatial scope} (window size $M$) controls \emph{how far} PAM reaches. Full global attention ($M{=}H$) captures all long-range spatial relationships; restricting to $M{\times}M$ local windows trades long-range context for lower complexity. This axis most directly governs whether high-CS tasks retain the anatomical context they require.
 
@@ -39,19 +37,19 @@ These axes correspond to three distinct types of approximation: \emph{spatial ap
   ]
     \node[draw, circle, fill=gray!10, minimum size=1.1cm, font=\small\bfseries] (c) at (0,0) {ApproxDA};
     \draw[axis, blue!70!black]  (c) -- ++(0, 2.0)
-      node[lab, above] {Spatial Scope};
+      node[lab, above] {Spatial Scope\\{\scriptsize(window $M$)}};
     \draw[axis, red!60!black]   (c) -- ++(-2.0,-1.1)
-      node[lab, below left] {Representation\\Fidelity};
+      node[lab, below left] {Representation\\Fidelity\\{\scriptsize(rank $r$)}};
     \draw[axis, green!60!black] (c) -- ++(2.0,-1.1)
-      node[lab, below right] {Semantic\\Interaction};
+      node[lab, below right] {Semantic\\Interaction\\{\scriptsize(groups $G$)}};
   \end{tikzpicture}
-  \caption{ApproxDA's three-dimensional approximation space. Each axis is independently controllable. Spatial scope ($M$) most directly governs long-range context capture and thereby approximation effectiveness on high-CS tasks.}
+  \caption{ApproxDA-TransUNet's three-dimensional approximation space. Each axis is independently controllable. Spatial scope ($M$) most directly governs long-range context capture and thereby sensitivity to window selection on high-CS tasks.}
   \label{fig:approx_space}
 \end{figure}
 
 \subsection{Spatial Approximation}
 
-Instead of computing global position attention, ApproxDA partitions the feature map into non-overlapping windows of size $M{\times}M$. Attention is computed independently inside each local window, reducing complexity from $\mathcal{O}(N^2C)$ to $\mathcal{O}(NM^2C)$.
+Instead of computing global position attention, ApproxDA-TransUNet partitions the feature map into non-overlapping windows of size $M{\times}M$. Attention is computed independently inside each local window, reducing complexity from $\mathcal{O}(N^2C)$ to $\mathcal{O}(NM^2C)$.
 
 \textbf{Window partitioning.} Following~\cite{liu2021swin}, we partition the feature map into $n_W$ non-overlapping $M{\times}M$ windows. Window clamping $M \leftarrow \min(M, H, W)$ allows $M{=}112$ to yield global attention at all scales, enabling a clean ablation that isolates windowing from low-rank as the performance bottleneck.
 
@@ -66,7 +64,7 @@ These two hyperparameters---window size $M$ and projection rank $r$---jointly co
 
 \subsection{Channel Approximation}
 
-The original Channel Attention Module computes a $C{\times}C$ channel attention matrix at $\mathcal{O}(C^2N)$ cost. ApproxDA approximates this by partitioning $C$ channels into $G$ groups of width $C_g = C/G$, computing independent per-group attention:
+The original Channel Attention Module computes a $C{\times}C$ channel attention matrix at $\mathcal{O}(C^2N)$ cost. ApproxDA-TransUNet approximates this by partitioning $C$ channels into $G$ groups of width $C_g = C/G$, computing independent per-group attention:
 \begin{equation}
   X^{(g)}_{ji} = \frac{\exp(\mathbf{A}^{(g)}_i \cdot \mathbf{A}^{(g)}_j)}{\sum_{k=1}^{C_g}\exp(\mathbf{A}^{(g)}_k \cdot \mathbf{A}^{(g)}_j)},
   \label{eq:groupedcam}
@@ -94,9 +92,9 @@ where $\hat{\mathbf{P}}$ and $\hat{\mathbf{C}}$ are the normalized PAM and CAM o
 \end{tabular}
 \end{center}
 
-This single-parameter design enables systematic ablation of routing strategy without any other architectural change. ApproxDA does not treat this routing module as a primary architectural contribution; instead, it serves as an analyzable component whose optimization behavior is investigated in Section~\ref{sec:analysis}. As demonstrated later, the routing coefficient consistently converges to an almost constant value, revealing an unexpected optimization phenomenon.
+This single-parameter design enables systematic ablation of routing strategy without any other architectural change. ApproxDA-TransUNet does not treat this routing module as a primary architectural contribution; instead, it serves as an analyzable component whose optimization behavior is investigated in Section~\ref{sec:understanding}. As observed in Section~\ref{sec:understanding}, the routing coefficient consistently converges to an almost constant value, revealing an unexpected optimization phenomenon.
 
-\begin{figure*}[t]
+\begin{figure*}[tbp]
   \centering
   \includegraphics[width=\textwidth]{figures/approxda_block}
   \caption{ApproxDABlock internals. Input $\mathbf{x}$ splits into two branches: Low-Rank Windowed PAM (blue, upper) via window partition, low-rank projection, and attention; Grouped CAM (green, lower) via group split and channel attention. A learned gate $g$ fuses the outputs; $\mathbf{x}$ is added as a residual.}
@@ -111,4 +109,4 @@ The training objective combines Dice loss and cross-entropy loss with equal weig
   \label{eq:loss}
 \end{equation}
 
-These approximations reduce layer-level attention complexity: windowed PAM from $\mathcal{O}(N^2C)$ to $\mathcal{O}(NrC)$ ($r \ll N$); grouped CAM from $\mathcal{O}(C^2N)$ to $\mathcal{O}(C^2N/G)$. Since backbone operations dominate end-to-end computation, the primary value of ApproxDA is not whole-network FLOPs reduction but a controllable formulation for systematically isolating each approximation operator's effect on segmentation performance (Section~\ref{sec:experiments}).
+These approximations reduce layer-level attention complexity: windowed PAM from $\mathcal{O}(N^2C)$ to $\mathcal{O}(NrC)$ ($r \ll N$); grouped CAM from $\mathcal{O}(C^2N)$ to $\mathcal{O}(C^2N/G)$. Since backbone operations dominate end-to-end computation, the primary value of ApproxDA-TransUNet is not whole-network FLOPs reduction but a controllable formulation for systematically isolating each approximation operator's effect on segmentation performance (Section~\ref{sec:experiments}).

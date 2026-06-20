@@ -1,4 +1,4 @@
-% !TEX root = ../ApproxDA-TransUNet_v4.tex
+% !TEX root = ../ApproxDA-TransUNet.tex
 \section{Related Work}
 \label{sec:related_work}
 
@@ -16,4 +16,4 @@ DANet~\cite{fu2019dual} introduced Position Attention Modules (PAM) and Channel 
 
 \subsection{Efficient Attention and Adaptive Routing}
 
-Windowed local attention~\cite{liu2021swin}, low-rank projection~\cite{wang2020linformer}, and grouped channel interaction~\cite{rahman2024emcad} have become standard strategies for reducing the cost of global attention, with learnable gating widely adopted to fuse multi-branch outputs~\cite{azad2023daeformer,rahman2024emcad}. Prior work focuses on \emph{how} to approximate efficiently, leaving open \emph{when} approximation is appropriate; this work addresses both by studying task-dependent approximation behavior and exposing the gradient symmetry dynamics that cause adaptive routing to degenerate into fixed blending.
+Windowed local attention~\cite{liu2021swin}, low-rank projection~\cite{wang2020linformer}, and grouped channel interaction~\cite{rahman2024emcad} have become standard strategies for reducing the cost of global attention, with learnable gating widely adopted to fuse multi-branch outputs~\cite{azad2023daeformer,rahman2024emcad}. Existing efficient attention methods primarily optimize computational efficiency while implicitly assuming approximation is universally applicable. Whether approximation itself changes representation learning, and why it behaves differently across tasks with different contextual requirements, remains largely unexplored. This work addresses both questions by studying the context-sensitive behavior of approximation across heterogeneous segmentation tasks and exposing the gradient symmetry dynamics that cause adaptive routing to degenerate into fixed blending.

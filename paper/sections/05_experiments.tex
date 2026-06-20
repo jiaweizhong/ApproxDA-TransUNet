@@ -1,12 +1,12 @@
-% !TEX root = ../ApproxDA-TransUNet_v4.tex
-\section{Experiments}
+% !TEX root = ../ApproxDA-TransUNet.tex
+\section{Results}
 \label{sec:experiments}
 
-We evaluate ApproxDA-TransUNet on three medical image segmentation benchmarks spanning different context sensitivity. The experiments systematically examine computational efficiency, task-dependent approximation behavior across CS regimes, the dynamics of symmetric gate routing, and the relationship between approximation strength and task context.
+We evaluate ApproxDA-TransUNet on three medical image segmentation benchmarks. Section~\ref{sec:understanding} provides mechanistic analysis of the observed task-dependent patterns.
 
 \subsection{Experimental Setup}
 
-\textbf{Datasets.} We evaluate ApproxDA on three representative medical image segmentation benchmarks covering different contextual characteristics.
+\textbf{Datasets.} We evaluate ApproxDA-TransUNet on three representative medical image segmentation benchmarks covering different contextual characteristics.
 
 \textit{Synapse Multi-Organ CT}~\cite{landman2015miccai}: 30 abdominal CT scans with an 18/12 train/test split covering 8 organ classes (9 classes with background). Evaluation metrics: mean DSC and HD95.
 
@@ -14,9 +14,9 @@ We evaluate ApproxDA-TransUNet on three medical image segmentation benchmarks sp
 
 \textit{ISIC 2018}~\cite{codella2019isic}: 2594 dermoscopy skin lesion images (binary segmentation) with a 2075/519 train/test split (80/20). Evaluation metrics: DSC and mIoU.
 
-Table~\ref{tab:datasets} summarizes the three datasets alongside their contextual characteristics and CS classification, which motivates the cross-task analysis in Section~\ref{sec:analysis}.
+Table~\ref{tab:datasets} summarizes the three datasets alongside their contextual characteristics and CS classification, which motivates the cross-task analysis in Section~\ref{sec:understanding}.
 
-\begin{table}[t]
+\begin{table}[ht]
   \caption{Dataset Properties and Context Sensitivity (CS)}
   \label{tab:datasets}
   \begin{center}
@@ -25,53 +25,30 @@ Table~\ref{tab:datasets} summarizes the three datasets alongside their contextua
     \toprule
     Dataset & Classes & Object Type & Long-range Context & CS \\
     \midrule
-    Synapse    & 8 & Multi-organ CT  & High (inter-organ)   & High \\
-    Kvasir-SEG & 1 & Polyp           & Low (local boundary) & Low  \\
-    ISIC 2018  & 1 & Skin lesion     & Low (texture/edge)   & Low  \\
+    Synapse    & 8 & Multi-organ CT  & High (inter-organ)   & High$^\dagger$ \\
+    Kvasir-SEG & 1 & Polyp           & Low (local boundary) & Low$^\dagger$  \\
+    ISIC 2018  & 1 & Skin lesion     & Low (texture/edge)   & Low$^\dagger$  \\
     \bottomrule
   \end{tabular}
   \end{center}
   \vspace{-0.3em}
-  \footnotesize{High-CS tasks require cross-organ anatomical reasoning; low-CS tasks are dominated by local appearance cues. CS governs approximation effectiveness (Section~\ref{sec:analysis}).}
+  \footnotesize{$^\dagger$CS level measured empirically from window sensitivity ablation. High-CS tasks require cross-organ anatomical reasoning; low-CS tasks are dominated by local appearance cues. CS governs sensitivity to approximation scale (Section~\ref{sec:understanding}).}
 \end{table}
 
-\textbf{Implementation Details.} All experiments use an R50-ViT-B/16 backbone pretrained on ImageNet-21K. Training uses SGD (momentum 0.9, weight decay $10^{-4}$), initial learning rate 0.01 with polynomial decay, batch size 24, image size $224{\times}224$, 300 epochs, and seed 1234. The DA-TransUNet baseline runs on T4${\times}$1. ApproxDA-TransUNet runs on T4${\times}$2 via \texttt{torchrun} DDP with per-GPU batch 12 and NCCL all-reduce, under identical total batch size and base learning rate. Default ApproxDA configuration: $M{=}7$, $r{=}32$, $G{=}8$. Our DA-TransUNet re-run achieves validation DSC 0.795, consistent with the paper-reported 0.798, confirming faithful replication.
+\textbf{Implementation Details.} All experiments use an R50-ViT-B/16 backbone pretrained on ImageNet-21K. Training uses SGD with initial learning rate 0.01 and polynomial decay, batch size 24, image size $224{\times}224$, 300 epochs, and seed 1234. Default ApproxDA-TransUNet configuration: $M{=}7$, $r{=}32$, $G{=}8$.
 
-\subsection{Computational Efficiency of ApproxDA}
+\subsection{Comparison with State-of-the-Art}
 
-Table~\ref{tab:efficiency} compares the computational characteristics of ApproxDA and DA-TransUNet on Synapse. Although per-GPU VRAM is reduced substantially---from 11.5\,GB to 6.4\,GB---total GFLOPs are slightly higher (32.1 vs.\ 30.2) because the shared ViT backbone dominates total computation and Conv1d/Linear projection overhead partially offsets decoder-level savings. The reduced memory footprint enables multi-GPU distributed training via DDP, which DA-TransUNet does not support.
+Tables~\ref{tab:synapse}--\ref{tab:isic} compare ApproxDA-TransUNet against DA-TransUNet and established baselines on all three benchmarks.
 
-\begin{table*}[t]
-  \caption{Efficiency Comparison on Synapse (T4). GFLOPs measured by \texttt{fvcore} (single $224{\times}224$ slice, includes attention \texttt{bmm}).}
-  \label{tab:efficiency}
-  \begin{center}
-  \setlength{\tabcolsep}{5pt}
-  \begin{tabular}{lcccccc}
-    \toprule
-    Method & Params (M) & GFLOPs & Train VRAM & Train Time & Infer (s/vol) & Multi-GPU \\
-    \midrule
-    DA-TransUNet~\cite{sun2024datransunet} & 107.95 & 30.2 & 11.5\,GB & 11.4h $\times$1 & 120.0 & No$^\dagger$ \\
-    \midrule
-    ApproxDA (gate=pam, $M$=7, $r$=32)   & 112.98 & 32.1 & 6.4\,GB/GPU & 8.3h $\times$2 & 121.3 & Yes (DDP) \\
-    ApproxDA (gate=learn, $M$=7, $r$=32) & 114.90 & 32.1 & 10.6\,GB & 11.5h $\times$1 & 114.2 & Yes (DDP) \\
-    \bottomrule
-  \end{tabular}
-  \end{center}
-  \vspace{-0.3em}
-  \footnotesize{$^\dagger$DA-TransUNet does not support multi-GPU training. ApproxDA uses DDP (\texttt{torchrun}, NCCL); per-GPU batch 12 (total 24), LR unchanged.}
-\end{table*}
+\textbf{Synapse.} Table~\ref{tab:synapse} compares DSC and HD95 against 11 published methods. CNN-based methods achieve 76--78\% DSC. Transformer-based methods progressively improve global context modeling, with Swin-Unet (79.13\%) and DA-TransUNet (79.80\%) previously topping the leaderboard. ApproxDA-TransUNet (gate=pam, $M{=}28$, $r{=}32$) achieves \textbf{80.94\%} DSC and 27.49\,mm HD95---surpassing all baselines including DA-TransUNet by $+$1.14\%. The optimal window $M{=}28$ provides the best balance between local detail and global context; Section~\ref{sec:understanding} analyzes this task-dependent behavior in detail.
 
-\subsection{Task-dependent Behavior of Attention Approximation}
-
-We examine whether efficient attention approximation behaves consistently across medical segmentation tasks with different contextual requirements. Tables~\ref{tab:synapse}--\ref{tab:isic} compare ApproxDA-TransUNet against DA-TransUNet and established baselines on all three benchmarks.
-
-\textbf{Synapse.} Table~\ref{tab:synapse} compares DSC and HD95 against 11 published methods. CNN-based methods achieve 76--78\% DSC. Transformer-based methods progressively improve global context modeling, with Swin-Unet (79.13\%) and DA-TransUNet (79.80\%) previously topping the leaderboard. ApproxDA-TransUNet (gate=pam, $M{=}28$, $r{=}32$) achieves \textbf{80.94\%} DSC and 27.49\,mm HD95---surpassing all baselines including DA-TransUNet by $+$1.14\%. Window sensitivity ablation (Section~\ref{sec:rq2}) reveals a non-monotonic DSC-vs-$M$ curve peaking at $M{=}28$: both too-local ($M{=}7$: 78.64\%) and fully-global ($M{=}112$: 79.44\%) attention underperform the intermediate optimum.
-
-\begin{table}[t]
+\begin{table}[ht]
   \caption{Segmentation Results on Synapse Multi-Organ CT}
   \label{tab:synapse}
   \begin{center}
-  \setlength{\tabcolsep}{4pt}
+  \renewcommand{\arraystretch}{1.15}
+  \setlength{\tabcolsep}{6pt}
   \begin{tabular}{lcc}
     \toprule
     Method & DSC (\%) $\uparrow$ & HD95 (mm) $\downarrow$ \\
@@ -100,9 +77,9 @@ We examine whether efficient attention approximation behaves consistently across
   \footnotesize{Baselines from~\cite{sun2024datransunet} Table~1 (SGD, 500ep, 224$\times$224). ApproxDA: gate=pam, $M$=28, $r$=32, $G$=8, SGD 300ep (window sensitivity ablation identifies $M{=}28$ as optimal). We also re-ran DA-TransUNet under our protocol (SGD, 300ep) and obtained 72.03\% DSC; the gap from paper-reported (79.80\%) is primarily due to optimizer and epoch differences (Adam/500ep vs.\ SGD/300ep), so we report paper-reported values for all Synapse baselines.}
 \end{table}
 
-\textbf{Kvasir-SEG.} Table~\ref{tab:kvasir} compares polyp segmentation results against all six methods reported in~\cite{sun2024datransunet}. We re-ran DA-TransUNet under the same SGD/300ep protocol as ApproxDA to enable a direct comparison, obtaining 88.44\% DSC, 81.70\% mIoU, and 53.04\,mm HD95. ApproxDA-TransUNet (gate=pam, $M$=56) achieves 90.17\% DSC, 84.27\% mIoU, and 44.35\,mm HD95---outperforming the reproduced DA-TransUNet baseline (+1.73\% DSC, +2.57\% mIoU, $-$8.69\,mm HD95).
+\textbf{Kvasir-SEG.} Table~\ref{tab:kvasir} compares polyp segmentation results against all six methods reported in~\cite{sun2024datransunet}. We re-ran DA-TransUNet under the same SGD/300ep protocol as ApproxDA-TransUNet to enable a direct comparison, obtaining 88.44\% DSC, 81.70\% mIoU, and 53.04\,mm HD95. ApproxDA-TransUNet (gate=pam, $M$=56) achieves 90.17\% DSC, 84.27\% mIoU, and 44.35\,mm HD95---outperforming the reproduced DA-TransUNet baseline (+1.73\% DSC, +2.57\% mIoU, $-$8.69\,mm HD95).
 
-\begin{table}[t]
+\begin{table}[ht]
   \caption{Segmentation Results on Kvasir-SEG Polyp}
   \label{tab:kvasir}
   \begin{center}
@@ -128,11 +105,12 @@ We examine whether efficient attention approximation behaves consistently across
 
 \textbf{ISIC 2018.} Table~\ref{tab:isic} reports skin lesion segmentation results against the same six baselines from~\cite{sun2024datransunet}. We re-ran DA-TransUNet under our protocol (SGD, 300ep, 80/20 split), obtaining 88.43\% DSC and 80.68\% mIoU. ApproxDA-TransUNet (gate=learn, $M{=}7$, $r{=}32$) achieves \textbf{89.58\%} DSC and \textbf{82.66\%} mIoU---outperforming the reproduced DA-TransUNet baseline by $+$1.15\% DSC and $+$1.98\% mIoU, and surpassing all published baselines including the paper-reported DA-TransUNet (88.88\%). This extends the low-CS pattern observed on Kvasir-SEG to a third benchmark.
 
-\begin{table}[t]
+\begin{table}[ht]
   \caption{Segmentation Results on ISIC 2018 Skin Lesion}
   \label{tab:isic}
   \begin{center}
-  \setlength{\tabcolsep}{4pt}
+  \renewcommand{\arraystretch}{1.15}
+  \setlength{\tabcolsep}{6pt}
   \begin{tabular}{lcc}
     \toprule
     Method & DSC (\%) $\uparrow$ & mIoU (\%) $\uparrow$ \\
@@ -153,88 +131,12 @@ We examine whether efficient attention approximation behaves consistently across
   \footnotesize{Baselines from~\cite{sun2024datransunet} Table~2 (Adam, 50ep, 75/25 split). $^\dag$DA-TransUNet re-run under the same protocol as ApproxDA (SGD, 300ep, 80/20 split); paper-reported: 88.88\% DSC, 82.78\% mIoU. ApproxDA: gate=learn, $M{=}7$, $r{=}32$, $G{=}8$.}
 \end{table}
 
-With appropriate window selection, ApproxDA outperforms DA-TransUNet on all three datasets: $+$1.14\% DSC on Synapse ($M{=}28$), $+$1.73\% DSC on Kvasir ($M{=}56$), and $+$1.15\% DSC on ISIC 2018 ($M{=}7$, gate=learn). The sensitivity to window choice differs markedly across the two datasets with full ablations: Synapse DSC spans 2.30\% across $M$ values while Kvasir spans only 0.64\%---a 3.6$\times$ ratio reflecting the different context sensitivity of the two tasks.
+With appropriate window selection, ApproxDA-TransUNet outperforms DA-TransUNet on all three datasets: $+$1.14\% DSC on Synapse ($M{=}28$), $+$1.73\% DSC on Kvasir ($M{=}56$), and $+$1.15\% DSC on ISIC 2018 ($M{=}7$, gate=learn). The sensitivity to window choice differs markedly across the two datasets with full ablations: Synapse DSC spans 2.30\% across $M$ values while Kvasir spans only 0.64\%---a 3.6$\times$ ratio reflecting the different context sensitivity of the two tasks.
 
-\subsection{Window Sensitivity and the Optimal Approximation Scale}
-\label{sec:rq2}
 
-\textbf{Which approximation axis drives performance, and what is the optimal scale?} Table~\ref{tab:window_ablation} isolates spatial windowing by comparing $M{\in}\{7,28,56,112\}$ under gate=pam, $r{=}32$ on Synapse. Crucially, \emph{approximation is present in all rows}---windowed PAM and low-rank projection operate at every $M$, including $M{=}28$---demonstrating that optimal performance requires the right approximation scale, not the absence of approximation.
+\textbf{Cross-task summary.} Table~\ref{tab:cross_task} consolidates results. With task-appropriate window selection, ApproxDA-TransUNet improves over DA-TransUNet on all three benchmarks: $+$1.14\% on empirically high-CS Synapse, $+$1.73\% on empirically low-CS Kvasir, and $+$1.15\% on empirically low-CS ISIC. The sensitivity ratio (2.30\% vs.\ 0.64\% on Synapse vs.\ Kvasir) is the primary empirical operationalization of CS. Figure~\ref{fig:qualitative} shows qualitative examples.
 
-\begin{table}[t]
-  \caption{Spatial Approximation Ablation on Synapse ($G$=8)}
-  \label{tab:window_ablation}
-  \begin{center}
-  \setlength{\tabcolsep}{2pt}
-  \small
-  \begin{tabular}{lccccc}
-    \toprule
-    Config & $M$ & $r$ & Gate & DSC (\%) $\uparrow$ & HD95 (mm) $\downarrow$ \\
-    \midrule
-    Windowed + low-rank & 7   & 32 & pam          & 78.64          & 31.09 \\
-    Windowed + low-rank & 14  & 64 & learn$^\dag$ & 78.04          & 29.09 \\
-    Windowed + low-rank & 28  & 32 & pam          & \textbf{80.94} & \underline{27.49} \\
-    Windowed + low-rank & 56  & 32 & pam          & 78.90          & 35.23 \\
-    Global + low-rank   & 112 & 32 & pam          & \underline{79.44} & \textbf{27.26} \\
-    \bottomrule
-  \end{tabular}
-  \end{center}
-  \vspace{-0.3em}
-  \footnotesize{$^\dag$Gate collapsed to $g{\approx}0.5$. $M{=}112$ via window clamping yields full-map attention at all scales. Non-monotonic peak at $M{=}28$: both under-context ($M{=}7$) and over-context ($M{=}112$) underperform. DSC range = 2.30\%---3.6$\times$ Kvasir's 0.64\%, operationalizing CS as a sensitivity predictor.}
-\end{table}
-
-The Synapse DSC-vs-$M$ curve is \emph{non-monotonic}: peak at $M{=}28$ (80.94\%, $+$1.14\% vs.\ DA-TransUNet), with all other scales underperforming---too-local ($M{=}7$: 78.64\%), intermediate ($M{=}56$: 78.90\%), and fully-global ($M{=}112$: 79.44\%). This mirrors the classical bias-variance tradeoff: under-context windows have high bias (missing necessary dependencies); over-context windows introduce spurious variance (irrelevant distant tokens); the intermediate $M{=}28$ achieves the optimal balance. The DSC range of 2.30\% across $M$ values confirms high window sensitivity on this high-CS task.
-
-The Kvasir-SEG curve ($M{\in}\{7,28,56,112\}$) spans only 0.64\% DSC---a broad performance plateau with a shallow peak at $M{=}56$. Even on this low-CS task, moderate global context ($M{=}56$) edges out fully-local ($M{=}7$) attention, but the task is largely window-robust across the measured range.
-
-Figure~\ref{fig:dsc_vs_m} visualizes both curves side by side. The 3.6$\times$ sensitivity ratio directly reflects the tasks' different context sensitivity.
-
-\begin{figure}[t]
-\centering
-\begin{tikzpicture}
-\begin{groupplot}[
-  group style={group size=2 by 1, horizontal sep=0.5cm},
-  width=4.1cm, height=4.4cm,
-  xlabel={\footnotesize Window $M$},
-  tick label style={font=\footnotesize},
-  label style={font=\footnotesize},
-  title style={font=\small\bfseries},
-  ymajorgrids=true,
-  grid style={dashed,gray!30},
-  every axis plot/.append style={very thick, mark size=2.5pt},
-]
-\nextgroupplot[
-  title={Synapse (High CS)},
-  ylabel={\footnotesize DSC (\%)},
-  ymin=78.0, ymax=81.6,
-  ytick={78.5,79.0,79.5,80.0,80.5,81.0},
-  xtick={7,28,56,112},
-  xticklabels={7,28,56,112},
-]
-\addplot[color=red!70!black, mark=*] coordinates {(7,78.64) (28,80.94) (56,78.90) (112,79.44)};
-\addplot[dashed, color=blue!50, very thin, forget plot] coordinates {(7,79.80) (112,79.80)};
-\node[font=\scriptsize, anchor=south west] at (axis cs:28,80.94) {\textbf{80.94}};
-\node[font=\scriptsize, color=blue!60, anchor=north east] at (axis cs:112,79.80) {DA};
-
-\nextgroupplot[
-  title={Kvasir-SEG (Low CS)},
-  ylabel={\footnotesize DSC (\%)},
-  ymin=89.1, ymax=90.5,
-  ytick={89.2,89.6,90.0,90.4},
-  xtick={7,28,56,112},
-]
-\addplot[color=green!50!black, mark=square*] coordinates {(7,89.53) (28,89.54) (56,90.17) (112,89.56)};
-\addplot[dashed, color=blue!50, very thin, forget plot] coordinates {(7,88.44) (112,88.44)};
-\node[font=\scriptsize, anchor=south] at (axis cs:56,90.17) {\textbf{90.17}};
-\node[font=\scriptsize, color=blue!60, anchor=north] at (axis cs:7,88.44) {DA};
-\end{groupplot}
-\end{tikzpicture}
-\caption{DSC vs.\ window size $M$ (gate=pam, $r{=}32$). \textbf{Left (Synapse, high CS):} non-monotonic curve, peak at $M{=}28$ ($+$1.14\% vs.\ DA-TransUNet, dashed blue), range 2.30\%. \textbf{Right (Kvasir-SEG, low CS):} near-flat plateau, range 0.64\%. The 3.6$\times$ sensitivity ratio operationalizes CS empirically.}
-\label{fig:dsc_vs_m}
-\end{figure}
-
-\textbf{Cross-task summary.} Table~\ref{tab:cross_task} consolidates results. With task-appropriate window selection, ApproxDA improves over DA-TransUNet on all three benchmarks: $+$1.14\% on high-CS Synapse, $+$1.73\% on low-CS Kvasir, and $+$1.15\% on low-CS ISIC. The sensitivity ratio (2.30\% vs.\ 0.64\% on Synapse vs.\ Kvasir) is the primary empirical operationalization of CS. Figure~\ref{fig:qualitative} shows qualitative examples.
-
-\begin{table}[t]
+\begin{table}[ht]
   \caption{Cross-Task Approximation Effectiveness by CS Level}
   \label{tab:cross_task}
   \begin{center}
@@ -242,7 +144,7 @@ Figure~\ref{fig:dsc_vs_m} visualizes both curves side by side. The 3.6$\times$ s
   \small
   \begin{tabular}{lcccc}
     \toprule
-    Dataset & CS & DA-TransUNet$^\dagger$ & Best ApproxDA & $\Delta$ DSC \\
+    Dataset & CS & DA-TransUNet$^\dagger$ & ApproxDA & $\Delta$ DSC \\
     \midrule
     Synapse    & High & 79.80\% & 80.94\%$^a$ & $+$1.14\% \\
     Kvasir-SEG & Low  & 88.44\%$^c$ & 90.17\%$^b$ & $+$1.73\% \\
@@ -254,36 +156,34 @@ Figure~\ref{fig:dsc_vs_m} visualizes both curves side by side. The 3.6$\times$ s
   \footnotesize{$^\dagger$Paper-reported~\cite{sun2024datransunet} except $^{c,d}$(our re-runs, SGD 300ep 80/20). $^a$gate=pam, $M{=}28$, $r{=}32$. $^b$gate=pam, $M{=}56$, $r{=}32$. $^d$Paper-reported: 88.88\%. $^e$gate=learn, $M{=}7$, $r{=}32$.}
 \end{table}
 
-\begin{figure*}[t]
+\begin{figure}[ht]
   \centering
-  \includegraphics[width=\textwidth]{figures/fig_qualitative_cross_task.png}
-  \caption{Qualitative segmentation comparison across all three benchmarks. \textbf{Top (Synapse, $M{=}28$, high CS):} multi-organ CT segmentation; ApproxDA achieves 80.94\% volume DSC ($+$1.14\% vs.\ DA-TransUNet). \textbf{Middle (Kvasir-SEG, $M{=}56$, low CS):} polyp segmentation; ApproxDA achieves 90.17\% DSC ($+$1.73\%). \textbf{Bottom (ISIC 2018, $M{=}7$, low CS):} skin lesion segmentation; ApproxDA achieves 89.58\% DSC ($+$1.15\%). Per-case DSC on Kvasir and ISIC samples shown in brackets; Synapse volume DSC is reported as the mean over all slices and organ classes (Table~\ref{tab:synapse}).}
+  \includegraphics[width=\columnwidth]{figures/fig_qualitative_cross_task.png}
+  \caption{Qualitative segmentation comparison. \textbf{Top (Synapse, $M{=}28$):} multi-organ CT; ApproxDA 80.94\% DSC ($+$1.14\%). \textbf{Middle (Kvasir-SEG, $M{=}56$):} polyp; 90.17\% DSC ($+$1.73\%). \textbf{Bottom (ISIC 2018, $M{=}7$):} skin lesion; 89.58\% DSC ($+$1.15\%).}
   \label{fig:qualitative}
-\end{figure*}
+\end{figure}
 
-Together, the window sensitivity experiments establish that approximation strength---not approximation itself---governs performance. This motivates the mechanistic analysis in Section~\ref{sec:analysis}.
 
-\subsection{Analysis of Symmetric Gate Collapse}
+\subsection{Efficiency Analysis}
 
-Although the learnable gate (\texttt{gate=learn}) was designed to dynamically balance PAM and CAM branches, Table~\ref{tab:gate_ablation} reveals that it consistently ranks last on Synapse. The gate coefficient converges to $g{\approx}0.5$ and remains nearly constant throughout training, producing a fixed 50/50 blend that performs below both PAM-only (78.64\%) and CAM-only (78.26\%) configurations. This collapse is observed across both $M{=}7$ and $M{=}14$, confirming that it is a property of symmetric two-branch optimization rather than a consequence of limited receptive field. The gradient-level derivation is provided in Section~\ref{sec:collapse}.
+Table~\ref{tab:efficiency} compares the computational characteristics of ApproxDA-TransUNet and DA-TransUNet on Synapse. Although per-GPU VRAM is reduced substantially---from 11.5\,GB to 6.4\,GB---total GFLOPs are slightly higher (32.1 vs.\ 30.2) because the shared ViT backbone dominates total computation and projection overhead partially offsets decoder-level savings. The reduced memory footprint enables multi-GPU distributed training via DDP, which DA-TransUNet does not support.
 
-\begin{table}[t]
-  \caption{Gate Mode Ablation on Synapse ($M$=7, $r$=32 unless noted)}
-  \label{tab:gate_ablation}
+\begin{table*}[ht]
+  \caption{Efficiency Comparison on Synapse (T4). GFLOPs measured by \texttt{fvcore} (single $224{\times}224$ slice, includes attention \texttt{bmm}).}
+  \label{tab:efficiency}
   \begin{center}
-  \setlength{\tabcolsep}{4pt}
-  \small
-  \begin{tabular}{llcc}
+  \setlength{\tabcolsep}{5pt}
+  \begin{tabular}{lcccccc}
     \toprule
-    Gate Mode & $g$ & DSC (\%) $\uparrow$ & HD95 (mm) $\downarrow$ \\
+    Method & Params (M) & GFLOPs & Train VRAM & Train Time & Infer (s/vol) & Multi-GPU \\
     \midrule
-    gate=pam                    & 1.0              & \textbf{78.64} & 31.09 \\
-    gate=cam                    & 0.0              & \underline{78.26}  & \underline{30.59} \\
-    gate=learn ($M$=14, $r$=64) & ${\approx}0.5^*$ & 78.04          & \textbf{29.09} \\
-    gate=learn                  & ${\approx}0.5^*$ & 77.78          & 34.29 \\
+    DA-TransUNet~\cite{sun2024datransunet} & 107.95 & 30.2 & 11.5\,GB & 11.4h $\times$1 & 120.0 & No$^\dagger$ \\
+    \midrule
+    ApproxDA-TransUNet (gate=pam, $M$=7)  & 112.98 & 32.1 & 6.4\,GB/GPU & 8.3h $\times$2 & 121.3 & Yes (DDP) \\
+    ApproxDA-TransUNet (gate=learn, $M$=7) & 114.90 & 32.1 & 10.6\,GB & 11.5h $\times$1 & 114.2 & Yes (DDP) \\
     \bottomrule
   \end{tabular}
   \end{center}
   \vspace{-0.3em}
-  \footnotesize{All rows: ApproxDA-TransUNet. $^*$Gate collapsed to $g{\approx}0.5$ throughout training; see Section~\ref{sec:collapse}. \textbf{Bold}: best; \underline{underline}: second best per column.}
-\end{table}
+  \footnotesize{$^\dagger$DA-TransUNet does not support multi-GPU training. ApproxDA-TransUNet uses DDP; per-GPU batch 12 (total 24), LR unchanged.}
+\end{table*}
