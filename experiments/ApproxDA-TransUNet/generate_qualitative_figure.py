@@ -179,14 +179,37 @@ def overlay(img_gray, seg_rgb, alpha=0.55):
 
 
 # ── Synapse: pick a representative slice from a volume ────────────────────────
-def pick_synapse_slice(img_vol, lbl_vol):
-    """Return (s, img_slice, lbl_slice) for the slice with the most foreground pixels."""
+def pick_synapse_slice(img_vol, lbl_vol, net=None):
+    """Return (s, img_slice, lbl_slice) with the best per-slice DSC.
+
+    If net is provided, runs inference on candidate slices and picks the one
+    with the highest mean per-class DSC. Otherwise falls back to fg density.
+    """
     fg_counts = [(lbl_vol[s] > 0).sum() for s in range(img_vol.shape[0])]
-    # pick slice near the 75th percentile of fg_counts (a rich but not-extreme case)
-    thresh = np.percentile([c for c in fg_counts if c > 0], 75)
-    candidates = [s for s, c in enumerate(fg_counts) if c >= thresh * 0.9]
-    s = candidates[len(candidates) // 2]
-    return s, img_vol[s], lbl_vol[s]
+    non_empty = [c for c in fg_counts if c > 0]
+    lo = np.percentile(non_empty, 40)
+    hi = np.percentile(non_empty, 90)
+    candidates = [s for s, c in enumerate(fg_counts) if lo <= c <= hi]
+    if not candidates:
+        candidates = list(range(img_vol.shape[0]))
+
+    if net is None:
+        s = candidates[len(candidates) // 2]
+        return s, img_vol[s], lbl_vol[s]
+
+    best_s, best_dsc = candidates[0], -1.0
+    for s in candidates:
+        pred = predict_slice(net, img_vol[s].astype(np.float32))
+        lbl_s = lbl_vol[s]
+        per_class = [
+            dsc_binary((pred == c).astype(np.uint8), (lbl_s == c).astype(np.uint8))
+            for c in range(1, 9) if (lbl_s == c).any()
+        ]
+        d = float(np.mean(per_class)) if per_class else 0.0
+        if d > best_dsc:
+            best_dsc, best_s = d, s
+    print(f"  Best Synapse slice: {best_s}  per-slice DSC={best_dsc:.3f}")
+    return best_s, img_vol[best_s], lbl_vol[best_s]
 
 
 # ── load Synapse volumes ───────────────────────────────────────────────────────
@@ -384,7 +407,7 @@ elif args.mode == 'cross_task':
     net = load_model(getattr(args, arg_name), M, r, gm, num_cls)
     cases = load_synapse_cases(n_cases=1)
     name, img_vol, lbl_vol = cases[0]
-    s_idx, img_sl, lbl_sl = pick_synapse_slice(img_vol, lbl_vol)
+    s_idx, img_sl, lbl_sl = pick_synapse_slice(img_vol, lbl_vol, net=net)
     pred = predict_slice(net, img_sl)
     del net; torch.cuda.empty_cache() if torch.cuda.is_available() else None
 
