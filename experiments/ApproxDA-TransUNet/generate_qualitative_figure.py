@@ -207,38 +207,56 @@ def load_synapse_cases(n_cases=2):
 
 
 # ── load Kvasir/ISIC images ───────────────────────────────────────────────────
-def load_binary_cases(dataset, n_cases=2):
+def _make_binary_db(dataset, split):
     if dataset == 'Kvasir':
         from datasets.dataset_kvasir import Kvasir_dataset
-        db = Kvasir_dataset(base_dir=args.volume_path_kv, list_dir=args.list_dir_kv,
-                            split='test_vol')
+        return Kvasir_dataset(base_dir=args.volume_path_kv,
+                              list_dir=args.list_dir_kv, split=split)
     else:
         from datasets.dataset_isic import ISIC_dataset
-        db = ISIC_dataset(base_dir=args.volume_path_isic, list_dir=args.list_dir_isic,
-                          split='test_vol')
-    loader = DataLoader(db, batch_size=1, shuffle=False, num_workers=1)
+        return ISIC_dataset(base_dir=args.volume_path_isic,
+                            list_dir=args.list_dir_isic, split=split)
+
+def load_binary_cases(dataset, n_cases=1):
+    # try common split names until one returns data
+    for split in ('test_vol', 'test', 'val', 'train'):
+        try:
+            db = _make_binary_db(dataset, split)
+            if len(db) == 0:
+                continue
+            print(f"  {dataset}: using split='{split}', {len(db)} samples")
+            break
+        except Exception:
+            continue
+    else:
+        sys.exit(f"Could not find any valid split for {dataset} dataset.")
+
+    loader = DataLoader(db, batch_size=1, shuffle=False, num_workers=0)
     cases = []
     for s in loader:
-        if len(cases) >= n_cases:
-            break
         img = s['image'].squeeze().cpu().numpy()
-        if img.ndim == 3:          # (C, H, W) -> take first channel
+        if img.ndim == 3:
             img = img[0]
         lbl = s['label'].squeeze().cpu().numpy().astype(np.uint8)
         name = s['case_name'][0]
-        if (lbl > 0).mean() < 0.01:   # skip blank, try next
+        if (lbl > 0).mean() < 0.01:
             continue
         cases.append((name, img, lbl))
+        if len(cases) >= n_cases:
+            break
+
     if not cases:
-        # fallback: just take the first sample regardless of blank
-        for s in loader:
+        # fallback: take the very first sample regardless of fg content
+        for s in DataLoader(db, batch_size=1, shuffle=False, num_workers=0):
             img = s['image'].squeeze().cpu().numpy()
             if img.ndim == 3:
                 img = img[0]
             lbl = s['label'].squeeze().cpu().numpy().astype(np.uint8)
-            name = s['case_name'][0]
-            cases.append((name, img, lbl))
+            cases.append((s['case_name'][0], img, lbl))
             break
+
+    if not cases:
+        sys.exit(f"No samples loaded for {dataset}. Check --volume_path_kv / --volume_path_isic.")
     return cases
 
 
