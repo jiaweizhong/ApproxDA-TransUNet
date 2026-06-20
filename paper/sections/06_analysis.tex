@@ -16,19 +16,19 @@ At initialization $g{\approx}0.5$, both branches receive equal gradient $\tfrac{
 
 \textbf{Design implication.} Symmetric two-branch gating is an unstable fixed point that any dual-attention architecture will converge to without explicit symmetry breaking. Future designs should initialize branches asymmetrically, use diversity-encouraging loss terms, or replace the gate with a non-symmetric routing mechanism to escape this degenerate equilibrium.
 
-\begin{figure}[t]
+\begin{figure*}[t]
   \centering
-  \fbox{\rule{0pt}{3.5cm}\rule{\columnwidth}{0pt}}
+  \includegraphics[width=\textwidth]{figures/fig_gate_collapse.pdf}
   \caption{Gate value $g$ across all Synapse validation slices for $M{=}7$ and $M{=}14$ (gate=learn). Both configurations produce near-constant $g{\approx}0.5$ for every input (range: $[0.4993,\,0.5010]$ at $M{=}7$; $g{\approx}0.5002$ at $M{=}14$), confirming the gate is inert regardless of window size. The \texttt{gate\_fc} learns near-zero weights, so $\sigma(0){\approx}0.5$ for all inputs.}
   \label{fig:gate_collapse}
-\end{figure}
+\end{figure*}
 
-\begin{figure}[t]
+\begin{figure*}[t]
   \centering
-  \fbox{\rule{0pt}{3.2cm}\rule{\columnwidth}{0pt}}
+  \includegraphics[width=\textwidth]{figures/fig_entropy_scatter.pdf}
   \caption{Gate value $g$ vs.\ per-block feature entropy $H(F)$ (Synapse validation, $M{=}7$, gate=learn). Gate values cluster tightly at $g{\approx}0.5$ regardless of input entropy (Spearman $r_s{\approx}0$, high-$H$ vs.\ low-$H$ mean gate delta~${\approx}0.000$), confirming no sample-adaptive routing occurs---the gate collapses to a fixed equilibrium.}
   \label{fig:entropy}
-\end{figure}
+\end{figure*}
 
 \subsection{Observation 2: Task-Dependent Approximation Effectiveness}
 \label{sec:obs2}

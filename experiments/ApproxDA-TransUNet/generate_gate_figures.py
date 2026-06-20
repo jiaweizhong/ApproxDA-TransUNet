@@ -279,33 +279,37 @@ try:
     plt.close(fig)
     print(f"\nfig_gate_collapse -> {args.out_dir}/fig_gate_collapse.pdf")
 
-    # fig:entropy scatter (primary checkpoint)
+    # fig:entropy scatter — single combined panel, all blocks overlaid
     bd = configs[0][3]
-    n_blocks = len(bd)
-    cols = min(n_blocks, 4)
-    rows = (n_blocks + cols - 1) // cols
-    fig, axes = plt.subplots(rows, cols, figsize=(4 * cols, 3.5 * rows))
-    axes_flat = np.array(axes).flatten() if n_blocks > 1 else [axes]
+    BLOCK_COLORS = ['#1f77b4', '#ff7f0e', '#2ca02c', '#9467bd',
+                    '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22']
+
+    fig, ax = plt.subplots(1, 1, figsize=(7, 5))
+
+    all_H = np.concatenate([H_all for _, H_all, _, _, _ in bd])
+    all_g = np.concatenate([g_all for _, _, g_all, _, _ in bd])
+    r_all, p_all = stats.spearmanr(all_H, all_g)
+    delta_all = all_g.max() - all_g.min()
 
     for i, (blk_lbl, H_all, g_all, r, p) in enumerate(bd):
-        ax = axes_flat[i]
-        ax.scatter(H_all, g_all, alpha=0.2, s=4, color='steelblue', rasterized=True)
-        ax.set_xlabel('Feature entropy $H(F)$', fontsize=FS)
-        ax.set_ylabel('Mean gate $g$', fontsize=FS)
-        sig = '***' if p < 0.001 else ('**' if p < 0.01 else ('*' if p < 0.05 else 'n.s.'))
-        delta = g_all.max() - g_all.min()
-        ax.set_title(f'{blk_lbl}\n$r_s$={r:+.3f} {sig}  ' + r'$\Delta g$=' + f'{delta:.4f}',
-                     fontsize=FS)
-        ax.tick_params(labelsize=FS - 1)
+        ax.scatter(H_all, g_all,
+                   alpha=0.25, s=8,
+                   color=BLOCK_COLORS[i % len(BLOCK_COLORS)],
+                   label=blk_lbl, rasterized=True)
 
-    for ax in axes_flat[n_blocks:]:
-        ax.set_visible(False)
-
-    fig.suptitle(
-        r'Gate $g$ vs.\ feature entropy $H(F)$ -- ' + configs[0][0] + '\n'
-        r'$r_s$ may appear non-zero but $\Delta g < 0.002$ (gate is inert)',
+    sig = '***' if p_all < 0.001 else ('**' if p_all < 0.01 else ('*' if p_all < 0.05 else 'n.s.'))
+    ax.set_xlabel('Feature entropy $H(F)$', fontsize=FS + 1)
+    ax.set_ylabel('Mean gate value $g$', fontsize=FS + 1)
+    ax.tick_params(labelsize=FS)
+    ax.legend(fontsize=FS - 1, title='Block', title_fontsize=FS - 1,
+              loc='upper right', framealpha=0.7)
+    ax.set_title(
+        f'{configs[0][0]}\n'
+        r'All blocks: $r_s$=' + f'{r_all:+.3f} {sig},  '
+        r'$\Delta g_{\max}$=' + f'{delta_all:.4f} — gate is inert',
         fontsize=FS
     )
+
     fig.tight_layout()
     for ext in ('pdf', 'png'):
         fig.savefig(os.path.join(args.out_dir, f'fig_entropy_scatter.{ext}'),
