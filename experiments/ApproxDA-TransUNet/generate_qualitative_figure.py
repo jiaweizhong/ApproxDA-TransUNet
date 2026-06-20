@@ -421,9 +421,7 @@ elif args.mode == 'cross_task':
     axes[row, 0].imshow(norm_img, cmap='gray')
     axes[row, 1].imshow(overlay(norm_img, seg_to_rgb(lbl_sl, SYNAPSE_COLORS)))
     axes[row, 2].imshow(overlay(norm_img, seg_to_rgb(pred,   SYNAPSE_COLORS)))
-    axes[row, 2].text(0.03, 0.03, f'DSC={d:.3f}', transform=axes[row, 2].transAxes,
-                      fontsize=9, color='white', va='bottom',
-                      bbox=dict(boxstyle='round,pad=0.2', facecolor='black', alpha=0.6))
+    # Synapse: skip per-slice DSC (misleading — volume mean is 80.94%, see Table)
 
     # ── Kvasir ───────────────────────────────────────────────────────────────
     row = 1
