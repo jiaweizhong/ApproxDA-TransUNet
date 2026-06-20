@@ -111,7 +111,7 @@ def load_model(ckpt_path, window_size, rank=32, gate_mode='pam', num_classes=9):
     net = ApproxDATransUNet(cfg, img_size=args.img_size, num_classes=num_classes)
     state = torch.load(ckpt_path, map_location='cpu', weights_only=False)
     state = {k.replace('.ada_block.', '.approx_block.'): v for k, v in state.items()}
-    net.load_state_dict(state)
+    net.load_state_dict(state, strict=False)
     net.eval()
     if torch.cuda.is_available():
         net = net.cuda()
@@ -312,7 +312,7 @@ if args.mode == 'window_ablation':
 # ══════════════════════════════════════════════════════════════════════════════
 elif args.mode == 'cross_task':
     required = {
-        'Synapse':     ('ckpt_syn_best',    9,  7,  32, 'pam'),
+        'Synapse':     ('ckpt_syn_best',    9, 28,  32, 'pam'),
         'Kvasir-SEG':  ('ckpt_kvasir_best', 2, 56,  32, 'pam'),
         'ISIC 2018':   ('ckpt_isic_best',   2,  7,  32, 'learn'),
     }
