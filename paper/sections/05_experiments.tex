@@ -6,42 +6,23 @@ We evaluate ApproxDA-TransUNet on three medical image segmentation benchmarks. S
 
 \subsection{Experimental Setup}
 
-\textbf{Datasets.} We evaluate ApproxDA-TransUNet on three representative medical image segmentation benchmarks covering different contextual characteristics.
+\textbf{Datasets.} We evaluate on three representative medical image segmentation benchmarks.
 
-\textit{Synapse Multi-Organ CT}~\cite{landman2015miccai}: 30 abdominal CT scans with an 18/12 train/test split covering 8 organ classes (9 classes with background). Evaluation metrics: mean DSC and HD95.
+\textit{Synapse Multi-Organ CT}~\cite{landman2015miccai}: 30 abdominal CT scans with an 18/12 train/test split covering 8 organ classes. Metrics: mean DSC and HD95.
 
-\textit{Kvasir-SEG}~\cite{jha2020kvasir}: 1000 endoscopy polyp images (binary segmentation) with an 800/200 train/test split. Evaluation metrics: DSC and mIoU.
+\textit{Kvasir-SEG}~\cite{jha2020kvasir}: 1000 endoscopy polyp images (binary) with an 800/200 train/test split. Metrics: DSC and mIoU.
 
-\textit{ISIC 2018}~\cite{codella2019isic}: 2594 dermoscopy skin lesion images (binary segmentation) with a 2075/519 train/test split (80/20). Evaluation metrics: DSC and mIoU.
-
-Table~\ref{tab:datasets} summarizes the three datasets alongside their contextual characteristics and CS classification, which motivates the cross-task analysis in Section~\ref{sec:understanding}.
-
-\begin{table}[ht]
-  \caption{Dataset Properties and Context Sensitivity (CS)}
-  \label{tab:datasets}
-  \begin{center}
-  \setlength{\tabcolsep}{3pt}
-  \begin{tabular}{lcccc}
-    \toprule
-    Dataset & Classes & Object Type & Long-range Context & CS \\
-    \midrule
-    Synapse    & 8 & Multi-organ CT  & High (inter-organ)   & High$^\dagger$ \\
-    Kvasir-SEG & 1 & Polyp           & Low (local boundary) & Low$^\dagger$  \\
-    ISIC 2018  & 1 & Skin lesion     & Low (texture/edge)   & Low$^\dagger$  \\
-    \bottomrule
-  \end{tabular}
-  \end{center}
-  \vspace{-0.3em}
-  \footnotesize{$^\dagger$CS level measured empirically from window sensitivity ablation. High-CS tasks require cross-organ anatomical reasoning; low-CS tasks are dominated by local appearance cues. CS governs sensitivity to approximation scale (Section~\ref{sec:understanding}).}
-\end{table}
+\textit{ISIC 2018}~\cite{codella2019isic}: 2594 dermoscopy skin lesion images (binary) with a 2075/519 train/test split. Metrics: DSC and mIoU.
 
 \textbf{Implementation Details.} All experiments use an R50-ViT-B/16 backbone pretrained on ImageNet-21K. Training uses SGD with initial learning rate 0.01 and polynomial decay, batch size 24, image size $224{\times}224$, 300 epochs, and seed 1234. Default ApproxDA-TransUNet configuration: $M{=}7$, $r{=}32$, $G{=}8$.
+
+\textbf{Gate Protocol.} ApproxDA-TransUNet supports four gate modes: \texttt{pam} ($g{=}1.0$, PAM only), \texttt{cam} ($g{=}0.0$, CAM only), \texttt{fixed} ($g{=}0.5$, equal blend), and \texttt{learn} ($g$ learned per channel). Unless otherwise specified, all main-result experiments use \texttt{gate=pam}. The gate ablation in Table~\ref{tab:gate_ablation} evaluates all four modes to isolate the effect of routing strategy.
 
 \subsection{Comparison with State-of-the-Art}
 
 Tables~\ref{tab:synapse}--\ref{tab:isic} compare ApproxDA-TransUNet against DA-TransUNet and established baselines on all three benchmarks.
 
-\textbf{Synapse.} Table~\ref{tab:synapse} compares DSC and HD95 against 11 published methods. CNN-based methods achieve 76--78\% DSC. Transformer-based methods progressively improve global context modeling, with Swin-Unet (79.13\%) and DA-TransUNet (79.80\%) previously topping the leaderboard. ApproxDA-TransUNet (gate=pam, $M{=}28$, $r{=}32$) achieves \textbf{80.94\%} DSC and 27.49\,mm HD95---surpassing all baselines including DA-TransUNet by $+$1.14\%. The optimal window $M{=}28$ provides the best balance between local detail and global context; Section~\ref{sec:understanding} analyzes this task-dependent behavior in detail.
+\textbf{Synapse.} Table~\ref{tab:synapse} compares DSC and HD95 against 11 published methods. CNN-based methods achieve 76--78\% DSC. Transformer-based methods progressively improve global context modeling, with Swin-Unet (79.13\%) and DA-TransUNet (79.80\%) previously topping the leaderboard. ApproxDA-TransUNet (gate=pam, $M{=}28$, $r{=}32$) achieves \textbf{80.94\%} DSC and 27.49\,mm HD95---surpassing all baselines including DA-TransUNet by $+$1.14\%. The optimal window $M{=}28$ provides the best balance between local detail and global context; Section~\ref{sec:understanding} analyzes this task-dependent behavior in detail. All baselines are taken from paper-reported values under their original protocols; our SGD/300ep re-run of DA-TransUNet yields 72.03\% DSC, with the gap attributable to optimizer and epoch differences (Adam/500ep vs.\ SGD/300ep).
 
 \begin{table}[ht]
   \caption{Segmentation Results on Synapse Multi-Organ CT}
@@ -74,7 +55,7 @@ Tables~\ref{tab:synapse}--\ref{tab:isic} compare ApproxDA-TransUNet against DA-T
   \end{tabular}
   \end{center}
   \vspace{-0.3em}
-  \footnotesize{Baselines from~\cite{sun2024datransunet} Table~1 (SGD, 500ep, 224$\times$224). ApproxDA: gate=pam, $M$=28, $r$=32, $G$=8, SGD 300ep (window sensitivity ablation identifies $M{=}28$ as optimal). We also re-ran DA-TransUNet under our protocol (SGD, 300ep) and obtained 72.03\% DSC; the gap from paper-reported (79.80\%) is primarily due to optimizer and epoch differences (Adam/500ep vs.\ SGD/300ep), so we report paper-reported values for all Synapse baselines.}
+  \footnotesize{Baselines from~\cite{sun2024datransunet} Table~1. ApproxDA: gate=pam, $M$=28, $r$=32, $G$=8, SGD 300ep.}
 \end{table}
 
 \textbf{Kvasir-SEG.} Table~\ref{tab:kvasir} compares polyp segmentation results against all six methods reported in~\cite{sun2024datransunet}. We re-ran DA-TransUNet under the same SGD/300ep protocol as ApproxDA-TransUNet to enable a direct comparison, obtaining 88.44\% DSC, 81.70\% mIoU, and 53.04\,mm HD95. ApproxDA-TransUNet (gate=pam, $M$=56) achieves 90.17\% DSC, 84.27\% mIoU, and 44.35\,mm HD95---outperforming the reproduced DA-TransUNet baseline (+1.73\% DSC, +2.57\% mIoU, $-$8.69\,mm HD95).
@@ -103,7 +84,7 @@ Tables~\ref{tab:synapse}--\ref{tab:isic} compare ApproxDA-TransUNet against DA-T
   \footnotesize{Other baselines from~\cite{sun2024datransunet} Table~2 (Adam, 500ep, 75/25 split); HD95 not reported. $^\dag$DA-TransUNet re-run under the same protocol as ApproxDA (SGD, 300ep, 80/20 split). Paper-reported~\cite{sun2024datransunet}: 88.47\% DSC, 81.02\% mIoU. ApproxDA: gate=pam, $M$=56, $r$=32.}
 \end{table}
 
-\textbf{ISIC 2018.} Table~\ref{tab:isic} reports skin lesion segmentation results against the same six baselines from~\cite{sun2024datransunet}. We re-ran DA-TransUNet under our protocol (SGD, 300ep, 80/20 split), obtaining 88.43\% DSC and 80.68\% mIoU. ApproxDA-TransUNet (gate=learn, $M{=}7$, $r{=}32$) achieves \textbf{89.58\%} DSC and \textbf{82.66\%} mIoU---outperforming the reproduced DA-TransUNet baseline by $+$1.15\% DSC and $+$1.98\% mIoU, and surpassing all published baselines including the paper-reported DA-TransUNet (88.88\%). This extends the low-CS pattern observed on Kvasir-SEG to a third benchmark.
+\textbf{ISIC 2018.} Table~\ref{tab:isic} reports skin lesion segmentation results against the same six baselines from~\cite{sun2024datransunet}. We re-ran DA-TransUNet under our protocol (SGD, 300ep, 80/20 split), obtaining 88.43\% DSC and 80.68\% mIoU. ApproxDA-TransUNet (gate=learn, $M{=}7$, $r{=}32$) achieves \textbf{89.58\%} DSC and \textbf{82.66\%} mIoU---outperforming the reproduced DA-TransUNet baseline by $+$1.15\% DSC and $+$1.98\% mIoU, and surpassing all published baselines including the paper-reported DA-TransUNet (88.88\%). This extends the low-GCS pattern observed on Kvasir-SEG to a third benchmark.
 
 \begin{table}[ht]
   \caption{Segmentation Results on ISIC 2018 Skin Lesion}
@@ -131,30 +112,9 @@ Tables~\ref{tab:synapse}--\ref{tab:isic} compare ApproxDA-TransUNet against DA-T
   \footnotesize{Baselines from~\cite{sun2024datransunet} Table~2 (Adam, 50ep, 75/25 split). $^\dag$DA-TransUNet re-run under the same protocol as ApproxDA (SGD, 300ep, 80/20 split); paper-reported: 88.88\% DSC, 82.78\% mIoU. ApproxDA: gate=learn, $M{=}7$, $r{=}32$, $G{=}8$.}
 \end{table}
 
-With appropriate window selection, ApproxDA-TransUNet outperforms DA-TransUNet on all three datasets: $+$1.14\% DSC on Synapse ($M{=}28$), $+$1.73\% DSC on Kvasir ($M{=}56$), and $+$1.15\% DSC on ISIC 2018 ($M{=}7$, gate=learn). The sensitivity to window choice differs markedly across the two datasets with full ablations: Synapse DSC spans 2.30\% across $M$ values while Kvasir spans only 0.64\%---a 3.6$\times$ ratio reflecting the different context sensitivity of the two tasks.
+With appropriate window selection, ApproxDA-TransUNet outperforms DA-TransUNet on all three datasets: $+$1.14\% DSC on Synapse ($M{=}28$), $+$1.73\% DSC on Kvasir ($M{=}56$), and $+$1.15\% DSC on ISIC 2018 ($M{=}7$, gate=learn). The sensitivity to window choice differs markedly across the two datasets with full ablations: Synapse DSC spans 2.30\% across $M$ values while Kvasir spans only 0.64\%---a 3.6$\times$ ratio reflecting the different empirical GCS of the two tasks.
 
 
-\textbf{Cross-task summary.} Table~\ref{tab:cross_task} consolidates results. With task-appropriate window selection, ApproxDA-TransUNet improves over DA-TransUNet on all three benchmarks: $+$1.14\% on empirically high-CS Synapse, $+$1.73\% on empirically low-CS Kvasir, and $+$1.15\% on empirically low-CS ISIC. The sensitivity ratio (2.30\% vs.\ 0.64\% on Synapse vs.\ Kvasir) is the primary empirical operationalization of CS. Figure~\ref{fig:qualitative} shows qualitative examples.
-
-\begin{table}[ht]
-  \caption{Cross-Task Approximation Effectiveness by CS Level}
-  \label{tab:cross_task}
-  \begin{center}
-  \setlength{\tabcolsep}{3pt}
-  \small
-  \begin{tabular}{lcccc}
-    \toprule
-    Dataset & CS & DA-TransUNet$^\dagger$ & ApproxDA & $\Delta$ DSC \\
-    \midrule
-    Synapse    & High & 79.80\% & 80.94\%$^a$ & $+$1.14\% \\
-    Kvasir-SEG & Low  & 88.44\%$^c$ & 90.17\%$^b$ & $+$1.73\% \\
-    ISIC 2018  & Low  & 88.43\%$^d$ & 89.58\%$^e$ & $+$1.15\% \\
-    \bottomrule
-  \end{tabular}
-  \end{center}
-  \vspace{-0.3em}
-  \footnotesize{$^\dagger$Paper-reported~\cite{sun2024datransunet} except $^{c,d}$(our re-runs, SGD 300ep 80/20). $^a$gate=pam, $M{=}28$, $r{=}32$. $^b$gate=pam, $M{=}56$, $r{=}32$. $^d$Paper-reported: 88.88\%. $^e$gate=learn, $M{=}7$, $r{=}32$.}
-\end{table}
 
 \begin{figure}[ht]
   \centering

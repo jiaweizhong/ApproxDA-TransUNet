@@ -15,13 +15,13 @@ ApproxDA-TransUNet adopts the hybrid CNN--ViT encoder-decoder structure of DA-Tr
   \label{fig:framework}
 \end{figure*}
 
-Figure~\ref{fig:framework} illustrates the overall ApproxDA-TransUNet architecture. Figure~\ref{fig:approxda_block} details the internal structure of each ApproxDABlock.
+Figure~\ref{fig:framework} illustrates the overall architecture; Figure~\ref{fig:approxda_block} details the internal structure of each ApproxDABlock.
 
 \subsection{Attention Approximation Formulation}
 
 The original DA module performs dense spatial and channel attention over the full feature map, with quadratic complexity in both spatial resolution and channel dimension. ApproxDA-TransUNet reduces this cost along three independent axes, each targeting a distinct aspect of the approximation:
 
-\textbf{Spatial scope} (window size $M$) controls \emph{how far} PAM reaches. Full global attention ($M{=}H$) captures all long-range spatial relationships; restricting to $M{\times}M$ local windows trades long-range context for lower complexity. This axis most directly governs whether high-CS tasks retain the anatomical context they require.
+\textbf{Spatial scope} (window size $M$) controls \emph{how far} PAM reaches. Full global attention ($M{=}H$) captures all long-range spatial relationships; restricting to $M{\times}M$ local windows trades long-range context for lower complexity. This axis most directly governs whether tasks with broader contextual requirements retain the anatomical context they depend on.
 
 \textbf{Representation fidelity} (rank $r$) controls \emph{how precisely} attention is computed within each window. Low-rank projection ($r \ll M^2$) approximates the affinity matrix at reduced cost; higher $r$ approaches exact attention.
 
@@ -43,7 +43,7 @@ These axes correspond to three distinct types of approximation: \emph{spatial ap
     \draw[axis, green!60!black] (c) -- ++(2.0,-1.1)
       node[lab, below right] {Semantic\\Interaction\\{\scriptsize(groups $G$)}};
   \end{tikzpicture}
-  \caption{ApproxDA-TransUNet's three-dimensional approximation space. Each axis is independently controllable. Spatial scope ($M$) most directly governs long-range context capture and thereby sensitivity to window selection on high-CS tasks.}
+  \caption{The three orthogonal approximation axes of ApproxDA-TransUNet. Each axis is independently controllable, enabling clean ablations that isolate individual approximation effects.}
   \label{fig:approx_space}
 \end{figure}
 
@@ -92,7 +92,7 @@ where $\hat{\mathbf{P}}$ and $\hat{\mathbf{C}}$ are the normalized PAM and CAM o
 \end{tabular}
 \end{center}
 
-This single-parameter design enables systematic ablation of routing strategy without any other architectural change. ApproxDA-TransUNet does not treat this routing module as a primary architectural contribution; instead, it serves as an analyzable component whose optimization behavior is investigated in Section~\ref{sec:understanding}. As observed in Section~\ref{sec:understanding}, the routing coefficient consistently converges to an almost constant value, revealing an unexpected optimization phenomenon.
+In gate=learn, $g \in (0,1)^C$ is a per-channel routing coefficient broadcast over all spatial positions; it collapses to a channel-wise blend rather than a spatially-adaptive or input-dependent scalar. This single-parameter design enables systematic ablation of routing strategy without any other architectural change. ApproxDA-TransUNet does not treat this routing module as a primary architectural contribution; rather, it serves as an analyzable component whose optimization dynamics---including an unexpected convergence to $g{\approx}0.5$ regardless of window size---are investigated in Section~\ref{sec:understanding}.
 
 \begin{figure*}[tbp]
   \centering
