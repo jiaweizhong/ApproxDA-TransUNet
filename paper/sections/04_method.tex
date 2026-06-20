@@ -23,7 +23,7 @@ Figure~\ref{fig:framework} illustrates the overall ApproxDA architecture. Figure
 
 The original DA module performs dense spatial and channel attention over the full feature map, with quadratic complexity in both spatial resolution and channel dimension. ApproxDA reduces this cost along three independent axes, each targeting a distinct aspect of the approximation:
 
-\textbf{Spatial scope} (window size $M$) controls \emph{how far} PAM reaches. Full global attention ($M{=}H$) captures all long-range spatial relationships; restricting to $M{\times}M$ local windows trades long-range context for lower complexity. This axis most directly governs whether high-GCR tasks retain the anatomical context they require.
+\textbf{Spatial scope} (window size $M$) controls \emph{how far} PAM reaches. Full global attention ($M{=}H$) captures all long-range spatial relationships; restricting to $M{\times}M$ local windows trades long-range context for lower complexity. This axis most directly governs whether high-CS tasks retain the anatomical context they require.
 
 \textbf{Representation fidelity} (rank $r$) controls \emph{how precisely} attention is computed within each window. Low-rank projection ($r \ll M^2$) approximates the affinity matrix at reduced cost; higher $r$ approaches exact attention.
 
@@ -45,7 +45,7 @@ These axes correspond to three distinct types of approximation: \emph{spatial ap
     \draw[axis, green!60!black] (c) -- ++(2.0,-1.1)
       node[lab, below right] {Semantic\\Interaction};
   \end{tikzpicture}
-  \caption{ApproxDA's three-dimensional approximation space. Each axis is independently controllable. Spatial scope ($M$) most directly governs long-range context capture and thereby approximation effectiveness on high-GCR tasks.}
+  \caption{ApproxDA's three-dimensional approximation space. Each axis is independently controllable. Spatial scope ($M$) most directly governs long-range context capture and thereby approximation effectiveness on high-CS tasks.}
   \label{fig:approx_space}
 \end{figure}
 

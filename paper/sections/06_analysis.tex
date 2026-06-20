@@ -19,21 +19,21 @@ At initialization $g{\approx}0.5$, both branches receive equal gradient $\tfrac{
 \begin{figure}[t]
   \centering
   \fbox{\rule{0pt}{3.5cm}\rule{\columnwidth}{0pt}}
-  \caption{Gate value $g$ vs.\ training epoch for $M{=}7$ and $M{=}14$. Both converge to $g{\approx}0.5$ by epoch~100, independent of window size. Shaded band shows gate range across network blocks. [Generated from training logs after experiments complete.]}
+  \caption{Gate value $g$ across all Synapse validation slices for $M{=}7$ and $M{=}14$ (gate=learn). Both configurations produce near-constant $g{\approx}0.5$ for every input (range: $[0.4993,\,0.5010]$ at $M{=}7$; $g{\approx}0.5002$ at $M{=}14$), confirming the gate is inert regardless of window size. The \texttt{gate\_fc} learns near-zero weights, so $\sigma(0){\approx}0.5$ for all inputs.}
   \label{fig:gate_collapse}
 \end{figure}
 
 \begin{figure}[t]
   \centering
   \fbox{\rule{0pt}{3.2cm}\rule{\columnwidth}{0pt}}
-  \caption{Gate value vs.\ per-block input entropy scatter (300-epoch checkpoint, Synapse validation). Gate values cluster tightly at $g{\approx}0.5$ regardless of input entropy, confirming no sample-adaptive routing occurs. [Generated from inference analysis.]}
+  \caption{Gate value $g$ vs.\ per-block feature entropy $H(F)$ (Synapse validation, $M{=}7$, gate=learn). Gate values cluster tightly at $g{\approx}0.5$ regardless of input entropy (Spearman $r_s{\approx}0$, high-$H$ vs.\ low-$H$ mean gate delta~${\approx}0.000$), confirming no sample-adaptive routing occurs---the gate collapses to a fixed equilibrium.}
   \label{fig:entropy}
 \end{figure}
 
 \subsection{Observation 2: Task-Dependent Approximation Effectiveness}
 \label{sec:obs2}
 
-Although ApproxDA adopts the same approximation operators across all experiments, its effectiveness varies considerably among different segmentation datasets. Window sensitivity ablation (Phase~D, gate=pam, $r{=}32$, $M{\in}\{7,28,56,112\}$) reveals that performance depends critically on window selection, and that the optimal window size differs by task: $M{=}28$ on Synapse (80.94\% DSC, $+$1.14\% vs.\ DA-TransUNet) and $M{=}56$ on Kvasir-SEG (90.17\% DSC, $+$1.73\%). Importantly, the \emph{sensitivity} to window choice differs dramatically: the Synapse DSC-vs-$M$ curve spans 2.30\% across measured $M$ values (non-monotonic: $M{=}7$ 78.64\%, $M{=}28$ 80.94\%, $M{=}112$ 79.44\%), while the Kvasir curve spans only 0.64\%---a 3.6$\times$ ratio.
+Although ApproxDA adopts the same approximation operators across all experiments, its effectiveness varies considerably among different segmentation datasets. Window sensitivity ablation (Phase~D, gate=pam, $r{=}32$, $M{\in}\{7,28,56,112\}$) reveals that performance depends critically on window selection, and that the optimal window size differs by task: $M{=}28$ on Synapse (80.94\% DSC, $+$1.14\% vs.\ DA-TransUNet) and $M{=}56$ on Kvasir-SEG (90.17\% DSC, $+$1.73\%). Importantly, the \emph{sensitivity} to window choice differs dramatically: the Synapse DSC-vs-$M$ curve spans 2.30\% across measured $M$ values (non-monotonic: $M{=}7$ 78.64\%, $M{=}28$ 80.94\%, $M{=}112$ 79.44\%), while the Kvasir curve spans only 0.64\%---a 3.6$\times$ ratio. On ISIC 2018, ApproxDA (gate=learn, $M{=}7$) achieves 89.58\% DSC vs.\ 88.43\% for our DA-TransUNet re-run ($+$1.15\%), consistent with the low-CS pattern of Kvasir-SEG; window sensitivity ablation on ISIC is left for future work.
 
 We attribute this sensitivity difference to the different global contextual requirements of the underlying segmentation tasks. Multi-organ abdominal CT segmentation requires reasoning over long-range anatomical relationships among multiple organs. The high sensitivity to window size (2.30\% range) reflects that both too-local windows (insufficient cross-organ context) and fully-global windows (noise from unrelated background) degrade performance; an intermediate scope ($M{=}28$) provides the optimal balance.
 
@@ -73,7 +73,7 @@ We propose that CS governs the \emph{importance} of window tuning, which we trea
   \Delta_\text{DSC} \approx f(\text{CS}), \quad f'(\cdot) < 0,
   \label{eq:cs_hypothesis}
 \end{equation}
-where $\Delta_\text{DSC}$ = DSC(ApproxDA) $-$ DSC(DA-TransUNet) at the \emph{optimal window} for each task. Equation~\eqref{eq:cs_hypothesis} is a conceptual claim, not an analytic proof. With task-appropriate windows, ApproxDA achieves $\Delta_\text{DSC}{=}{+}1.73\%$ on low-CS Kvasir-SEG ($M{=}56$) and $\Delta_\text{DSC}{=}{+}1.14\%$ on high-CS Synapse ($M{=}28$)---both positive, with larger gain on the window-robust low-CS task. Figure~\ref{fig:cs_curve} illustrates the CS-governed pattern. The 3.6$\times$ sensitivity ratio operationalizes the CS difference: high-CS tasks require careful window tuning to unlock gains; low-CS tasks are window-robust. Systematic multi-task CS quantification is a direction for future work.
+where $\Delta_\text{DSC}$ = DSC(ApproxDA) $-$ DSC(DA-TransUNet) at the \emph{optimal window} for each task. Equation~\eqref{eq:cs_hypothesis} is a conceptual claim, not an analytic proof. With task-appropriate windows, ApproxDA achieves $\Delta_\text{DSC}{=}{+}1.73\%$ on low-CS Kvasir-SEG ($M{=}56$), $\Delta_\text{DSC}{=}{+}1.15\%$ on low-CS ISIC 2018 ($M{=}7$, gate=learn), and $\Delta_\text{DSC}{=}{+}1.14\%$ on high-CS Synapse ($M{=}28$)---all positive, with larger gains on the window-robust low-CS tasks. Figure~\ref{fig:cs_curve} illustrates the CS-governed pattern. The 3.6$\times$ sensitivity ratio (Synapse vs.\ Kvasir) operationalizes the CS difference: high-CS tasks require careful window tuning to unlock gains; low-CS tasks are window-robust. Systematic multi-task CS quantification is a direction for future work.
 
 \begin{figure}[t]
   \centering
@@ -102,11 +102,11 @@ where $\Delta_\text{DSC}$ = DSC(ApproxDA) $-$ DSC(DA-TransUNet) at the \emph{opt
 
     \draw[dashed, gray!60, thick] (1.8, 1.05)--(1.8,-2.35);
   \end{tikzpicture}
-  \caption{Context Sensitivity (CS) governs approximation window importance. Both tasks benefit from ApproxDA with the appropriate window ($+$1.14\% Synapse at $M{=}28$; $+$1.73\% Kvasir at $M{=}56$), but performance sensitivity to window choice is 3.6$\times$ higher on the high-CS benchmark (Synapse CS=2.30 pp vs.\ Kvasir CS=0.64 pp).}
+  \caption{Context Sensitivity (CS) governs approximation window importance. All three tasks benefit from ApproxDA ($+$1.14\% Synapse at $M{=}28$; $+$1.73\% Kvasir at $M{=}56$; $+$1.15\% ISIC at $M{=}7$), but performance sensitivity to window choice is 3.6$\times$ higher on the high-CS benchmark (Synapse CS=2.30 pp vs.\ Kvasir CS=0.64 pp). ISIC CS (window ablation pending) follows the low-CS pattern.}
   \label{fig:cs_curve}
 \end{figure}
 
-Attention approximation should not be regarded as a binary design choice but as a configurable inductive bias whose importance depends on task CS. Different window sizes suit different CS regimes (Figure~\ref{fig:approx_space}). That the same collapsed gate=learn routing helps on low-CS Kvasir ($+$0.77\% vs.\ DA-TransUNet at $M{=}7$) while underperforming gate=pam on high-CS Synapse ($+$1.14\% with tuned $M{=}28$) further underscores this task-dependence: the effectiveness of a fixed routing strategy is determined by the task's context sensitivity.
+Attention approximation should not be regarded as a binary design choice but as a configurable inductive bias whose importance depends on task CS. Different window sizes suit different CS regimes (Figure~\ref{fig:approx_space}). That the same collapsed gate=learn routing helps on low-CS tasks---Kvasir ($+$0.77\% vs.\ DA-TransUNet at $M{=}7$) and ISIC ($+$1.15\% at $M{=}7$)---while underperforming gate=pam on high-CS Synapse ($+$1.14\% with tuned $M{=}28$) further underscores this task-dependence: the effectiveness of a fixed routing strategy is determined by the task's context sensitivity.
 
 \subsection{Design Principles}
 
@@ -135,10 +135,10 @@ Finally, future efficient attention architectures should explicitly consider whe
     \draw[arr] (q) -- node[above left,  font=\tiny, pos=0.35] {Yes} +(-2.2,-0.8) -- (yes);
     \draw[arr] (q) -- node[above right, font=\tiny, pos=0.35] {No}  +(2.2,-0.8)  -- (no);
   \end{tikzpicture}
-  \caption{Practical design guideline derived from CS analysis. ApproxDA outperforms DA-TransUNet on both task types with appropriate window selection. High-CS tasks require careful window tuning ($M{=}28$, $+$1.14\%); low-CS tasks are window-robust ($M{=}56$, $+$1.73\%). Both cases reduce per-GPU training VRAM by 44\% (6.4\,GB vs.\ 11.5\,GB).}
+  \caption{Practical design guideline derived from CS analysis. ApproxDA outperforms DA-TransUNet on all three datasets. High-CS tasks require careful window tuning ($M{=}28$, $+$1.14\%); low-CS tasks are window-robust ($M{=}56$, $+$1.73\% Kvasir; $M{=}7$, $+$1.15\% ISIC). Both cases reduce per-GPU training VRAM by 44\% (6.4\,GB vs.\ 11.5\,GB).}
   \label{fig:guideline}
 \end{figure}
 
 \subsection{Limitations}
 
-Although Eq.~\eqref{eq:cs_def} provides a computable CS value from the window sensitivity ablation, a rigorous CS estimator that generalizes across imaging modalities and training protocols---without requiring the ablation itself---remains to be developed. A natural candidate proxy, center-cropping the input to restrict visible context, is invalidated by a more fundamental issue: evaluation against the full-resolution label penalises the crop for missing structures that lie outside the crop window, regardless of the model's actual context reasoning. For randomly-positioned targets (polyps, lesions), small crops frequently exclude the target entirely; for anatomically-fixed but spatially-extended targets (abdominal organs), crops exclude large organ fractions. In both cases DSC collapses not because the model lacks global reasoning but because the crop removes the target itself. Window sensitivity within the model---where target visibility is unchanged---is the appropriate substitute. Additionally, the cross-task comparison is limited to two benchmarks (Synapse and Kvasir-SEG); the CS hypothesis should be validated on a broader range of medical segmentation tasks before being applied prescriptively. Finally, the three mechanisms proposed in Section~\ref{sec:mechanisms}---inductive bias, over-context suppression, implicit regularization---are empirically motivated but not formally proven; their relative contributions and the conditions under which each dominates warrant further investigation.
+Although Eq.~\eqref{eq:cs_def} provides a computable CS value from the window sensitivity ablation, a rigorous CS estimator that generalizes across imaging modalities and training protocols---without requiring the ablation itself---remains to be developed. A natural candidate proxy, center-cropping the input to restrict visible context, is invalidated by a more fundamental issue: evaluation against the full-resolution label penalises the crop for missing structures that lie outside the crop window, regardless of the model's actual context reasoning. For randomly-positioned targets (polyps, lesions), small crops frequently exclude the target entirely; for anatomically-fixed but spatially-extended targets (abdominal organs), crops exclude large organ fractions. In both cases DSC collapses not because the model lacks global reasoning but because the crop removes the target itself. Window sensitivity within the model---where target visibility is unchanged---is the appropriate substitute. Additionally, the cross-task comparison covers three benchmarks (Synapse, Kvasir-SEG, and ISIC 2018); the CS hypothesis should be validated on a broader range of medical segmentation tasks before being applied prescriptively. Finally, the three mechanisms proposed in Section~\ref{sec:mechanisms}---inductive bias, over-context suppression, implicit regularization---are empirically motivated but not formally proven; their relative contributions and the conditions under which each dominates warrant further investigation.

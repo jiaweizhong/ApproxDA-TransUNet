@@ -29,7 +29,7 @@ Both DA-TransUNet (baseline) and AdaDA-TransUNet are run under identical conditi
 |---------|-------------------|-------------------|-------------|------------|
 | Synapse | ✅ Done (11.41h, T4×1, 300ep, Lightning AI, Peak VRAM 11.5 GB, best val DSC 0.7952 at ep180) | ✅ Done (reproduced: DSC 72.03%, HD95 72.52mm, mIoU 59.62% — Lightning AI env artifact; **paper-reported used for narrative**: 79.80% DSC / 23.48mm HD95; mIoU not reported in paper; GFLOPs **30.2 (fvcore)**, Params 107.95M, 120.0s/vol, VRAM 0.5 GB) | ✅ Done (T4×1, 3-skip, 300ep, 11.51h pure train, Peak VRAM 10.6 GB, best val epoch 45) | ✅ Done (gate=learn re-run Lightning AI: DSC **77.78%**, HD95 **34.29mm**, Params 114.90M, GFLOPs **32.1 (fvcore)**, Infer 114.2s/vol, Infer VRAM 0.5GB) |
 | Kvasir-SEG | ✅ Done (4.29h, T4×1, 300ep, Peak VRAM 11.5 GB, best val DSC 0.8838 at ep300) | ✅ Done (DSC **88.44%**, mIoU **81.70%**, HD95 53.04mm, GFLOPs **30.2 (fvcore)**, Params 107.95M, 117ms/img, Infer VRAM 0.5 GB) | ✅ Done (4.45h, T4×1, 300ep, gate=learn, Peak VRAM 10.5 GB, best val DSC 0.8923 at ep300) | ✅ Done (DSC **89.24%**, mIoU **83.40%**, HD95 42.60mm, GFLOPs 32.0 (fvcore), Params 114.90M, 120ms/img, Infer VRAM 0.5 GB) |
-| ISIC 2018 | ✅ Done (83.00h, T4×1, 300ep, best val DSC 0.8771 at ep75, Peak VRAM 11.5 GB, Params 107.95M, GFLOPs 30.2 fvcore) | ⚠️ Failed — Lightning AI had stale `h, w = sampled_batch["image"].size()[2:]` in test.py; local code is fixed — rerun needed | ✅ Done (gate=learn, M=7, r=32, G=8; 83.26h, T4×1, 300ep, best val DSC **0.8956** at ep90, Peak VRAM 10.5 GB) | ⏳ Pending (run after re-upload) |
+| ISIC 2018 | ✅ Done (83.00h, T4×1, 300ep, best val DSC 0.8771 at ep75, Peak VRAM 11.5 GB, Params 107.95M, GFLOPs 30.2 fvcore) | ✅ Done (DSC **88.43%**, HD95 159.72mm, IoU **80.68%**, Params 107.95M, GFLOPs 30.2 (fvcore), Infer VRAM 0.5GB, avg 3089ms/case) | ✅ Done (gate=learn, M=7, r=32, G=8; 83.26h, T4×1, 300ep, best val DSC **0.8956** at ep90, Peak VRAM 10.5 GB) | ✅ Done (gate=learn, M=7, r=32, G=8; test DSC **89.58%**, HD95 134.83mm, IoU **82.66%**, Params 114.90M, GFLOPs 32.0 (fvcore), Infer VRAM 0.9GB, avg 3011ms/case) |
 
 ---
 
@@ -159,15 +159,15 @@ python test.py \
 
 ---
 
-### Phase C — GCR Context Sensitivity (Inference-Only, No Retraining)
+### Phase C — CS Analysis (Inference-Only, No Retraining)
 
-**Goal:** Provide empirical support for GCR as a measurable task property without any new training.
+**Goal:** Provide empirical support for CS as a measurable task property without any new training.
 
 **Why NOT window sensitivity (Option 3):**
 Varying M at inference time by slicing `proj_r.weight` is invalid — a checkpoint trained with M=7 has weight shape `[r, 49]`; you cannot test it at M=28 (784 tokens). Going the other way (M=112 checkpoint → test at smaller M) produces arbitrary results because the sliced weight columns correspond to no meaningful learned structure. Window sensitivity requires separate training runs for each M, defeating the inference-only goal.
 
 **Approach — Context Radius Sensitivity (Option 1 variant):**
-Use existing best checkpoints. For each test image, center-crop to radius R, resize back to 224×224, then run inference unchanged. The key insight: Synapse requires cross-organ spatial reasoning → DSC drops sharply when distant context is removed. Kvasir/ISIC rely on local boundary appearance → DSC stays flat. Slope difference = empirical GCR signal.
+Use existing best checkpoints. For each test image, center-crop to radius R, resize back to 224×224, then run inference unchanged. The key insight: Synapse requires cross-organ spatial reasoning → DSC drops sharply when distant context is removed. Kvasir/ISIC rely on local boundary appearance → DSC stays flat. Slope difference = empirical CS signal.
 
 **Checkpoint to use:** DA-TransUNet (full attention, same model for all datasets). This is the most principled choice — we're measuring the task's information dependency, not the approximation model's behavior.
 
@@ -237,16 +237,16 @@ DSC (%)
             56     112     168     224
 ```
 
-- Synapse curve: steep negative slope → high GCR
-- Kvasir/ISIC curves: near-flat → low GCR
-- Visual definition of GCR without any equations
+- Synapse curve: steep negative slope → high CS
+- Kvasir/ISIC curves: near-flat → low CS
+- Visual definition of CS without any equations
 
 If Synapse drop is less than 1% across all radii, the signal is too weak for a figure — fall back to a 1-sentence note referencing the existing window ablation data (M=7 vs M=112).
 
 #### Run Commands (from experiments/ApproxDA-TransUNet/)
 
 Uses best AdaDA checkpoints — no DA-TransUNet checkpoint needed.
-The GCR signal (slope of DSC vs crop size) is a task property independent of which model measures it.
+The CS signal (slope of DSC vs crop size) is a task property independent of which model measures it.
 
 ```bash
 # Synapse — best AdaDA is gate=pam, M=7, r=32, bs=12
@@ -270,7 +270,7 @@ so DSC collapses regardless of the model's actual context reasoning ability.
 
 **Synapse (2026-06-18):** DSC=0.018 at 25% crop, DSC=0.066 at 50% crop.
 Abdominal organs (liver, spleen, kidneys) are large structures spanning most of a 224×224 CT slice.
-A 56×56 center crop excludes most organ pixels. Collapse is structural, not a GCR signal.
+A 56×56 center crop excludes most organ pixels. Collapse is structural, not a CS signal.
 
 **Kvasir (2026-06-18):** DSC=0.185 at 25% crop (+70.8% drop).
 Polyps are randomly positioned — 25% crop frequently excludes the polyp entirely.
@@ -279,9 +279,9 @@ Polyps are randomly positioned — 25% crop frequently excludes the polyp entire
 structures that were outside the crop window, not for failing due to lack of global context.
 
 **Correct implementation (not worth pursuing):** Mask the label to only evaluate within the
-crop region. But Phase D (window sensitivity) already provides a valid GCR proxy with less effort.
+crop region. But Phase D (window sensitivity) already provides a valid CS proxy with less effort.
 
-**Phase D is the sole GCR proxy for both datasets.**
+**Phase D is the sole CS proxy for both datasets.**
 
 #### Status
 
@@ -297,7 +297,7 @@ crop region. But Phase D (window sensitivity) already provides a valid GCR proxy
 
 ### Phase D — Window Sensitivity Ablation (Requires Training)
 
-**Goal:** Primary GCR proxy for Kvasir/ISIC (Phase C is invalid for randomly-positioned targets).
+**Goal:** Primary CS proxy for Kvasir/ISIC (Phase C is invalid for randomly-positioned targets).
 Phase D varies the attention window M inside the model, which tests whether the model needs
 large spatial attention range regardless of where the target is located in the image.
 
@@ -329,7 +329,7 @@ Existing / newly trained data reused (no further training needed):
 > | **56** | **90.17%** (BEST) | 44.35 | 84.27% |
 > | 112 | 89.56% | 45.51 | 83.68% |
 >
-> **Finding (Kvasir GCR):** DSC-vs-M curve peaks at M=56 — non-monotonic bell shape. Overall window sensitivity M=7→M=112: Δ = +0.03% (vs +0.80% on Synapse). Near-flat curve confirms low GCR: Kvasir performance is nearly window-size-invariant. D5 (gate=pam, M=56) is the new best ApproxDA Kvasir result: **90.17% DSC**, +1.73% over DA-TransUNet re-run (88.44%). Previous best was gate=learn M=7 at 89.24% (+0.80%/$+$0.77% vs paper-reported).
+> **Finding (Kvasir CS):** DSC-vs-M curve peaks at M=56 — non-monotonic bell shape. Overall window sensitivity M=7→M=112: Δ = +0.03% (vs +0.80% on Synapse). Near-flat curve confirms low CS: Kvasir performance is nearly window-size-invariant. D5 (gate=pam, M=56) is the new best ApproxDA Kvasir result: **90.17% DSC**, +1.73% over DA-TransUNet re-run (88.44%). Previous best was gate=learn M=7 at 89.24% (+0.80%/$+$0.77% vs paper-reported).
 
 **Minimum viable (D1+D2+D3+D6):** Gives anchor points at both ends of the M sweep
 for both datasets — 4 training runs, ~24h total.
@@ -398,7 +398,7 @@ Hooks `(output - input).norm(dim=1)` on all active `LowRankWindowedPAM` modules 
 - Mean `attn_on_mask`: **M=7 pam = 62.3%**, M=112 global = 34.2%, M=7 learn = 54.2%
 - **9/10 samples: M=7 pam > M=112** on on-mask concentration
 - M=7 pam is **1.82× more concentrated** on polyp region than M=112 global
-- Interpretation: windowed attention (local prior) naturally focuses on polyp boundaries; global attention disperses to surrounding tissue — consistent with low-GCR inductive bias hypothesis
+- Interpretation: windowed attention (local prior) naturally focuses on polyp boundaries; global attention disperses to surrounding tissue — consistent with low-CS inductive bias hypothesis
 - Output figures: `attn_Kvasir_M7_r32_pam_vs_M112.png`, `attn_Kvasir_M7_r32_pam_vs_M112_stats.csv`
 
 #### Status
@@ -533,8 +533,8 @@ Night 5:  AdaDA         ISIC     (T4 x2, ~2.5h)
 |--------|---------|---------|
 | TransUNet | 88.78 | 82.63 |
 | DA-TransUNet (paper, 50ep Adam, 75/25 split) | 88.88 | 82.78 |
-| DA-TransUNet (ours, 300ep SGD, 80/20 split) | XX | XX |
-| **ApproxDA-TransUNet (ours, gate=pam, 300ep SGD, 80/20 split)** | **XX** | **XX** |
+| DA-TransUNet (ours, 300ep SGD, 80/20 split) | **88.43** | **80.68** |
+| **ApproxDA-TransUNet (ours, gate=learn, M=7, r=32, 300ep SGD, 80/20 split)** | **89.58** | **82.66** |
 
 ### Efficiency (Synapse, T4)
 
@@ -608,16 +608,16 @@ Night 5:  AdaDA         ISIC     (T4 x2, ~2.5h)
 > | 112 | 79.44% | 27.26mm | −0.36% |
 > Non-monotonic: peak at M=28, all others underperform. DSC range: 80.94−78.64 = **2.30%** (3.6× Kvasir range 0.64%). M=56 (78.90%) sits between M=7 and M=112, confirming the non-monotonic shape.
 >
-> **Finding 1 — Gate collapses to fixed routing (H3 confirmed):** Symmetric gating collapses to g≈0.5 — a stable equilibrium of dual-branch optimization. The resulting fixed 50/50 routing is task-dependent in effectiveness: on high-GCR Synapse it performs below both single-branch modes (gate=learn 77.78% < gate=pam 78.64%, gate=cam 78.26%), while on low-GCR Kvasir it produces the best result (+0.77% vs DA-TransUNet). The collapse itself is the finding — not that "gates are bad."
+> **Finding 1 — Gate collapses to fixed routing (H3 confirmed):** Symmetric gating collapses to g≈0.5 — a stable equilibrium of dual-branch optimization. The resulting fixed 50/50 routing is task-dependent in effectiveness: on high-CS Synapse it performs below both single-branch modes (gate=learn 77.78% < gate=pam 78.64%, gate=cam 78.26%), while on low-CS Kvasir it produces the best result (+0.77% vs DA-TransUNet). The collapse itself is the finding — not that "gates are bad."
 >
 > **Finding 2 — PAM > CAM (+0.38% DSC):** PAM captures richer spatial context per window; CAM's grouped channel attention is inherently weaker at capturing structural boundaries in CT.
 >
 > **Finding 3 — Window size vs gate quality trade-off:** gate=pam M=7 (78.64%) > gate=learn M=14 (78.04%). Pure PAM with a small window is better than a blended 50/50 gate with a larger window.
 >
-> **Finding 4 — Intermediate windowing is optimal on high-GCR Synapse; ApproxDA beats DA-TransUNet:** The DSC-vs-M curve is **non-monotonic** — peak at M=28 (80.94%, +1.14% vs DA-TransUNet). Both too-local (M=7: 78.64%) and too-global (M=112: 79.44%) underperform the intermediate optimum. Window sensitivity range = 2.30%, vs Kvasir 0.64% — 3.6× higher sensitivity confirms high GCR. Key insight: **ApproxDA with tuned window now beats DA-TransUNet on Synapse (+1.14%)**; GCR governs sensitivity to M choice, not the sign of approximation's effect.
+> **Finding 4 — Intermediate windowing is optimal on high-CS Synapse; ApproxDA beats DA-TransUNet:** The DSC-vs-M curve is **non-monotonic** — peak at M=28 (80.94%, +1.14% vs DA-TransUNet). Both too-local (M=7: 78.64%) and too-global (M=112: 79.44%) underperform the intermediate optimum. Window sensitivity range = 2.30%, vs Kvasir 0.64% — 3.6× higher sensitivity confirms high CS. Key insight: **ApproxDA with tuned window now beats DA-TransUNet on Synapse (+1.14%)**; CS governs sensitivity to M choice, not the sign of approximation's effect.
 >
 > Gate collapse is **Contribution 2** in V4.0 — a theoretical finding about the fundamental limitation of naïve learnable gating in two-branch attention architectures.
-> **Paper narrative (V4.0, Contribution 2):** "Naïve learnable gating suffers from gradient symmetry collapse: when g=0.5, PAM and CAM receive identical gradients, branches converge symmetrically, and the gate gradient → 0. This is a fundamental limitation, not a windowing artifact. The collapsed gate produces a fixed 50/50 routing whose effectiveness is context-dependent: harmful on high-GCR tasks (complex multi-organ CT (gate=learn 77.78% < gate=pam 78.64%) but beneficial on low-GCR tasks (Kvasir: gate=learn AdaDA 89.24% > DA-TransUNet 88.44%). This motivates a context-dependent analysis rather than redesigning the gate (conference goal: understand routing failure; journal goal: learn effective routing)."
+> **Paper narrative (V4.0, Contribution 2):** "Naïve learnable gating suffers from gradient symmetry collapse: when g=0.5, PAM and CAM receive identical gradients, branches converge symmetrically, and the gate gradient → 0. This is a fundamental limitation, not a windowing artifact. The collapsed gate produces a fixed 50/50 routing whose effectiveness is context-dependent: harmful on high-CS tasks (complex multi-organ CT (gate=learn 77.78% < gate=pam 78.64%) but beneficial on low-CS tasks (Kvasir: gate=learn AdaDA 89.24% > DA-TransUNet 88.44%). This motivates a context-dependent analysis rather than redesigning the gate (conference goal: understand routing failure; journal goal: learn effective routing)."
 
 ---
 
@@ -629,14 +629,14 @@ Night 5:  AdaDA         ISIC     (T4 x2, ~2.5h)
 - Central question: *"When is attention approximation safe under different global context requirements?"*
 - **Three explicit hypotheses (organizing framework):**
   - **H1.** Attention approximation effectiveness depends on task characteristics — not universally safe.
-  - **H2.** Global Context Requirement (GCR), a latent task property describing reliance on long-range contextual information, appears to be an important explanatory factor governing approximation safety.
+  - **H2.** Context Sensitivity (CS), a latent task property describing reliance on long-range contextual information, appears to be an important explanatory factor governing approximation safety.
   - **H3.** Symmetric dual-attention routing naturally collapses to a fixed 50/50 blend during optimization — a stable equilibrium of dual-branch gradient symmetry.
 - **Contribution 1 — Controllable approximation framework (ApproxDA as scientific instrument):** Three independently controllable approximation axes — spatial scope (window M), representation fidelity (rank r), channel interaction (groups G) — enable isolated analysis of each operator's effect. Engineering benefit: DDP-compatible; per-GPU VRAM 6.4 GB vs DA 11.5 GB. **Do NOT claim GFLOPs reduction** — fvcore shows AdaDA 32.1 vs DA 30.2 (AdaDA slightly higher).
-- **Contribution 2 — Gate collapse analysis (H3 evidence):** Symmetric gating collapses to fixed routing — a stable equilibrium of dual-branch optimization (g=0.5 → identical gradients → PAM≈CAM → gate gradient≈0). The collapsed routing's effectiveness is task-dependent: harmful on high-GCR Synapse, beneficial on low-GCR Kvasir. General finding applicable to any two-branch attention with naïve learnable gating; not a windowing artifact.
-- **Contribution 3 — Cross-task empirical study (H1 + H2 evidence):** Synapse (high GCR): **+1.14% DSC (M=28/r=32, 80.94%)** — beats DA-TransUNet; Kvasir (low GCR): **+1.73% DSC** (gate=pam, M=56; 90.17% vs 88.44%). Both tasks improved with appropriate window. GCR governs window *sensitivity*: range 2.30% (Synapse) vs 0.64% (Kvasir) — 3.6× ratio confirms high-GCR tasks require more careful window tuning. ISIC: pending.
-- **Contribution 4 — Window sensitivity as GCR proxy; optimal window is intermediate:** The DSC-vs-M curve is non-monotonic on Synapse: peak at M=28 (80.94%), with M=7 (78.64%) and M=112 (79.44%) both underperforming. Synapse window sensitivity range (2.30%) is 3.6× Kvasir's (0.64%), operationalizing GCR as a predictor of approximation sensitivity. Both tasks benefit from ApproxDA with appropriate M; high-GCR tasks require more careful window tuning.
+- **Contribution 2 — Gate collapse analysis (H3 evidence):** Symmetric gating collapses to fixed routing — a stable equilibrium of dual-branch optimization (g=0.5 → identical gradients → PAM≈CAM → gate gradient≈0). The collapsed routing's effectiveness is task-dependent: harmful on high-CS Synapse, beneficial on low-CS Kvasir. General finding applicable to any two-branch attention with naïve learnable gating; not a windowing artifact.
+- **Contribution 3 — Cross-task empirical study (H1 + H2 evidence):** Synapse (high CS): **+1.14% DSC (M=28/r=32, 80.94%)** — beats DA-TransUNet; Kvasir (low CS): **+1.73% DSC** (gate=pam, M=56; 90.17% vs 88.44%). Both tasks improved with appropriate window. CS governs window *sensitivity*: range 2.30% (Synapse) vs 0.64% (Kvasir) — 3.6× ratio confirms high-CS tasks require more careful window tuning. ISIC: pending.
+- **Contribution 4 — Window sensitivity as CS proxy; optimal window is intermediate:** The DSC-vs-M curve is non-monotonic on Synapse: peak at M=28 (80.94%), with M=7 (78.64%) and M=112 (79.44%) both underperforming. Synapse window sensitivity range (2.30%) is 3.6× Kvasir's (0.64%), operationalizing CS as a predictor of approximation sensitivity. Both tasks benefit from ApproxDA with appropriate M; high-CS tasks require more careful window tuning.
 - Conference paper: No new gating mechanism — scientific analysis of when and why approximation fails.
-- Journal paper: Non-collapsing routing (entropy-guided, orthogonal branch loss, MoE), formal GCR quantification, expanded dataset range.
+- Journal paper: Non-collapsing routing (entropy-guided, orthogonal branch loss, MoE), formal CS quantification, expanded dataset range.
 - Target: **BIBM 2026** primary, ACPR 2026 backup, SPIE 2027 safe
 
 **Route 2 — + Scaling Analysis** ❌ CLOSED (Exp 1 DSC 78.04% < 80.5% threshold)
@@ -656,14 +656,14 @@ Night 5:  AdaDA         ISIC     (T4 x2, ~2.5h)
 | **SPIE 2027** | C | Aug 5, 2026 | ✅ Safe bet — workshop venue, less competitive |
 | **MICCAI 2027** | A | Jan 2027 | 🎯 Journal extension target after acceptance |
 
-> **Narrative to write now (V5.0):** "Every segmentation task has an optimal attention context scale; Context Sensitivity CS (= DSC range across M values) determines how important it is to find it. ApproxDA-TransUNet is the scientific instrument enabling this analysis. Key finding: the DSC-vs-M curve is non-monotonic on Synapse (peak M=28: 80.94%, +1.14% vs DA-TransUNet); the curve is near-flat on Kvasir (peak M=56: 90.17%, +1.73%). The 3.6× sensitivity ratio (GCR=2.30 vs 0.64) operationalizes GCR directly from the ablation. Mechanistically: approximation is not a capability reduction but an inductive bias adjustment — windowed attention's locality prior suppresses spurious long-range correlations (over-context suppression on high-GCR; inductive bias alignment on low-GCR). Phase E evidence: M=7 pam concentrates 62.3% on-mask vs M=112's 34.2% (1.82×). Gate collapse (H3) is a secondary mechanistic finding. This work shifts the question from *how to approximate* toward *when and at what scale*."
-> This story needs ISIC results to be complete (expected to reinforce low-GCR tolerance).
+> **Narrative to write now (V5.0):** "Every segmentation task has an optimal attention context scale; Context Sensitivity CS (= DSC range across M values) determines how important it is to find it. ApproxDA-TransUNet is the scientific instrument enabling this analysis. Key finding: the DSC-vs-M curve is non-monotonic on Synapse (peak M=28: 80.94%, +1.14% vs DA-TransUNet); the curve is near-flat on Kvasir (peak M=56: 90.17%, +1.73%). The 3.6× sensitivity ratio (CS=2.30 vs 0.64) operationalizes CS directly from the ablation. Mechanistically: approximation is not a capability reduction but an inductive bias adjustment — windowed attention's locality prior suppresses spurious long-range correlations (over-context suppression on high-CS; inductive bias alignment on low-CS). Phase E evidence: M=7 pam concentrates 62.3% on-mask vs M=112's 34.2% (1.82×). Gate collapse (H3) is a secondary mechanistic finding. This work shifts the question from *how to approximate* toward *when and at what scale*."
+> This story needs ISIC results to be complete (expected to reinforce low-CS tolerance).
 
 ### Journal Extension (after conference acceptance)
 **Target:** IEEE JBHI or *Frontiers in Bioengineering and Biotechnology* (same journal as DA-TransUNet)
 - Design non-collapsing routing mechanisms (entropy-guided gate, orthogonal branch loss, MoE-style routing) that avoid the gradient symmetry collapse
-- Formally quantify Global Context Requirement (GCR) and validate its correlation with approximation safety empirically
-- Add broader dataset range to widen GCR spectrum (Chest X-Ray, CVC-ClinicDB)
+- Formally quantify Context Sensitivity (CS) and validate its correlation with approximation safety empirically
+- Add broader dataset range to widen CS spectrum (Chest X-Ray, CVC-ClinicDB)
 - Add sensitivity curves (rank r, window M, groups G) and per-organ analysis for Synapse
 - Extend to ~12 pages
 
@@ -673,8 +673,8 @@ The following implementation specifics are omitted from the conference paper but
 - **GroupedCAM integer-division fix:** The original `DANetHead` at C=64 channels produces an integer-division underflow; grouped decomposition (G=8) avoids this.
 - **ApproxDA resolution:** Both issues are resolved simultaneously by the windowed PAM (no N×N matrix) and grouped CAM (no C=64 underflow), enabling DDP via `torchrun` (NCCL, avoids `BroadcastBackward`).
 
-#### Mechanism Validation: Why Approximation Helps on Low-GCR Tasks
-The conference paper attributes low-GCR improvement to two factors: (i) near-zero information cost (local context is sufficient) and (ii) implicit regularization (spatial constraints reduce overfitting). The regularization interpretation is currently stated as hypothesis. The following experiments are needed to elevate it to a validated finding:
+#### Mechanism Validation: Why Approximation Helps on Low-CS Tasks
+The conference paper attributes low-CS improvement to two factors: (i) near-zero information cost (local context is sufficient) and (ii) implicit regularization (spatial constraints reduce overfitting). The regularization interpretation is currently stated as hypothesis. The following experiments are needed to elevate it to a validated finding:
 
 1. **Train/test generalization gap analysis** — Plot train DSC vs. test DSC learning curves for DA-TransUNet and ApproxDA on Kvasir. If ApproxDA has a smaller generalization gap (train DSC − test DSC), this directly supports the regularization interpretation. Cheap: just log train metrics during existing training runs.
 

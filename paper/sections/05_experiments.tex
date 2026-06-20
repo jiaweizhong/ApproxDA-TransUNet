@@ -17,7 +17,7 @@ We evaluate ApproxDA-TransUNet on three medical image segmentation benchmarks sp
 Table~\ref{tab:datasets} summarizes the three datasets alongside their contextual characteristics and CS classification, which motivates the cross-task analysis in Section~\ref{sec:analysis}.
 
 \begin{table}[t]
-  \caption{Dataset Properties and Global Context Requirement (CS)}
+  \caption{Dataset Properties and Context Sensitivity (CS)}
   \label{tab:datasets}
   \begin{center}
   \setlength{\tabcolsep}{3pt}
@@ -126,7 +126,7 @@ We examine whether efficient attention approximation behaves consistently across
   \footnotesize{Other baselines from~\cite{sun2024datransunet} Table~2 (Adam, 500ep, 75/25 split); HD95 not reported. $^\dag$DA-TransUNet re-run under the same protocol as ApproxDA (SGD, 300ep, 80/20 split). Paper-reported~\cite{sun2024datransunet}: 88.47\% DSC, 81.02\% mIoU. ApproxDA: gate=pam, $M$=56, $r$=32.}
 \end{table}
 
-\textbf{ISIC 2018.} Table~\ref{tab:isic} reports skin lesion segmentation results against the same six baselines from~\cite{sun2024datransunet}. Our ApproxDA experimental results are pending completion.
+\textbf{ISIC 2018.} Table~\ref{tab:isic} reports skin lesion segmentation results against the same six baselines from~\cite{sun2024datransunet}. We re-ran DA-TransUNet under our protocol (SGD, 300ep, 80/20 split), obtaining 88.43\% DSC and 80.68\% mIoU. ApproxDA-TransUNet (gate=learn, $M{=}7$, $r{=}32$) achieves \textbf{89.58\%} DSC and \textbf{82.66\%} mIoU---outperforming the reproduced DA-TransUNet baseline by $+$1.15\% DSC and $+$1.98\% mIoU, and surpassing all published baselines including the paper-reported DA-TransUNet (88.88\%). This extends the low-CS pattern observed on Kvasir-SEG to a third benchmark.
 
 \begin{table}[t]
   \caption{Segmentation Results on ISIC 2018 Skin Lesion}
@@ -142,17 +142,18 @@ We examine whether efficient attention approximation behaves consistently across
     U-Net++~\cite{zhou2018unetpp}              & 87.30 & 81.33 \\
     Res-UNet~\cite{diakogiannis2020resunet}    & 83.32 & 76.51 \\
     TransUNet~\cite{chen2021transunet}         & \underline{88.78} & \underline{82.63} \\
-    DA-TransUNet~\cite{sun2024datransunet}     & \textbf{88.88} & \textbf{82.78} \\
+    DA-TransUNet~\cite{sun2024datransunet}     & 88.88 & 82.78 \\
     \midrule
-    \textbf{ApproxDA-TransUNet (ours)}         & \textit{pend.} & \textit{pend.} \\
+    DA-TransUNet$^\dag$                        & 88.43 & 80.68 \\
+    \textbf{ApproxDA-TransUNet (ours)}         & \textbf{89.58} & \textbf{82.66} \\
     \bottomrule
   \end{tabular}
   \end{center}
   \vspace{-0.3em}
-  \footnotesize{Baselines from~\cite{sun2024datransunet} Table~2 (Adam, 50ep, 75/25 split). ApproxDA: SGD, 300ep, 80/20 split.}
+  \footnotesize{Baselines from~\cite{sun2024datransunet} Table~2 (Adam, 50ep, 75/25 split). $^\dag$DA-TransUNet re-run under the same protocol as ApproxDA (SGD, 300ep, 80/20 split); paper-reported: 88.88\% DSC, 82.78\% mIoU. ApproxDA: gate=learn, $M{=}7$, $r{=}32$, $G{=}8$.}
 \end{table}
 
-With appropriate window selection, ApproxDA outperforms DA-TransUNet on both datasets: $+$1.14\% DSC on Synapse ($M{=}28$) and $+$1.73\% DSC on Kvasir ($M{=}56$). However, the sensitivity to window choice differs markedly: Synapse DSC spans 2.30\% across $M$ values while Kvasir spans only 0.64\%, a 3.6$\times$ ratio reflecting the different context sensitivity of the two tasks.
+With appropriate window selection, ApproxDA outperforms DA-TransUNet on all three datasets: $+$1.14\% DSC on Synapse ($M{=}28$), $+$1.73\% DSC on Kvasir ($M{=}56$), and $+$1.15\% DSC on ISIC 2018 ($M{=}7$, gate=learn). The sensitivity to window choice differs markedly across the two datasets with full ablations: Synapse DSC spans 2.30\% across $M$ values while Kvasir spans only 0.64\%---a 3.6$\times$ ratio reflecting the different context sensitivity of the two tasks.
 
 \subsection{Window Sensitivity and the Optimal Approximation Scale}
 \label{sec:rq2}
@@ -231,7 +232,7 @@ Figure~\ref{fig:dsc_vs_m} visualizes both curves side by side. The 3.6$\times$ s
 \label{fig:dsc_vs_m}
 \end{figure}
 
-\textbf{Cross-task summary.} Table~\ref{tab:cross_task} consolidates results. With task-appropriate window selection, ApproxDA improves over DA-TransUNet on both benchmarks: $+$1.14\% on high-CS Synapse and $+$1.73\% on low-CS Kvasir. The sensitivity ratio (2.30\% vs.\ 0.64\%) is the primary empirical operationalization of CS. Figure~\ref{fig:qualitative} shows qualitative examples.
+\textbf{Cross-task summary.} Table~\ref{tab:cross_task} consolidates results. With task-appropriate window selection, ApproxDA improves over DA-TransUNet on all three benchmarks: $+$1.14\% on high-CS Synapse, $+$1.73\% on low-CS Kvasir, and $+$1.15\% on low-CS ISIC. The sensitivity ratio (2.30\% vs.\ 0.64\% on Synapse vs.\ Kvasir) is the primary empirical operationalization of CS. Figure~\ref{fig:qualitative} shows qualitative examples.
 
 \begin{table}[t]
   \caption{Cross-Task Approximation Effectiveness by CS Level}
@@ -245,18 +246,18 @@ Figure~\ref{fig:dsc_vs_m} visualizes both curves side by side. The 3.6$\times$ s
     \midrule
     Synapse    & High & 79.80\% & 80.94\%$^a$ & $+$1.14\% \\
     Kvasir-SEG & Low  & 88.44\%$^c$ & 90.17\%$^b$ & $+$1.73\% \\
-    ISIC 2018  & Low  & 88.88\% & \textit{pend.} & \textit{pend.} \\
+    ISIC 2018  & Low  & 88.43\%$^d$ & 89.58\%$^e$ & $+$1.15\% \\
     \bottomrule
   \end{tabular}
   \end{center}
   \vspace{-0.3em}
-  \footnotesize{$^\dagger$Paper-reported~\cite{sun2024datransunet} except $^c$Kvasir (our re-run, SGD 300ep 80/20). $^a$gate=pam, $M{=}28$, $r{=}32$. $^b$gate=pam, $M{=}56$, $r{=}32$.}
+  \footnotesize{$^\dagger$Paper-reported~\cite{sun2024datransunet} except $^{c,d}$(our re-runs, SGD 300ep 80/20). $^a$gate=pam, $M{=}28$, $r{=}32$. $^b$gate=pam, $M{=}56$, $r{=}32$. $^d$Paper-reported: 88.88\%. $^e$gate=learn, $M{=}7$, $r{=}32$.}
 \end{table}
 
 \begin{figure}[t]
   \centering
   \fbox{\rule{0pt}{4cm}\rule{\columnwidth}{0pt}}
-  \caption{Qualitative segmentation comparison. \textbf{Top (Synapse, $M{=}28$):} ApproxDA achieves $+$1.14\% DSC; performance is window-sensitive (range 2.30\%). \textbf{Bottom (Kvasir-SEG, $M{=}56$):} ApproxDA achieves $+$1.73\% DSC; performance is window-robust (range 0.64\%). [Generated after experiments complete.]}
+  \caption{Qualitative segmentation comparison. \textbf{Top (Synapse, $M{=}28$):} ApproxDA achieves $+$1.14\% DSC; performance is window-sensitive (range 2.30\%). \textbf{Middle (Kvasir-SEG, $M{=}56$):} ApproxDA achieves $+$1.73\% DSC; performance is window-robust (range 0.64\%). \textbf{Bottom (ISIC 2018, $M{=}7$, gate=learn):} ApproxDA achieves $+$1.15\% DSC, consistent with the low-CS pattern. [Generated after experiments complete.]}
   \label{fig:qualitative}
 \end{figure}
 
