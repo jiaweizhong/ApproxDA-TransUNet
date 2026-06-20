@@ -70,9 +70,10 @@ class Kvasir_dataset(Dataset):
     def __init__(self, base_dir, list_dir, split, transform=None):
         self.transform = transform
         list_split = 'test' if split == 'test_vol' else split
-        self.sample_list = open(
-            os.path.join(list_dir, list_split + '.txt')
-        ).readlines()
+        self.sample_list = [
+            l for l in open(os.path.join(list_dir, list_split + '.txt')).readlines()
+            if l.strip() and not l.strip().startswith('#')
+        ]
         self.img_dir  = os.path.join(base_dir, 'images')
         self.mask_dir = os.path.join(base_dir, 'masks')
 
