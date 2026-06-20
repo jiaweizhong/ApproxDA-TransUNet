@@ -312,7 +312,7 @@ if args.mode == 'window_ablation':
 # ══════════════════════════════════════════════════════════════════════════════
 elif args.mode == 'cross_task':
     required = {
-        'Synapse':     ('ckpt_syn_best',    9, 28,  32, 'pam'),
+        'Synapse':     ('ckpt_syn_best',    9,  7,  32, 'pam'),
         'Kvasir-SEG':  ('ckpt_kvasir_best', 2, 56,  32, 'pam'),
         'ISIC 2018':   ('ckpt_isic_best',   2,  7,  32, 'learn'),
     }
