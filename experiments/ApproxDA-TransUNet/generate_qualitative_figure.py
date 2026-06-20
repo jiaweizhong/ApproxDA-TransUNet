@@ -218,19 +218,28 @@ def load_binary_cases(dataset, n_cases=2):
                           split='test_vol')
     loader = DataLoader(db, batch_size=1, shuffle=False, num_workers=1)
     cases = []
-    for i, s in enumerate(loader):
-        if i >= n_cases:
+    for s in loader:
+        if len(cases) >= n_cases:
             break
-        img = s['image'].squeeze().cpu().numpy()   # H×W float
+        img = s['image'].squeeze().cpu().numpy()
+        if img.ndim == 3:          # (C, H, W) -> take first channel
+            img = img[0]
         lbl = s['label'].squeeze().cpu().numpy().astype(np.uint8)
         name = s['case_name'][0]
-        # skip nearly-blank images (fg < 1%)
-        if (lbl > 0).mean() < 0.01:
-            n_cases += 1
-            if i < n_cases:
-                continue
+        if (lbl > 0).mean() < 0.01:   # skip blank, try next
+            continue
         cases.append((name, img, lbl))
-    return cases[:n_cases]
+    if not cases:
+        # fallback: just take the first sample regardless of blank
+        for s in loader:
+            img = s['image'].squeeze().cpu().numpy()
+            if img.ndim == 3:
+                img = img[0]
+            lbl = s['label'].squeeze().cpu().numpy().astype(np.uint8)
+            name = s['case_name'][0]
+            cases.append((name, img, lbl))
+            break
+    return cases
 
 
 # ══════════════════════════════════════════════════════════════════════════════
