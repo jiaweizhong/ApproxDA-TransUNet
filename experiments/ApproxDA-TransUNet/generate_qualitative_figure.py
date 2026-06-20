@@ -98,7 +98,28 @@ os.makedirs(args.out_dir, exist_ok=True)
 
 
 # ── model loader ───────────────────────────────────────────────────────────────
+def infer_window_size(state):
+    """Read M from proj_r.weight shape: [rank, M*M] -> M = sqrt(shape[1])."""
+    for k, v in state.items():
+        if 'pam.proj_r.weight' in k:
+            m = int(round(v.shape[1] ** 0.5))
+            return m
+    return None
+
 def load_model(ckpt_path, window_size, rank=32, gate_mode='pam', num_classes=9):
+    state = torch.load(ckpt_path, map_location='cpu', weights_only=False)
+    state = {k.replace('.ada_block.', '.approx_block.'): v for k, v in state.items()}
+
+    detected_m = infer_window_size(state)
+    if detected_m is not None and detected_m != window_size:
+        print(f"  [auto] window_size {window_size} -> {detected_m} (from checkpoint)")
+        window_size = detected_m
+
+    detected_gate = 'learn' if any('gate_fc' in k for k in state) else gate_mode
+    if detected_gate != gate_mode:
+        print(f"  [auto] gate_mode '{gate_mode}' -> '{detected_gate}' (from checkpoint)")
+        gate_mode = detected_gate
+
     cfg = CONFIGS_ViT_seg['R50-ViT-B_16']
     cfg.n_classes = num_classes
     cfg.n_skip = args.n_skip
@@ -109,13 +130,11 @@ def load_model(ckpt_path, window_size, rank=32, gate_mode='pam', num_classes=9):
     cfg.patches.grid = (args.img_size // 16, args.img_size // 16)
 
     net = ApproxDATransUNet(cfg, img_size=args.img_size, num_classes=num_classes)
-    state = torch.load(ckpt_path, map_location='cpu', weights_only=False)
-    state = {k.replace('.ada_block.', '.approx_block.'): v for k, v in state.items()}
     net.load_state_dict(state, strict=False)
     net.eval()
     if torch.cuda.is_available():
         net = net.cuda()
-    print(f"  Loaded: {ckpt_path}")
+    print(f"  Loaded: {ckpt_path}  (M={window_size}, gate={gate_mode})")
     return net
 
 
