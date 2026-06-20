@@ -140,10 +140,13 @@ def load_model(ckpt_path, window_size, rank=32, gate_mode='pam', num_classes=9):
 
 # ── per-slice prediction ───────────────────────────────────────────────────────
 def predict_slice(net, img_slice):
-    """img_slice: H×W float32 numpy [0,1]. Returns pred: H×W uint8."""
+    """img_slice: H×W float32 numpy (any range). Returns pred: H×W uint8."""
     h, w = img_slice.shape
     if h != args.img_size or w != args.img_size:
         img_slice = nd_zoom(img_slice, (args.img_size / h, args.img_size / w), order=3)
+    # normalize to [0, 1] — matches training preprocessing for all datasets
+    lo, hi = img_slice.min(), img_slice.max()
+    img_slice = (img_slice - lo) / (hi - lo + 1e-6)
     t = torch.from_numpy(img_slice.astype(np.float32)).unsqueeze(0).unsqueeze(0).repeat(1, 3, 1, 1)
     if torch.cuda.is_available():
         t = t.cuda()
