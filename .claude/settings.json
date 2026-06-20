@@ -5,7 +5,16 @@
       "Bash(git mv *)",
       "Bash(ls *.aux *.bbl *.bib)",
       "Bash(head -20 ApproxDA-TransUNet_v4.aux)",
-      "Bash(mkdir -p \"c:/Users/jiawe/Repos/AdaDA-TransUNet/.vscode\")"
+      "Bash(mkdir -p \"c:/Users/jiawe/Repos/AdaDA-TransUNet/.vscode\")",
+      "Bash(git commit -m ' *)",
+      "Bash(grep -rh \"\\\\\\\\\\\\\\\\cite{\" /c/Users/jiawe/Repos/AdaDA-TransUNet/paper/sections/)",
+      "Bash(grep -v '^$')",
+      "Bash(grep -E '^[a-z0-9_]+$')",
+      "Bash(grep -oh \"@[a-zA-Z0-9_]*{[^,]*,\" /c/Users/jiawe/Repos/AdaDA-TransUNet/paper/references.bib)",
+      "Bash(grep -rn \"\\\\\\\\\\\\\\\\label{\" /c/Users/jiawe/Repos/AdaDA-TransUNet/paper/sections/)",
+      "Bash(grep -rh \"\\\\\\\\\\\\\\\\ref{\" /c/Users/jiawe/Repos/AdaDA-TransUNet/paper/sections/)",
+      "Bash(grep -rn \"\\\\\\\\\\\\\\\\includegraphics\" /c/Users/jiawe/Repos/AdaDA-TransUNet/paper/sections/)",
+      "Bash(grep -rn \"\\\\\\\\\\\\\\\\fbox\" /c/Users/jiawe/Repos/AdaDA-TransUNet/paper/sections/)"
     ],
     "additionalDirectories": [
       "c:\\Users\\jiawe\\Repos\\AdaDA-TransUNet"

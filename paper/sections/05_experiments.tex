@@ -254,12 +254,12 @@ Figure~\ref{fig:dsc_vs_m} visualizes both curves side by side. The 3.6$\times$ s
   \footnotesize{$^\dagger$Paper-reported~\cite{sun2024datransunet} except $^{c,d}$(our re-runs, SGD 300ep 80/20). $^a$gate=pam, $M{=}28$, $r{=}32$. $^b$gate=pam, $M{=}56$, $r{=}32$. $^d$Paper-reported: 88.88\%. $^e$gate=learn, $M{=}7$, $r{=}32$.}
 \end{table}
 
-\begin{figure}[t]
+\begin{figure*}[t]
   \centering
-  \fbox{\rule{0pt}{4cm}\rule{\columnwidth}{0pt}}
-  \caption{Qualitative segmentation comparison. \textbf{Top (Synapse, $M{=}28$):} ApproxDA achieves $+$1.14\% DSC; performance is window-sensitive (range 2.30\%). \textbf{Middle (Kvasir-SEG, $M{=}56$):} ApproxDA achieves $+$1.73\% DSC; performance is window-robust (range 0.64\%). \textbf{Bottom (ISIC 2018, $M{=}7$, gate=learn):} ApproxDA achieves $+$1.15\% DSC, consistent with the low-CS pattern. [Generated after experiments complete.]}
+  \includegraphics[width=\textwidth]{figures/fig_qualitative_cross_task.png}
+  \caption{Qualitative segmentation comparison across all three benchmarks. \textbf{Top (Synapse, $M{=}28$, high CS):} multi-organ CT segmentation; ApproxDA achieves 80.94\% volume DSC ($+$1.14\% vs.\ DA-TransUNet). \textbf{Middle (Kvasir-SEG, $M{=}56$, low CS):} polyp segmentation; ApproxDA achieves 90.17\% DSC ($+$1.73\%). \textbf{Bottom (ISIC 2018, $M{=}7$, low CS):} skin lesion segmentation; ApproxDA achieves 89.58\% DSC ($+$1.15\%). Per-case DSC on Kvasir and ISIC samples shown in brackets; Synapse volume DSC is reported as the mean over all slices and organ classes (Table~\ref{tab:synapse}).}
   \label{fig:qualitative}
-\end{figure}
+\end{figure*}
 
 Together, the window sensitivity experiments establish that approximation strength---not approximation itself---governs performance. This motivates the mechanistic analysis in Section~\ref{sec:analysis}.
 
