@@ -28,7 +28,7 @@ We first investigate how approximation strength influences segmentation performa
   \end{tabular}
   \end{center}
   \vspace{-0.3em}
-  \footnotesize{$^\dag$Gate collapsed to $g{\approx}0.5$. $M{=}112$ via window clamping yields full-map attention at all scales. Non-monotonic peak at $M{=}28$: both under-context ($M{=}7$) and over-context ($M{=}112$) underperform.}
+  \footnotesize{$^\dag$Gate collapsed to $g{\approx}0.5$. $M{=}112$ via window clamping yields full-map attention at all scales.}
 \end{table}
 
 The Synapse DSC-vs-$M$ curve is \emph{non-monotonic}: peak at $M{=}28$ (80.94\%, $+$1.14\% vs.\ DA-TransUNet), with all other scales underperforming---too-local ($M{=}7$: 78.64\%), intermediate-upper ($M{=}56$: 78.90\%), and fully-global ($M{=}112$: 79.44\%). This pattern is analogous to the classical bias-variance tradeoff: under-context windows have high bias (missing necessary dependencies); over-context windows introduce spurious variance (irrelevant distant tokens); the intermediate $M{=}28$ achieves the optimal balance. The DSC range of 2.30\,pp across $M$ values confirms high window sensitivity on this task.
@@ -109,7 +109,6 @@ We validate this locality bias hypothesis via controlled attention-map analysis:
 
 Together, these findings reframe the role of approximation: not as a capability reduction but as a task-dependent inductive bias adjustment whose value depends on how well the enforced locality prior aligns with the task's intrinsic context scale.
 
-Attention approximation should be selected according to the contextual characteristics of the target task rather than applied uniformly: high-GCS tasks require careful window tuning; low-GCS tasks are largely window-robust and benefit from the locality prior that windowed approximation enforces.
 
 \subsection{Gate Ablation and Mechanistic Analysis}
 \label{sec:collapse}
@@ -141,7 +140,7 @@ Finally, we investigate whether adaptive routing contributes to approximation pe
   \end{tabular}
   \end{center}
   \vspace{-0.3em}
-  \footnotesize{All rows: ApproxDA-TransUNet. $^*$Gate collapsed to $g{\approx}0.5$ throughout training. \textbf{Bold}: best; \underline{underline}: second best per column.}
+  \footnotesize{$^*$Gate collapsed to $g{\approx}0.5$ throughout training. \textbf{Bold}: best; \underline{underline}: second best per column.}
 \end{table}
 
 Gate=pam (78.64\%) outperforms gate=cam (78.26\%) and both gate=learn configurations (77.78\% at $M{=}7$; 78.04\% at $M{=}14$, $r{=}64$). Notably, gate=learn with a larger window and higher rank (M=14, r=64) still underperforms gate=pam at M=7 (78.04\% vs.\ 78.64\%), confirming that gate collapse is more damaging than a suboptimal window choice. In both gate=learn configurations, the gate converges to $g{\approx}0.5$ regardless of window size, producing a fixed 50/50 blend that performs below both single-branch modes.
@@ -165,4 +164,4 @@ Overall, the ablation studies reveal three important findings. First, approximat
 
 \subsection{Limitations}
 
-Although the $\Delta\text{DSC}$ measure provides a computable GCS estimate from the window sensitivity ablation, a rigorous GCS estimator that generalizes across imaging modalities and training protocols---without requiring the ablation itself---remains to be developed. A natural candidate proxy, center-cropping the input to restrict visible context, is invalidated by a more fundamental issue: evaluation against the full-resolution label penalises the crop for missing structures that lie outside the crop window, regardless of the model's actual context reasoning. For randomly-positioned targets (polyps, lesions), small crops frequently exclude the target entirely; for anatomically-fixed but spatially-extended targets (abdominal organs), crops exclude large organ fractions. In both cases DSC collapses not because the model lacks global reasoning but because the crop removes the target itself. Window sensitivity within the model---where target visibility is unchanged---is the appropriate substitute. Additionally, the cross-task comparison covers three benchmarks (Synapse, Kvasir-SEG, and ISIC 2018); the GCS hypothesis should be validated on a broader range of medical segmentation tasks before being applied prescriptively. Finally, the two mechanisms---inductive bias alignment and context interference---are empirically motivated but not formally proven; their relative contributions and the conditions under which each dominates warrant further investigation.
+Although the $\Delta\text{DSC}$ measure provides a computable GCS estimate from the window sensitivity ablation, a rigorous GCS estimator that generalizes across imaging modalities and training protocols---without requiring the ablation itself---remains to be developed. The cross-task comparison covers three benchmarks (Synapse, Kvasir-SEG, and ISIC 2018); the GCS hypothesis should be validated on a broader range of medical segmentation tasks before being applied prescriptively. Finally, the two mechanisms---inductive bias alignment and context interference---are empirically motivated but not formally proven; their relative contributions and the conditions under which each dominates warrant further investigation.

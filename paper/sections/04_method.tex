@@ -17,26 +17,7 @@ Figure~\ref{fig:framework} illustrates the overall architecture: ApproxDA-TransU
 
 \subsection{Attention Approximation Formulation}
 
-The original DA module performs dense spatial and channel attention over the full feature map, with quadratic complexity in both spatial resolution and channel dimension. ApproxDA-TransUNet reduces this cost along three independent axes (Figure~\ref{fig:approx_space}), each targeting a distinct aspect of the approximation:
-
-\begin{figure}[t]
-  \centering
-  \scalebox{0.85}{%
-  \begin{tikzpicture}[
-    axis/.style={->, thick, >=stealth},
-    lab/.style={font=\small, align=center}
-  ]
-    \node[draw, circle, fill=gray!10, minimum size=1.1cm, font=\small\bfseries] (c) at (0,0) {ApproxDA};
-    \draw[axis, blue!70!black]  (c) -- ++(0, 2.0)
-      node[lab, above] {Spatial Scope\\{\scriptsize(window $M$)}};
-    \draw[axis, red!60!black]   (c) -- ++(-2.0,-1.1)
-      node[lab, below left] {Representation\\Fidelity\\{\scriptsize(rank $r$)}};
-    \draw[axis, green!60!black] (c) -- ++(2.0,-1.1)
-      node[lab, below right] {Semantic\\Interaction\\{\scriptsize(groups $G$)}};
-  \end{tikzpicture}}
-  \caption{The three orthogonal approximation axes of ApproxDA-TransUNet. Each axis is independently controllable, enabling clean ablations that isolate individual approximation effects.}
-  \label{fig:approx_space}
-\end{figure}
+The original DA module performs dense spatial and channel attention over the full feature map, with quadratic complexity in both spatial resolution and channel dimension. ApproxDA-TransUNet reduces this cost along three independent axes, each targeting a distinct aspect of the approximation:
 
 \textbf{Spatial scope} (window size $M$) controls \emph{how far} PAM reaches. Full global attention ($M{=}H$) captures all long-range spatial relationships; restricting to $M{\times}M$ local windows trades long-range context for lower complexity. This axis most directly governs whether tasks with broader contextual requirements retain the anatomical context they depend on.
 
@@ -108,4 +89,4 @@ The training objective combines Dice loss and cross-entropy loss with equal weig
   \label{eq:loss}
 \end{equation}
 
-These approximations reduce layer-level attention complexity: windowed PAM from $\mathcal{O}(N^2C)$ to $\mathcal{O}(NrC)$ ($r \ll N$); grouped CAM from $\mathcal{O}(C^2N)$ to $\mathcal{O}(C^2N/G)$. Since backbone operations dominate end-to-end computation, the primary value of ApproxDA-TransUNet is not whole-network FLOPs reduction but a controllable formulation for systematically isolating each approximation operator's effect on segmentation performance (Section~\ref{sec:experiments}).
+These approximations reduce layer-level attention complexity: windowed PAM from $\mathcal{O}(N^2C)$ to $\mathcal{O}(NrC)$ ($r \ll N$); grouped CAM from $\mathcal{O}(C^2N)$ to $\mathcal{O}(C^2N/G)$.
