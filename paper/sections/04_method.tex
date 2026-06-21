@@ -48,7 +48,7 @@ These axes correspond to three distinct types of approximation: \emph{spatial ap
 
 \begin{figure*}[tbp]
   \centering
-  \includegraphics[width=0.8\textwidth]{figures/approxda_block}
+  \includegraphics[width=\textwidth]{figures/approxda_block}
   \caption{ApproxDABlock internals. Input $\mathbf{x}$ splits into two branches: Low-Rank Windowed PAM (blue, upper) via window partition, low-rank projection, and attention; Grouped CAM (green, lower) via group split and channel attention. A learned gate $g$ fuses the outputs; $\mathbf{x}$ is added as a residual.}
   \label{fig:approxda_block}
 \end{figure*}
