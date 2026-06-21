@@ -6,7 +6,7 @@ This section introduces the overall architecture of ApproxDA-TransUNet, then des
 
 \subsection{Architecture Overview}
 
-ApproxDA-TransUNet adopts the hybrid CNN--ViT encoder-decoder structure of DA-TransUNet~\cite{sun2024datransunet}, with an R50-ViT-B/16 backbone pretrained on ImageNet-21K. Three CNN encoder stages produce multi-scale features at strides 4, 8, and 16; a 12-layer ViT processes $14{\times}14$ patch tokens. ApproxDABlocks replace all dual-attention modules at three skip connections---512 channels at $28{\times}28$, 256 at $56{\times}56$, and 64 at $112{\times}112$---and at the bottleneck.
+Figure~\ref{fig:framework} illustrates the overall architecture: ApproxDA-TransUNet adopts the hybrid CNN--ViT encoder-decoder structure of DA-TransUNet~\cite{sun2024datransunet}, with an R50-ViT-B/16 backbone pretrained on ImageNet-21K. Three CNN encoder stages produce multi-scale features at strides 4, 8, and 16; a 12-layer ViT processes $14{\times}14$ patch tokens. ApproxDABlocks replace all dual-attention modules at three skip connections---512 channels at $28{\times}28$, 256 at $56{\times}56$, and 64 at $112{\times}112$---and at the bottleneck. Each block routes activations through a Low-Rank Windowed PAM branch and a Grouped CAM branch, fused by a configurable gate $g$ that controls the spatial-to-channel attention blend.
 
 \begin{figure*}[tbp]
   \centering
@@ -15,22 +15,13 @@ ApproxDA-TransUNet adopts the hybrid CNN--ViT encoder-decoder structure of DA-Tr
   \label{fig:framework}
 \end{figure*}
 
-Figure~\ref{fig:framework} illustrates the overall architecture; Figure~\ref{fig:approxda_block} details the internal structure of each ApproxDABlock.
-
 \subsection{Attention Approximation Formulation}
 
-The original DA module performs dense spatial and channel attention over the full feature map, with quadratic complexity in both spatial resolution and channel dimension. ApproxDA-TransUNet reduces this cost along three independent axes, each targeting a distinct aspect of the approximation:
-
-\textbf{Spatial scope} (window size $M$) controls \emph{how far} PAM reaches. Full global attention ($M{=}H$) captures all long-range spatial relationships; restricting to $M{\times}M$ local windows trades long-range context for lower complexity. This axis most directly governs whether tasks with broader contextual requirements retain the anatomical context they depend on.
-
-\textbf{Representation fidelity} (rank $r$) controls \emph{how precisely} attention is computed within each window. Low-rank projection ($r \ll M^2$) approximates the affinity matrix at reduced cost; higher $r$ approaches exact attention.
-
-\textbf{Semantic interaction} (groups $G$) controls \emph{which channels} may interact in CAM. Partitioning $C$ channels into $G$ independent groups reduces cross-channel dependency while retaining within-group semantic interaction.
-
-These axes correspond to three distinct types of approximation: \emph{spatial approximation} (how far attention reaches, controlled by $M$), \emph{representation approximation} (how precisely affinity is computed, controlled by $r$), and \emph{channel approximation} (how broadly channels interact, controlled by $G$). The axes are fully independent: any two of $\{M,\,r,\,G\}$ can be held fixed while the third varies, enabling clean ablations that isolate individual approximation effects. Figure~\ref{fig:approx_space} visualizes this three-dimensional approximation space.
+The original DA module performs dense spatial and channel attention over the full feature map, with quadratic complexity in both spatial resolution and channel dimension. ApproxDA-TransUNet reduces this cost along three independent axes (Figure~\ref{fig:approx_space}), each targeting a distinct aspect of the approximation:
 
 \begin{figure}[t]
   \centering
+  \scalebox{0.85}{%
   \begin{tikzpicture}[
     axis/.style={->, thick, >=stealth},
     lab/.style={font=\small, align=center}
@@ -42,10 +33,25 @@ These axes correspond to three distinct types of approximation: \emph{spatial ap
       node[lab, below left] {Representation\\Fidelity\\{\scriptsize(rank $r$)}};
     \draw[axis, green!60!black] (c) -- ++(2.0,-1.1)
       node[lab, below right] {Semantic\\Interaction\\{\scriptsize(groups $G$)}};
-  \end{tikzpicture}
+  \end{tikzpicture}}
   \caption{The three orthogonal approximation axes of ApproxDA-TransUNet. Each axis is independently controllable, enabling clean ablations that isolate individual approximation effects.}
   \label{fig:approx_space}
 \end{figure}
+
+\textbf{Spatial scope} (window size $M$) controls \emph{how far} PAM reaches. Full global attention ($M{=}H$) captures all long-range spatial relationships; restricting to $M{\times}M$ local windows trades long-range context for lower complexity. This axis most directly governs whether tasks with broader contextual requirements retain the anatomical context they depend on.
+
+\textbf{Representation fidelity} (rank $r$) controls \emph{how precisely} attention is computed within each window. Low-rank projection ($r \ll M^2$) approximates the affinity matrix at reduced cost; higher $r$ approaches exact attention.
+
+\textbf{Semantic interaction} (groups $G$) controls \emph{which channels} may interact in CAM. Partitioning $C$ channels into $G$ independent groups reduces cross-channel dependency while retaining within-group semantic interaction.
+
+These axes correspond to three distinct types of approximation: \emph{spatial approximation} (how far attention reaches, controlled by $M$), \emph{representation approximation} (how precisely affinity is computed, controlled by $r$), and \emph{channel approximation} (how broadly channels interact, controlled by $G$). The axes are fully independent: any two of $\{M,\,r,\,G\}$ can be held fixed while the third varies, enabling clean ablations that isolate individual approximation effects. Figure~\ref{fig:approxda_block} shows the resulting block structure, with both branches fused through the configurable gate.
+
+\begin{figure*}[tbp]
+  \centering
+  \includegraphics[width=0.8\textwidth]{figures/approxda_block}
+  \caption{ApproxDABlock internals. Input $\mathbf{x}$ splits into two branches: Low-Rank Windowed PAM (blue, upper) via window partition, low-rank projection, and attention; Grouped CAM (green, lower) via group split and channel attention. A learned gate $g$ fuses the outputs; $\mathbf{x}$ is added as a residual.}
+  \label{fig:approxda_block}
+\end{figure*}
 
 \subsection{Spatial Approximation}
 
@@ -93,13 +99,6 @@ where $\hat{\mathbf{P}}$ and $\hat{\mathbf{C}}$ are the normalized PAM and CAM o
 \end{center}
 
 In gate=learn, $g \in (0,1)^C$ is a per-channel routing coefficient broadcast over all spatial positions; it collapses to a channel-wise blend rather than a spatially-adaptive or input-dependent scalar. This single-parameter design enables systematic ablation of routing strategy without any other architectural change. ApproxDA-TransUNet does not treat this routing module as a primary architectural contribution; rather, it serves as an analyzable component whose optimization dynamics---including an unexpected convergence to $g{\approx}0.5$ regardless of window size---are investigated in Section~\ref{sec:understanding}.
-
-\begin{figure*}[tbp]
-  \centering
-  \includegraphics[width=\textwidth]{figures/approxda_block}
-  \caption{ApproxDABlock internals. Input $\mathbf{x}$ splits into two branches: Low-Rank Windowed PAM (blue, upper) via window partition, low-rank projection, and attention; Grouped CAM (green, lower) via group split and channel attention. A learned gate $g$ fuses the outputs; $\mathbf{x}$ is added as a residual.}
-  \label{fig:approxda_block}
-\end{figure*}
 
 \subsection{Loss Function}
 
