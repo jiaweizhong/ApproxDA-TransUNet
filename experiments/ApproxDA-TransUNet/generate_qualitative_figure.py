@@ -37,7 +37,7 @@ Examples:
     --ckpt_isic_best  <path/isic_m7_learn/best_model.pth>
 """
 
-import argparse, os, sys
+import argparse, os, sys, json
 import numpy as np
 import torch
 from scipy.ndimage import zoom as nd_zoom
@@ -45,6 +45,12 @@ from torch.utils.data import DataLoader
 
 from Architecture.ApproxDATransUNet import ApproxDATransUNet
 from Architecture.ApproxDATransUNet import CONFIGS as CONFIGS_ViT_seg
+
+# path to the DA-TransUNet experiment directory (for optional DA column)
+DA_ARCH_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'DA-TransUNet'))
+
+# tracks which cases/slices were selected — written to cases_used.json at the end
+CASES_LOG = {}
 
 # ── Synapse organ colours (one per class 1–8) ──────────────────────────────────
 SYNAPSE_COLORS = np.array([
@@ -67,7 +73,10 @@ BINARY_COLORS = np.array([
 # ── args ───────────────────────────────────────────────────────────────────────
 parser = argparse.ArgumentParser()
 parser.add_argument('--mode', default='window_ablation',
-                    choices=['window_ablation', 'cross_task'])
+                    choices=['window_ablation', 'cross_task', 'da_only'])
+# da_only: re-run DA-TransUNet on the same cases recorded in cases_used.json
+# Needs: --ckpt_da_syn, --ckpt_da_kvasir, --ckpt_da_isic
+# Reads case selection from --cases_log (default ../results/paper_figures/cases_used.json)
 
 # window_ablation checkpoints
 parser.add_argument('--ckpt_syn_m7_pam',   default=None)
@@ -92,6 +101,14 @@ parser.add_argument('--n_skip',   type=int, default=3)
 parser.add_argument('--groups',   type=int, default=8)
 parser.add_argument('--out_dir',  default='../results/paper_figures')
 parser.add_argument('--dpi',      type=int, default=300)
+
+# DA-TransUNet checkpoints (for da_only mode)
+parser.add_argument('--ckpt_da_syn',    default=None, help='DA-TransUNet Synapse ckpt')
+parser.add_argument('--ckpt_da_kvasir', default=None, help='DA-TransUNet Kvasir ckpt')
+parser.add_argument('--ckpt_da_isic',   default=None, help='DA-TransUNet ISIC ckpt')
+parser.add_argument('--cases_log',
+                    default='../results/paper_figures/cases_used.json',
+                    help='JSON written by cross_task, read by da_only')
 args = parser.parse_args()
 
 os.makedirs(args.out_dir, exist_ok=True)
@@ -135,6 +152,28 @@ def load_model(ckpt_path, window_size, rank=32, gate_mode='pam', num_classes=9):
     if torch.cuda.is_available():
         net = net.cuda()
     print(f"  Loaded: {ckpt_path}  (M={window_size}, gate={gate_mode})")
+    return net
+
+
+def load_da_model(ckpt_path, num_classes=9):
+    """Load original DA-TransUNet from the sibling DA-TransUNet directory."""
+    if DA_ARCH_PATH not in sys.path:
+        sys.path.insert(0, DA_ARCH_PATH)
+    from Architecture.DATransUNet import DA_Transformer
+    from Architecture.DATransUNet import CONFIGS as DA_CONFIGS
+
+    cfg = DA_CONFIGS['R50-ViT-B_16']
+    cfg.n_classes = num_classes
+    cfg.n_skip = args.n_skip
+    cfg.patches.grid = (args.img_size // 16, args.img_size // 16)
+
+    net = DA_Transformer(cfg, img_size=args.img_size, num_classes=num_classes)
+    state = torch.load(ckpt_path, map_location='cpu', weights_only=False)
+    net.load_state_dict(state, strict=False)
+    net.eval()
+    if torch.cuda.is_available():
+        net = net.cuda()
+    print(f"  [DA-TransUNet] Loaded: {ckpt_path}")
     return net
 
 
@@ -212,6 +251,7 @@ def pick_synapse_slice(img_vol, lbl_vol, net=None):
         if d > best_dsc:
             best_dsc, best_s = d, s
     print(f"  Best Synapse slice: {best_s}  per-slice DSC={best_dsc:.3f}")
+    CASES_LOG.setdefault('synapse', {})['slice_idx'] = int(best_s)
     return best_s, img_vol[best_s], lbl_vol[best_s]
 
 
@@ -413,6 +453,8 @@ elif args.mode == 'cross_task':
     s_idx, img_sl, lbl_sl = pick_synapse_slice(img_vol, lbl_vol, net=net)
     pred = predict_slice(net, img_sl)
     del net; torch.cuda.empty_cache() if torch.cuda.is_available() else None
+    CASES_LOG['synapse'] = {'case_name': name, 'slice_idx': int(s_idx)}
+    print(f"  [LOG] Synapse: case={name}, slice={s_idx}")
 
     norm_img = (img_sl - img_sl.min()) / (img_sl.max() - img_sl.min() + 1e-6)
     d = sum(dsc_binary((pred == c).astype(np.uint8), (lbl_sl == c)) for c in range(1, 9)) / 8
@@ -431,6 +473,8 @@ elif args.mode == 'cross_task':
     name_kv, img_kv, lbl_kv = cases_kv[0]
     pred_kv = predict_slice(net, img_kv)
     del net; torch.cuda.empty_cache() if torch.cuda.is_available() else None
+    CASES_LOG['kvasir'] = {'case_name': name_kv}
+    print(f"  [LOG] Kvasir: case={name_kv}")
 
     norm_kv = (img_kv - img_kv.min()) / (img_kv.max() - img_kv.min() + 1e-6)
     d_kv = dsc_binary(pred_kv, lbl_kv)
@@ -451,6 +495,8 @@ elif args.mode == 'cross_task':
     name_isic, img_isic, lbl_isic = cases_isic[0]
     pred_isic = predict_slice(net, img_isic)
     del net; torch.cuda.empty_cache() if torch.cuda.is_available() else None
+    CASES_LOG['isic'] = {'case_name': name_isic}
+    print(f"  [LOG] ISIC: case={name_isic}")
 
     norm_isic = (img_isic - img_isic.min()) / (img_isic.max() - img_isic.min() + 1e-6)
     d_isic = dsc_binary(pred_isic, lbl_isic)
@@ -483,3 +529,97 @@ elif args.mode == 'cross_task':
     print(f"\nFig:qualitative (cross_task) saved → {out_path}")
     for ds, d in dscs_row.items():
         print(f"  {ds}: DSC={d:.4f}")
+
+    # ── save case log ─────────────────────────────────────────────────────────
+    log_path = args.cases_log
+    os.makedirs(os.path.dirname(log_path), exist_ok=True)
+    with open(log_path, 'w') as f:
+        json.dump(CASES_LOG, f, indent=2)
+    print(f"\n[LOG] Case selection saved → {log_path}")
+    print(json.dumps(CASES_LOG, indent=2))
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# MODE 3: da_only — re-run DA-TransUNet on the exact same cases as cross_task
+#   Reads:  cases_used.json  (written by cross_task mode)
+#   Writes: da_pred_synapse.png / da_pred_kvasir.png / da_pred_isic.png
+#           (individual prediction images — edit together with cross_task fig)
+# ══════════════════════════════════════════════════════════════════════════════
+elif args.mode == 'da_only':
+    import matplotlib
+    matplotlib.use('Agg')
+    import matplotlib.pyplot as plt
+
+    if not os.path.exists(args.cases_log):
+        sys.exit(f"cases_used.json not found at {args.cases_log}.\n"
+                 f"Run --mode cross_task first to record which cases were used.")
+
+    with open(args.cases_log) as f:
+        log = json.load(f)
+    print(f"[da_only] Loaded case log: {log}")
+
+    for ds_key, ckpt_arg, num_cls in [
+        ('synapse', args.ckpt_da_syn,    9),
+        ('kvasir',  args.ckpt_da_kvasir, 2),
+        ('isic',    args.ckpt_da_isic,   2),
+    ]:
+        if ckpt_arg is None:
+            print(f"  Skipping {ds_key} (no --ckpt_da_{ds_key} provided)")
+            continue
+        if ds_key not in log:
+            print(f"  Skipping {ds_key} (not in cases_log)")
+            continue
+
+        net = load_da_model(ckpt_arg, num_classes=num_cls)
+        info = log[ds_key]
+
+        if ds_key == 'synapse':
+            cases = load_synapse_cases(n_cases=12)
+            # find the logged case by name
+            target = info.get('case_name', '')
+            match = [(n, iv, lv) for n, iv, lv in cases if n == target]
+            if not match:
+                print(f"  [warn] case '{target}' not in first-12; using first")
+                match = [cases[0]]
+            _, img_vol, lbl_vol = match[0]
+            s_idx = info.get('slice_idx', img_vol.shape[0] // 2)
+            img_sl, lbl_sl = img_vol[s_idx], lbl_vol[s_idx]
+            pred = predict_slice(net, img_sl.astype(np.float32))
+            norm = (img_sl - img_sl.min()) / (img_sl.max() - img_sl.min() + 1e-6)
+            colors = SYNAPSE_COLORS
+
+        else:  # kvasir / isic
+            ds_label = 'Kvasir' if ds_key == 'kvasir' else 'ISIC'
+            cases = load_binary_cases(ds_label, n_cases=50)
+            target = info.get('case_name', '')
+            match = [(n, im, lb) for n, im, lb in cases if n == target]
+            if not match:
+                print(f"  [warn] case '{target}' not found; using first loaded")
+                match = [cases[0]]
+            _, img_sl, lbl_sl = match[0]
+            pred = predict_slice(net, img_sl)
+            norm = (img_sl - img_sl.min()) / (img_sl.max() - img_sl.min() + 1e-6)
+            colors = BINARY_COLORS
+
+        del net
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+
+        # save input / GT / DA-pred as individual PNGs (easy to combine in any editor)
+        for tag, arr, is_overlay in [
+            ('input', norm,                                     False),
+            ('gt',    seg_to_rgb(lbl_sl.astype(np.uint8), colors), True),
+            ('da_pred', seg_to_rgb(pred, colors),               True),
+        ]:
+            fig_s, ax_s = plt.subplots(1, 1, figsize=(3, 3))
+            ax_s.axis('off')
+            if is_overlay:
+                ax_s.imshow(overlay(norm, arr))
+            else:
+                ax_s.imshow(arr, cmap='gray')
+            out = os.path.join(args.out_dir, f'da_{ds_key}_{tag}.png')
+            fig_s.savefig(out, dpi=args.dpi, bbox_inches='tight', pad_inches=0)
+            plt.close(fig_s)
+            print(f"  Saved {out}")
+
+    print("\n[da_only] Done. Use da_*_da_pred.png files to add DA-TransUNet column.")

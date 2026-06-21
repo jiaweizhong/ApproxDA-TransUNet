@@ -35,7 +35,7 @@ The Synapse DSC-vs-$M$ curve is \emph{non-monotonic}: peak at $M{=}28$ (80.94\%,
 
 \begin{figure}[ht]
 \centering
-\scalebox{0.85}{%
+\scalebox{0.765}{%
 \begin{tikzpicture}
 \begin{axis}[
   width=\columnwidth, height=5.3cm,
@@ -102,7 +102,7 @@ We validate this locality bias hypothesis via controlled attention-map analysis:
 
 \begin{figure}[ht]
   \centering
-  \includegraphics[width=\columnwidth]{figures/attn_Kvasir_M7_r32_pam_vs_M112.png}
+  \includegraphics[width=0.9\columnwidth]{figures/attn_Kvasir_M7_r32_pam_vs_M112.png}
   \caption{Attention-map analysis on three representative Kvasir-SEG polyp images (selected from 10; samples with largest M=7 vs.\ M=112 on-mask gap). Each row: input image with GT contour (left), windowed PAM heatmap ($M{=}7$, gate=pam; center), global PAM heatmap ($M{=}112$, gate=pam; right). Windowed attention concentrates $62.3\%$ of its effect on the polyp region vs.\ $34.2\%$ for global attention---a $1.82{\times}$ difference confirmed in $9/10$ samples. Heatmap intensities reflect $\|\text{output} - \text{input}\|_2$ averaged across decoder scales and upsampled to $224{\times}224$.}
   \label{fig:attn_map}
 \end{figure}
@@ -118,7 +118,7 @@ Finally, we investigate whether adaptive routing contributes to approximation pe
 \begin{figure}[ht]
   \centering
   \includegraphics[width=\columnwidth]{figures/fig_entropy_scatter.png}
-  \caption{Gate value vs.\ per-block feature entropy $H(F)$ ($M{=}7$, gate=learn) for all four ApproxDABlock locations: \texttt{embeddings.approx\_block} (768\,ch, $14{\times}14$), \texttt{blocks[0].da3} (512\,ch, $28{\times}28$), \texttt{blocks[1].da2} (256\,ch, $56{\times}56$), and \texttt{blocks[2].da} (64\,ch, $112{\times}112$). All four blocks cluster at $g{\approx}0.5$ with Spearman $r_s{\approx}0$, confirming gate collapse is uniform across scales and that routing is not input-adaptive.}
+  \caption{Gate value vs.\ per-block feature entropy $H(F)$ ($M{=}7$, gate=learn). Panels (TL$\to$BR): \texttt{embeddings.approx\_block} (bottleneck), \texttt{0.da3}, \texttt{1.da2}, \texttt{2.da} (skip connections at 28$^2$, 56$^2$, 112$^2$). All four locations collapse to $g{\approx}0.5$ with $\Delta g{\leq}0.0002$, confirming uniform gate collapse across scales.}
   \label{fig:gate_analysis}
 \end{figure}
 
@@ -140,7 +140,7 @@ Finally, we investigate whether adaptive routing contributes to approximation pe
   \end{tabular}
   \end{center}
   \vspace{-0.3em}
-  \footnotesize{$^*$Gate collapsed to $g{\approx}0.5$ throughout training. \textbf{Bold}: best; \underline{underline}: second best per column.}
+  \footnotesize{$^*$Gate collapsed to $g{\approx}0.5$ throughout training.}
 \end{table}
 
 Gate=pam (78.64\%) outperforms gate=cam (78.26\%) and both gate=learn configurations (77.78\% at $M{=}7$; 78.04\% at $M{=}14$, $r{=}64$). Notably, gate=learn with a larger window and higher rank (M=14, r=64) still underperforms gate=pam at M=7 (78.04\% vs.\ 78.64\%), confirming that gate collapse is more damaging than a suboptimal window choice. In both gate=learn configurations, the gate converges to $g{\approx}0.5$ regardless of window size, producing a fixed 50/50 blend that performs below both single-branch modes.

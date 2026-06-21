@@ -5,240 +5,221 @@ Run:
     python paper/figures/generate_overview.py
 
 Outputs:
-    paper/figures/approxda_overview.pdf   (replaces current Fig 1)
-    paper/figures/approxda_overview.png   (preview)
-
-Requires: matplotlib, numpy  (pip install matplotlib)
+    paper/figures/approxda_overview.pdf
+    paper/figures/approxda_overview.png
 """
 
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
-from matplotlib.patches import FancyBboxPatch, FancyArrowPatch
-import matplotlib.patheffects as pe
+from matplotlib.patches import FancyBboxPatch
 import numpy as np
 import os
 
 # ── colour palette ───────────────────────────────────────────────────────────
-C_ENC  = "#D6E8F7"   # blue-ish  — CNN encoder
-C_VIT  = "#FDE9C9"   # orange    — ViT bottleneck
-C_ADB  = "#E8D5F5"   # violet    — ApproxDABlock
-C_DEC  = "#C9EDE8"   # teal      — decoder
-C_IO   = "#EBEBEB"   # gray      — input / output
-C_PAM  = "#C5D9F1"   # blue      — PAM branch (inset)
-C_CAM  = "#C9EDD0"   # green     — CAM branch (inset)
-C_GATE = "#FFF6C2"   # yellow    — gate (inset)
+C_ENC  = "#D6E8F7"
+C_VIT  = "#FDE9C9"
+C_ADB  = "#E8D5F5"
+C_DEC  = "#C9EDE8"
+C_IO   = "#EBEBEB"
+C_MLP  = "#D5F0E0"
 EDGE   = "#444444"
 
 # ── helpers ──────────────────────────────────────────────────────────────────
-def box(ax, cx, cy, w, h, color, label, sublabel="", fs=8, sfs=6.5):
-    """Draw a rounded box centred at (cx, cy)."""
+def box(ax, cx, cy, w, h, color, label, sublabel="", fs=10, sfs=9):
     rect = FancyBboxPatch(
         (cx - w/2, cy - h/2), w, h,
         boxstyle="round,pad=0.04",
-        linewidth=0.8, edgecolor=EDGE, facecolor=color, zorder=3
+        linewidth=0.9, edgecolor=EDGE, facecolor=color, zorder=3
     )
     ax.add_patch(rect)
     if sublabel:
-        ax.text(cx, cy + 0.07, label, ha="center", va="center",
+        ax.text(cx, cy + 0.10, label, ha="center", va="center",
                 fontsize=fs, fontweight="bold", zorder=4)
-        ax.text(cx, cy - 0.13, sublabel, ha="center", va="center",
-                fontsize=sfs, color="#555555", zorder=4)
+        ax.text(cx, cy - 0.14, sublabel, ha="center", va="center",
+                fontsize=sfs, color="#333333", zorder=4)
     else:
         ax.text(cx, cy, label, ha="center", va="center",
                 fontsize=fs, fontweight="bold", zorder=4)
-    return (cx - w/2, cy - h/2, cx + w/2, cy + h/2)  # bbox
 
-def arrow(ax, x0, y0, x1, y1, color="#333333", lw=1.2,
-          dashed=False, style="->", rad=0.0):
+def arrow(ax, x0, y0, x1, y1, color="#333333", lw=1.3, dashed=False, rad=0.0):
     ls = (0, (4, 2)) if dashed else "solid"
     ax.annotate("", xy=(x1, y1), xytext=(x0, y0),
-                arrowprops=dict(
-                    arrowstyle=style, color=color,
-                    lw=lw, linestyle=ls,
-                    connectionstyle=f"arc3,rad={rad}"
-                ), zorder=5)
+                arrowprops=dict(arrowstyle="->", color=color, lw=lw,
+                                linestyle=ls,
+                                connectionstyle=f"arc3,rad={rad}"), zorder=5)
 
-def elbow(ax, x0, y0, x1, y1, color="#333333", lw=1.2):
-    """L-shaped connector: (x0,y0) → down to y1 → right/left to (x1,y1)."""
+def elbow(ax, x0, y0, x1, y1, color="#333333", lw=1.3):
     ax.plot([x0, x0, x1], [y0, y1, y1], color=color, lw=lw, zorder=5)
     ax.annotate("", xy=(x1, y1), xytext=(x0 + 0.001, y1),
                 arrowprops=dict(arrowstyle="->", color=color, lw=lw), zorder=5)
 
+def add_circle(ax, cx, cy, r=0.13):
+    circ = plt.Circle((cx, cy), r, color='white', ec=EDGE, lw=0.9, zorder=5)
+    ax.add_patch(circ)
+    ax.text(cx, cy, '⊕', ha='center', va='center', fontsize=9.5, zorder=6)
+
 
 # ── figure layout ────────────────────────────────────────────────────────────
-fig_w, fig_h = 14.0, 4.2
+fig_w, fig_h = 12.5, 6.0
 fig, ax = plt.subplots(figsize=(fig_w, fig_h))
 ax.set_xlim(0, fig_w)
-ax.set_ylim(-0.5, fig_h - 0.5)
+ax.set_ylim(0.40, 5.40)
 ax.axis("off")
 
-# Column x-positions (left part of figure, right part = inset)
-XS = [0.8, 2.55, 4.30, 6.05, 8.15]  # Input, E0, E1, E2, ViT
-Y_ENC = 3.2   # encoder row y
-Y_ADB = 2.0   # ApproxDA row y
-Y_DEC = 0.8   # decoder row y
+XS = [0.8, 2.55, 4.30, 6.05, 8.15]
+Y_ENC = 4.55
+Y_ADB = 3.10
+Y_DEC = 1.65
 
-BW_ENC = 1.35   # box width  — encoder
-BH_ENC = 0.65   # box height — encoder
-BW_VIT = 1.5
-BH_VIT = 0.80
-BW_ADB = 1.35
-BH_ADB = 0.50
-BW_DEC = 1.35
-BH_DEC = 0.65
-BW_IO  = 1.10
-BH_IO  = 0.60
+BW_ENC = 1.35;  BH_ENC = 0.62
+BW_VIT = 1.55;  BH_VIT = 0.72
+BW_ADB = 1.35;  BH_ADB = 0.62
+BW_DEC = 1.35;  BH_DEC = 0.62
+BW_IO  = 1.15;  BH_IO  = 0.58
 
 # ── encoder ──────────────────────────────────────────────────────────────────
-box(ax, XS[0], Y_ENC, BW_IO, BH_IO, C_IO,
-    "Input", "3×224²", fs=7.5, sfs=6)
-box(ax, XS[1], Y_ENC, BW_ENC, BH_ENC, C_ENC,
-    "CNN", "64ch · 112²", fs=7.5, sfs=6)
-box(ax, XS[2], Y_ENC, BW_ENC, BH_ENC, C_ENC,
-    "CNN", "256ch · 56²", fs=7.5, sfs=6)
-box(ax, XS[3], Y_ENC, BW_ENC, BH_ENC, C_ENC,
-    "CNN", "512ch · 28²", fs=7.5, sfs=6)
-box(ax, XS[4], Y_ENC, BW_VIT, BH_VIT, C_VIT,
-    "ViT-B/16", "12 layers · 14²", fs=7.5, sfs=6)
+box(ax, XS[0], Y_ENC, BW_IO,  BH_IO,  C_IO,  "Input",    "3×224²",      fs=11, sfs=11)
+box(ax, XS[1], Y_ENC, BW_ENC, BH_ENC, C_ENC, "CNN",      "64ch · 112²", fs=11, sfs=11)
+box(ax, XS[2], Y_ENC, BW_ENC, BH_ENC, C_ENC, "CNN",      "256ch · 56²", fs=11, sfs=11)
+box(ax, XS[3], Y_ENC, BW_ENC, BH_ENC, C_ENC, "CNN",      "512ch · 28²", fs=11, sfs=11)
+box(ax, XS[4], Y_ENC, BW_VIT, BH_VIT, C_VIT, "ViT-B/16", "12L · 14²",  fs=11, sfs=11)
 
-# encoder flow arrows
 for i in range(4):
-    arrow(ax, XS[i] + BW_IO/2 if i == 0 else XS[i] + BW_ENC/2,
-          Y_ENC,
-          XS[i+1] - (BW_VIT/2 if i == 3 else BW_ENC/2),
-          Y_ENC)
+    arrow(ax,
+          XS[i] + (BW_IO if i == 0 else BW_ENC)/2, Y_ENC,
+          XS[i+1] - (BW_VIT if i == 3 else BW_ENC)/2, Y_ENC)
 
 # ── ApproxDABlocks ────────────────────────────────────────────────────────────
-# Indices: ab0=E0 col, ab1=E1, ab2=E2, ab3=ViT (bottleneck)
 for xi in XS[1:]:
-    box(ax, xi, Y_ADB, BW_ADB, BH_ADB, C_ADB,
-        "ApproxDABlock", fs=6.5)
+    box(ax, xi, Y_ADB, BW_ADB, BH_ADB, C_ADB, "ApproxDABlock", fs=10.5)
 
-# skip: encoder → ApproxDA (dashed gray)
+# skip connections — solid black arrows
+skip_mid_y   = (Y_ENC - BH_ENC/2 + Y_ADB + BH_ADB/2) / 2
+btlnk_mid_y  = (Y_ENC - BH_VIT/2 + Y_ADB + BH_ADB/2) / 2
+
 for xi in XS[1:4]:
-    arrow(ax, xi, Y_ENC - BH_ENC/2,
-          xi, Y_ADB + BH_ADB/2,
-          color="#888888", lw=0.9, dashed=True)
+    arrow(ax, xi, Y_ENC - BH_ENC/2, xi, Y_ADB + BH_ADB/2, lw=1.1)
+    ax.text(xi + 0.09, skip_mid_y, "skip", ha="left", va="center",
+            fontsize=10.5, color="#333333", style="italic", zorder=6)
 
-# bottleneck: ViT → ApproxDA (solid)
-arrow(ax, XS[4], Y_ENC - BH_VIT/2,
-      XS[4], Y_ADB + BH_ADB/2, lw=1.2)
+arrow(ax, XS[4], Y_ENC - BH_VIT/2, XS[4], Y_ADB + BH_ADB/2, lw=1.3)
+ax.text(XS[4] + 0.11, btlnk_mid_y, "bottleneck", ha="left", va="center",
+        fontsize=10.5, zorder=6)
 
 # ── decoder ───────────────────────────────────────────────────────────────────
-# Decoder columns aligned under E2, E1, E0 (same x)
-box(ax, XS[3], Y_DEC, BW_DEC, BH_DEC, C_DEC,
-    "Up-1", "512ch · 28²", fs=7.5, sfs=6)
-box(ax, XS[2], Y_DEC, BW_DEC, BH_DEC, C_DEC,
-    "Up-2", "256ch · 56²", fs=7.5, sfs=6)
-box(ax, XS[1], Y_DEC, BW_DEC, BH_DEC, C_DEC,
-    "Up-3", "64ch · 112²", fs=7.5, sfs=6)
-box(ax, XS[0], Y_DEC, BW_IO, BH_IO, C_IO,
-    "Output", "224²", fs=7.5, sfs=6)
+box(ax, XS[3], Y_DEC, BW_DEC, BH_DEC, C_DEC, "Decoder", "512ch · 28²", fs=11, sfs=11)
+box(ax, XS[2], Y_DEC, BW_DEC, BH_DEC, C_DEC, "Decoder", "256ch · 56²", fs=11, sfs=11)
+box(ax, XS[1], Y_DEC, BW_DEC, BH_DEC, C_DEC, "Decoder", "64ch · 112²", fs=11, sfs=11)
+box(ax, XS[0], Y_DEC, BW_IO,  BH_IO,  C_IO,  "Output",  "224²",        fs=11, sfs=11)
 
-# bottleneck AB3 → Up-1: elbow (down then left)
-elbow(ax, XS[4], Y_ADB - BH_ADB/2,
-      XS[3] + BW_DEC/2, Y_DEC + BH_DEC/2)
+# ViT ApproxDABlock → right-edge midpoint of Up-1
+elbow(ax, XS[4], Y_ADB - BH_ADB/2, XS[3] + BW_DEC/2, Y_DEC)
 
-# decoder flow: right → left
 for i in [3, 2, 1]:
-    x_from = XS[i] - BW_DEC/2
-    x_to   = XS[i-1] + (BW_IO/2 if i == 1 else BW_DEC/2)
-    arrow(ax, x_from, Y_DEC, x_to, Y_DEC)
+    arrow(ax, XS[i] - BW_DEC/2, Y_DEC,
+          XS[i-1] + (BW_IO if i == 1 else BW_DEC)/2, Y_DEC)
 
-# skip AB → decoder (same-column vertical arrows)
 for xi in XS[1:4]:
-    arrow(ax, xi, Y_ADB - BH_ADB/2,
-          xi, Y_DEC + BH_DEC/2, lw=1.2)
+    arrow(ax, xi, Y_ADB - BH_ADB/2, xi, Y_DEC + BH_DEC/2, lw=1.3)
 
-# ── skip / bottleneck labels ──────────────────────────────────────────────────
-for xi in XS[1:4]:
-    ax.text(xi + 0.08, (Y_ENC - BH_ENC/2 + Y_ADB + BH_ADB/2) / 2,
-            "skip", ha="left", va="center", fontsize=5.5,
-            color="#888888", style="italic", zorder=6)
-ax.text(XS[4] + 0.10, (Y_ENC - BH_VIT/2 + Y_ADB + BH_ADB/2) / 2,
-        "btlnk", ha="left", va="center", fontsize=5.5, zorder=6)
 
-# ── INSET: ApproxDABlock detail ───────────────────────────────────────────────
-IX = 9.55   # inset left edge
-IW = 4.10   # inset width
-IH = 3.80   # inset height
-IY = 0.15   # inset bottom
+# ════════════════════════════════════════════════════════════════════════════
+# INSET — ViT-B/16 Transformer Block
+# ════════════════════════════════════════════════════════════════════════════
+VIX  = 9.35
+VIW  = 2.80
+VIH  = 4.26
+VIY  = 0.58
+VIXC = VIX + VIW / 2   # 10.60
+VBW  = 2.00             # content boxes; res bar extends ~0.45 beyond right edge
+BH_LN  = 0.33
+BH_BLK = 0.46
 
-inset_rect = FancyBboxPatch(
-    (IX, IY), IW, IH,
-    boxstyle="round,pad=0.07",
-    linewidth=0.8, edgecolor="#999999",
-    facecolor="white", linestyle="dashed", zorder=2
-)
-ax.add_patch(inset_rect)
-ax.text(IX + IW/2, IY + IH - 0.22,
-        "ApproxDABlock", ha="center", va="center",
-        fontsize=8, fontweight="bold", color="#6A0EAC", zorder=6)
+ax.add_patch(FancyBboxPatch(
+    (VIX, VIY), VIW, VIH,
+    boxstyle="round,pad=0.07", linewidth=0.9,
+    edgecolor="#999999", facecolor="white", linestyle="dashed", zorder=2
+))
+ax.text(VIXC, VIY + VIH - 0.14,
+        "ViT-B/16 Transformer Block ×12",
+        ha="center", va="center", fontsize=10,
+        fontweight="bold", color="#7A4800", zorder=6)
 
-# positions inside inset
-IXC = IX + IW/2  # centre x of inset
-xi_y  = IY + IH - 0.65
-pam_y = IY + IH - 1.45
-cam_y = IY + IH - 1.45
-gt_y  = IY + IH - 2.30
-xo_y  = IY + 0.40
+# element y-centres — well-spaced so inter-block arrows are clearly visible
+vit_xi_y   = 4.34
+vit_ln1_y  = 3.82
+vit_msa_y  = 3.28
+vit_add1_y = 2.74
+vit_ln2_y  = 2.24
+vit_mlp_y  = 1.70
+vit_add2_y = 1.16
+vit_xo_y   = 0.73
 
-BW_IB = 1.45  # inset branch box width
+box(ax, VIXC, vit_xi_y,  VBW, 0.38,   C_IO,  "Input tokens",
+    "196 × 768",                fs=9, sfs=8)
+box(ax, VIXC, vit_ln1_y, VBW, BH_LN,  C_IO,  "Layer Norm",         fs=9)
+box(ax, VIXC, vit_msa_y, VBW, BH_BLK, C_VIT,
+    "Multi-Head Self-Attention", "12 heads · d_h = 64", fs=9, sfs=8)
+add_circle(ax, VIXC, vit_add1_y)
+box(ax, VIXC, vit_ln2_y, VBW, BH_LN,  C_IO,  "Layer Norm",         fs=9)
+box(ax, VIXC, vit_mlp_y, VBW, BH_BLK, C_MLP,
+    "MLP / FFN",                 "768 → 3072 → 768",   fs=9, sfs=8)
+add_circle(ax, VIXC, vit_add2_y)
+ax.text(VIXC, vit_xo_y, "Output tokens (196 × 768)",
+        ha="center", va="center", fontsize=8.5, color="#333333", zorder=6)
 
-box(ax, IXC, xi_y, 0.60, 0.38, C_IO, "x", fs=9)
+# vertical flow arrows
+for y0, y1 in [
+    (vit_xi_y   - 0.19,      vit_ln1_y  + BH_LN/2),
+    (vit_ln1_y  - BH_LN/2,   vit_msa_y  + BH_BLK/2),
+    (vit_msa_y  - BH_BLK/2,  vit_add1_y + 0.13),
+    (vit_add1_y - 0.13,      vit_ln2_y  + BH_LN/2),
+    (vit_ln2_y  - BH_LN/2,   vit_mlp_y  + BH_BLK/2),
+    (vit_mlp_y  - BH_BLK/2,  vit_add2_y + 0.13),
+    (vit_add2_y - 0.13,      vit_xo_y   + 0.13),
+]:
+    arrow(ax, VIXC, y0, VIXC, y1, lw=1.0)
 
-box(ax, IXC - 0.80, pam_y, BW_IB, 0.62, C_PAM,
-    "LR-Windowed PAM", "win M, rank r", fs=6.5, sfs=5.8)
-box(ax, IXC + 0.80, cam_y, BW_IB, 0.62, C_CAM,
-    "Grouped CAM", "groups G", fs=6.5, sfs=5.8)
-box(ax, IXC, gt_y, 1.80, 0.50, C_GATE,
-    "Gate  g", "g·P̂ + (1−g)·Ĉ", fs=6.5, sfs=5.8)
-box(ax, IXC, xo_y, 1.80, 0.42, C_IO,
-    "Wf(…) + x", fs=6.5)
+# residual bar — black, right of boxes
+res_x = VIXC + VBW/2 + 0.28
+ax.plot([VIXC + VBW/2, res_x, res_x],
+        [vit_xi_y, vit_xi_y, vit_add2_y],
+        color=EDGE, lw=1.1, zorder=5)
+ax.annotate("", xy=(VIXC + 0.14, vit_add1_y),
+            xytext=(res_x, vit_add1_y),
+            arrowprops=dict(arrowstyle="->", color=EDGE, lw=1.1), zorder=5)
+ax.annotate("", xy=(VIXC + 0.14, vit_add2_y),
+            xytext=(res_x + 0.001, vit_add2_y),
+            arrowprops=dict(arrowstyle="->", color=EDGE, lw=1.1), zorder=5)
+ax.text(res_x + 0.12, (vit_xi_y + vit_add2_y) / 2,
+        "res.", ha="center", va="center",
+        fontsize=8.5, color=EDGE, style="italic", rotation=90, zorder=6)
 
-# inset arrows
-arrow(ax, IXC, xi_y - 0.19,  IXC - 0.80, pam_y + 0.31, lw=0.9)
-arrow(ax, IXC, xi_y - 0.19,  IXC + 0.80, cam_y + 0.31, lw=0.9)
-arrow(ax, IXC - 0.80, pam_y - 0.31, IXC - 0.35, gt_y + 0.25, lw=0.9)
-arrow(ax, IXC + 0.80, cam_y - 0.31, IXC + 0.35, gt_y + 0.25, lw=0.9)
-arrow(ax, IXC, gt_y - 0.25, IXC, xo_y + 0.21, lw=0.9)
-# residual bypass
-ax.annotate("", xy=(IXC - 0.65, xo_y + 0.10),
-            xytext=(IXC - 0.65, xi_y - 0.10),
-            arrowprops=dict(
-                arrowstyle="->", color="#AAAAAA", lw=0.8,
-                connectionstyle="arc3,rad=-0.35",
-                linestyle=(0, (3, 2))
-            ), zorder=5)
-ax.text(IXC - 1.05, (xi_y + xo_y) / 2, "res.",
-        ha="center", va="center", fontsize=5.5, color="#AAAAAA", zorder=6)
 
-# ── connector: main → inset ───────────────────────────────────────────────────
-ax.annotate("", xy=(IX + 0.08, IY + IH/2),
-            xytext=(XS[4] + BW_VIT/2 + 0.05, Y_ADB),
-            arrowprops=dict(
-                arrowstyle="->", color="#AAAAAA", lw=0.8,
-                linestyle=(0, (3, 2)),
-                connectionstyle="arc3,rad=-0.15"
-            ), zorder=5)
-ax.text((XS[4] + BW_VIT/2 + IX) / 2, Y_ADB + 0.25,
-        "detail", ha="center", fontsize=5.5, color="#AAAAAA", zorder=6)
+# ── connector: ViT main box → ViT inset ──────────────────────────────────────
+ax.annotate("", xy=(VIX + 0.10, VIY + VIH / 2),
+            xytext=(XS[4] + BW_VIT/2 + 0.05, Y_ENC),
+            arrowprops=dict(arrowstyle="->", color="#AAAAAA", lw=0.9,
+                            linestyle=(0, (3, 2)),
+                            connectionstyle="arc3,rad=-0.2"), zorder=5)
+ax.text(9.10, 3.72, "detail", ha="center", fontsize=7.5, color="#AAAAAA", zorder=6)
+
 
 # ── legend ────────────────────────────────────────────────────────────────────
-legend_items = [
-    mpatches.Patch(facecolor=C_ENC, edgecolor=EDGE, label="CNN encoder stage"),
-    mpatches.Patch(facecolor=C_VIT, edgecolor=EDGE, label="ViT bottleneck"),
+ax.legend(handles=[
+    mpatches.Patch(facecolor=C_ENC, edgecolor=EDGE, label="CNN encoder"),
+    mpatches.Patch(facecolor=C_VIT, edgecolor=EDGE, label="ViT / MHSA"),
     mpatches.Patch(facecolor=C_ADB, edgecolor=EDGE, label="ApproxDABlock"),
-    mpatches.Patch(facecolor=C_DEC, edgecolor=EDGE, label="Decoder (Up)"),
-]
-ax.legend(handles=legend_items, loc="lower left",
-          fontsize=6, framealpha=0.85,
-          bbox_to_anchor=(0.0, -0.02),
-          ncol=4, columnspacing=0.8, handlelength=1.0, handleheight=0.8)
+    mpatches.Patch(facecolor=C_DEC, edgecolor=EDGE, label="Decoder"),
+    mpatches.Patch(facecolor=C_MLP, edgecolor=EDGE, label="MLP / FFN"),
+], loc="lower left", fontsize=13, framealpha=0.90,
+   bbox_to_anchor=(0.0, 0.010),
+   ncol=5, columnspacing=1.2, handlelength=2.0, handleheight=1.4)
+
 
 # ── save ──────────────────────────────────────────────────────────────────────
 out_dir = os.path.dirname(os.path.abspath(__file__))
-plt.tight_layout(pad=0.1)
+plt.tight_layout(pad=0.2)
 plt.savefig(os.path.join(out_dir, "approxda_overview.pdf"),
             bbox_inches="tight", dpi=300)
 plt.savefig(os.path.join(out_dir, "approxda_overview.png"),

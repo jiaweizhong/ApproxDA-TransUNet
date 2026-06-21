@@ -291,22 +291,25 @@ try:
     r_all, p_all = stats.spearmanr(all_H, all_g)
     delta_all = all_g.max() - all_g.min()
 
+    G_CENTER, G_SCALE = 0.5, 1e3   # display as (g - 0.5) × 10³
+
     for i, (blk_lbl, H_all, g_all, r, p) in enumerate(bd):
-        ax.scatter(H_all, g_all,
+        ax.scatter(H_all, (g_all - G_CENTER) * G_SCALE,
                    alpha=0.25, s=8,
                    color=BLOCK_COLORS[i % len(BLOCK_COLORS)],
                    label=blk_lbl, rasterized=True)
 
     sig = '***' if p_all < 0.001 else ('**' if p_all < 0.01 else ('*' if p_all < 0.05 else 'n.s.'))
     ax.set_xlabel('Feature entropy $H(F)$', fontsize=FS + 1)
-    ax.set_ylabel('Mean gate value $g$', fontsize=FS + 1)
+    ax.set_ylabel(r'Gate value $(g - 0.5)\times 10^{3}$', fontsize=FS + 1)
+    ax.axhline(0, color='black', linewidth=0.8, linestyle='--', alpha=0.5)
     ax.tick_params(labelsize=FS)
     ax.legend(fontsize=FS - 1, title='Block', title_fontsize=FS - 1,
               loc='upper right', framealpha=0.7)
     ax.set_title(
         f'{configs[0][0]}\n'
         r'All blocks: $r_s$=' + f'{r_all:+.3f} {sig},  '
-        r'$\Delta g_{\max}$=' + f'{delta_all:.4f} — gate is inert',
+        r'$\Delta g_{\max}$=' + f'{delta_all * G_SCALE:.2f}$\times 10^{{-3}}$ — gate is inert',
         fontsize=FS
     )
 

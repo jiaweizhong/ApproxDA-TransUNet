@@ -22,7 +22,7 @@ We evaluate ApproxDA-TransUNet on three medical image segmentation benchmarks. S
 
 Tables~\ref{tab:synapse}--\ref{tab:isic} compare ApproxDA-TransUNet against published baselines across all three benchmarks.
 
-\textbf{Synapse.} Table~\ref{tab:synapse} benchmarks against 11 published methods. CNN-based models plateau at 76--78\% DSC, with Att-UNet leading at 77.77\%. Transformer-based methods progressively improve: TransUNet (77.48\%), UCTransNet (78.23\%), MIM (78.59\%), Swin-Unet (79.13\%), and DA-TransUNet (79.80\%). ApproxDA-TransUNet with gate=pam, $M{=}28$, $r{=}32$ achieves \textbf{80.94\%} DSC and 27.49\,mm HD95---the highest DSC across all compared methods, surpassing DA-TransUNet by $+$1.14\%. The intermediate window $M{=}28$ captures sufficient cross-organ context while limiting spurious long-range correlations; Section~\ref{sec:understanding} analyzes this behavior in detail.
+\textbf{Synapse.} Table~\ref{tab:synapse} benchmarks against 9 published methods. CNN-based models plateau at 76--78\% DSC, with Att-UNet leading at 77.77\%. Transformer-based methods progressively improve: TransUNet (77.48\%), UCTransNet (78.23\%), MIM (78.59\%), Swin-Unet (79.13\%), and DA-TransUNet (79.80\%). ApproxDA-TransUNet with gate=pam, $M{=}28$, $r{=}32$ achieves \textbf{80.94\%} DSC and 27.49\,mm HD95---the highest DSC across all compared methods, surpassing DA-TransUNet by $+$1.14\%. The intermediate window $M{=}28$ captures sufficient cross-organ context while limiting spurious long-range correlations; Section~\ref{sec:understanding} analyzes this behavior in detail.
 
 \begin{table}[ht]
   \caption{Segmentation Results on Synapse Multi-Organ CT}
@@ -39,12 +39,10 @@ Tables~\ref{tab:synapse}--\ref{tab:isic} compare ApproxDA-TransUNet against publ
     U-Net++~\cite{zhou2018unetpp}                 & 76.91 & 36.93 \\
     Residual U-Net~\cite{diakogiannis2020resunet} & 76.95 & 38.44 \\
     Att-Unet~\cite{oktay2018attention}            & 77.77 & 36.02 \\
-    MultiResUNet~\cite{ibtehaz2020multiresunet}   & 77.42 & 36.84 \\
     \midrule
     \multicolumn{3}{l}{\textit{Transformer-based}} \\
     TransUNet~\cite{chen2021transunet}            & 77.48 & 31.69 \\
     UCTransNet~\cite{wang2022uctransnet}          & 78.23 & 26.75 \\
-    TransNorm~\cite{azad2022transnorm}            & 78.40 & 30.25 \\
     MIM~\cite{wang2022mim}                        & 78.59 & 26.59 \\
     Swin-Unet~\cite{cao2022swinunet}              & 79.13 & \textbf{21.55} \\
     DA-TransUNet~\cite{sun2024datransunet}        & \underline{79.80} & \underline{23.48} \\
@@ -54,8 +52,6 @@ Tables~\ref{tab:synapse}--\ref{tab:isic} compare ApproxDA-TransUNet against publ
     \bottomrule
   \end{tabular}
   \end{center}
-  \vspace{-0.3em}
-  \footnotesize{Baselines from~\cite{sun2024datransunet} Table~1.}
 \end{table}
 
 \textbf{Kvasir-SEG.} On polyp segmentation (Table~\ref{tab:kvasir}), U-Net leads the CNN-based group (88.22\% DSC) while TransUNet (87.91\%) and DA-TransUNet$^\dag$ (88.44\%) are the strongest Transformer-based entries. ApproxDA-TransUNet with gate=pam, $M{=}56$ achieves \textbf{90.17\%} DSC, \textbf{84.27\%} mIoU, and \textbf{44.35\,mm} HD95---state-of-the-art across all three metrics, with a $+$1.73\% DSC gain and $-$8.69\,mm HD95 improvement over the nearest baseline.
@@ -81,7 +77,7 @@ Tables~\ref{tab:synapse}--\ref{tab:isic} compare ApproxDA-TransUNet against publ
   \end{tabular}
   \end{center}
   \vspace{-0.3em}
-  \footnotesize{Baselines from~\cite{sun2024datransunet}; HD95 not originally reported. $^\dag$Our DA-TransUNet re-run closely reproduces paper-reported values (88.47\% DSC, 81.02\% mIoU). ApproxDA: gate=pam, $M{=}56$, $r{=}32$.}
+  \footnotesize{HD95 not originally reported. $^\dag$Our DA-TransUNet re-run closely reproduces paper-reported values (88.47\% DSC, 81.02\% mIoU). ApproxDA: gate=pam, $M{=}56$, $r{=}32$.}
 \end{table}
 
 \textbf{ISIC 2018.} On skin lesion segmentation (Table~\ref{tab:isic}), CNN-based methods cluster between 83--88\% DSC, with TransUNet (88.78\%) and DA-TransUNet (88.88\%) leading among Transformer-based approaches. ApproxDA-TransUNet with gate=learn, $M{=}7$ achieves \textbf{89.58\%} DSC ($+$0.70\% over DA-TransUNet) and 82.66\% mIoU, attaining the best DSC across all compared methods. This window-robust pattern is consistent with the low-GCS behavior observed on Kvasir-SEG, analyzed in Section~\ref{sec:understanding}.
@@ -108,7 +104,7 @@ Tables~\ref{tab:synapse}--\ref{tab:isic} compare ApproxDA-TransUNet against publ
   \end{tabular}
   \end{center}
   \vspace{-0.3em}
-  \footnotesize{All baselines from~\cite{sun2024datransunet} Table~2. ApproxDA: gate=learn, $M{=}7$, $r{=}32$, $G{=}8$.}
+  \footnotesize{ApproxDA: gate=learn, $M{=}7$, $r{=}32$, $G{=}8$.}
 \end{table}
 
 ApproxDA-TransUNet achieves state-of-the-art results across all three benchmarks (Figure~\ref{fig:qualitative}). The task-dependent window preferences and cross-task sensitivity differences are examined in Section~\ref{sec:understanding}.
@@ -117,7 +113,7 @@ ApproxDA-TransUNet achieves state-of-the-art results across all three benchmarks
 
 \begin{figure}[ht]
   \centering
-  \includegraphics[width=\columnwidth]{figures/fig_qualitative_cross_task.png}
+  \includegraphics[width=0.9\columnwidth]{figures/fig_qualitative_cross_task.png}
   \caption{Qualitative segmentation comparison. \textbf{Top (Synapse, $M{=}28$):} multi-organ CT; ApproxDA 80.94\% DSC ($+$1.14\%). \textbf{Middle (Kvasir-SEG, $M{=}56$):} polyp; 90.17\% DSC ($+$1.73\%). \textbf{Bottom (ISIC 2018, $M{=}7$):} skin lesion; 89.58\% DSC ($+$0.70\%).}
   \label{fig:qualitative}
 \end{figure}
