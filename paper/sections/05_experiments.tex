@@ -121,7 +121,7 @@ ApproxDA-TransUNet achieves state-of-the-art results across all three benchmarks
 
 \subsection{Efficiency Analysis}
 
-Table~\ref{tab:efficiency} shows that the ViT backbone accounts for the majority of compute overhead, leaving attention approximation with little room for end-to-end hardware savings (GFLOPs: 32.1 vs.\ 30.2); the main practical benefit is DDP compatibility---DA-TransUNet fails with a runtime error under multi-GPU execution, while ApproxDA-TransUNet runs natively.
+Although the proposed approximation substantially reduces the theoretical complexity of the dual-attention module, the overall computational cost is dominated by the ViT backbone and convolutional encoder, which remain unchanged. Consequently, end-to-end GFLOPs and memory exhibit only marginal differences from DA-TransUNet. The practical advantage of ApproxDA-TransUNet therefore lies in improved architectural compatibility rather than total model complexity reduction: DA-TransUNet fails under DDP, while ApproxDA-TransUNet trains natively across multiple GPUs, enabling cost-effective distributed training on commodity clusters.
 
 \begin{table*}[ht]
   \caption{Efficiency Comparison on Synapse (NVIDIA Tesla T4)}

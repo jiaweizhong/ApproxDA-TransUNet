@@ -45,9 +45,7 @@ Instead of computing global position attention, ApproxDA-TransUNet partitions th
   \tilde{\mathbf{C}} = \mathbf{W}_r \mathbf{C}^\top, \quad \tilde{\mathbf{D}} = \mathbf{W}_r \mathbf{D}^\top \in \mathbb{R}^{r \times C}.
   \label{eq:lowrank}
 \end{equation}
-The attention matrix $QK^\top \in \mathbb{R}^{N_w \times N_w}$ is approximated by $Q_r K_r^\top \in \mathbb{R}^{N_w \times r}$, where $Q_r, K_r \in \mathbb{R}^{N_w \times r}$. Total complexity is $\mathcal{O}(NrC)$. Combined, the two approximations reduce attention storage at $112{\times}112$ from ${\approx}15$\,GB to ${\approx}38$\,MB (${\sim}390\times$).
-
-These two hyperparameters---window size $M$ and projection rank $r$---jointly constitute the spatial approximation operator and form the primary experimental axes investigated on Synapse.
+The attention matrix $QK^\top \in \mathbb{R}^{N_w \times N_w}$ is approximated by $Q_r K_r^\top \in \mathbb{R}^{N_w \times r}$, where $Q_r, K_r \in \mathbb{R}^{N_w \times r}$, reducing total complexity to $\mathcal{O}(NrC)$. Combined, windowing and low-rank projection reduce the theoretical attention-matrix size from $\mathcal{O}(N^2)$ to $\mathcal{O}(Nr)$, a factor of $N/r$ (${\sim}390{\times}$ at $112{\times}112$ with $r{=}32$). These two hyperparameters---window size $M$ and rank $r$---form the primary experimental axes investigated on Synapse.
 
 \subsection{Channel Approximation}
 

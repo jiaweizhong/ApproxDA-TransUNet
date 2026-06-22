@@ -195,10 +195,7 @@ def run_single_image(image_np, label_np, model, collector):
     agg = collector.aggregate(PATCH_SIZE, PATCH_SIZE)   # (1, 224, 224)
     agg_np = agg[0].numpy()
 
-    # Normalise to [0,1]
-    mn, mx = agg_np.min(), agg_np.max()
-    if mx > mn:
-        agg_np = (agg_np - mn) / (mx - mn)
+    # Return raw values; global normalisation applied after all samples collected.
 
     # Resize prediction back to original label size
     if h != PATCH_SIZE or w != PATCH_SIZE:
@@ -215,7 +212,7 @@ def run_single_image(image_np, label_np, model, collector):
 
 def overlay_heatmap(ax, image_224, heatmap, title, alpha=0.55):
     ax.imshow(image_224, cmap='gray', vmin=0, vmax=1)
-    ax.imshow(heatmap, cmap='hot', alpha=alpha, vmin=0, vmax=1)
+    ax.imshow(heatmap, cmap='jet', alpha=alpha, vmin=0, vmax=1)
     ax.set_title(title, fontsize=13, fontweight='bold', pad=4)
     ax.axis('off')
 
@@ -372,6 +369,17 @@ def main():
     collector_a.remove()
     if collector_b is not None:
         collector_b.remove()
+
+    # --- Global normalisation across all samples and both models ---
+    all_maps = [s['attn_a'] for s in samples]
+    if any('attn_b' in s for s in samples):
+        all_maps += [s['attn_b'] for s in samples if 'attn_b' in s]
+    g_min = min(m.min() for m in all_maps)
+    g_max = max(m.max() for m in all_maps)
+    for s in samples:
+        s['attn_a'] = (s['attn_a'] - g_min) / (g_max - g_min + 1e-8)
+        if 'attn_b' in s:
+            s['attn_b'] = (s['attn_b'] - g_min) / (g_max - g_min + 1e-8)
 
     # --- Filter samples for figure ---
     if args.select_samples is not None:

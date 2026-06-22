@@ -77,7 +77,7 @@ The Synapse DSC-vs-$M$ curve is \emph{non-monotonic}: peak at $M{=}28$ (80.94\%,
     \textbf{Ratio: 3.6$\times$}};
 \end{axis}
 \end{tikzpicture}}
-\caption{Per-window gain of ApproxDA-TransUNet over DA-TransUNet ($\Delta$DSC, gate=pam, $r{=}32$). The Synapse curve (red) spans 2.30\,pp and crosses zero: wrong window choices actively hurt on this empirically high-GCS task. The Kvasir-SEG curve (green) spans only 0.64\,pp and stays positive throughout: any reasonable window helps on this empirically low-GCS task. The 3.6$\times$ span ratio (annotation box) directly operationalizes empirical GCS.}
+\caption{$\Delta$DSC vs.\ window size $M$ (gate=pam, $r{=}32$) for Synapse (red, high GCS) and Kvasir-SEG (green, low GCS). Annotation box: DSC span and 3.6$\times$ ratio.}
 \label{fig:dsc_vs_m}
 \end{figure}
 
@@ -102,8 +102,13 @@ We validate this locality bias hypothesis via controlled attention-map analysis:
 
 \begin{figure}[ht]
   \centering
-  \includegraphics[width=0.9\columnwidth]{figures/attn_Kvasir_M7_r32_pam_vs_M112.png}
-  \caption{Attention-map analysis on three representative Kvasir-SEG polyp images (selected from 10; samples with largest M=7 vs.\ M=112 on-mask gap). Each row: input image with GT contour (left), windowed PAM heatmap ($M{=}7$, gate=pam; center), global PAM heatmap ($M{=}112$, gate=pam; right). Windowed attention concentrates $62.3\%$ of its effect on the polyp region vs.\ $34.2\%$ for global attention---a $1.82{\times}$ difference confirmed in $9/10$ samples. Heatmap intensities reflect $\|\text{output} - \text{input}\|_2$ averaged across decoder scales and upsampled to $224{\times}224$.}
+  \scalebox{0.9}{%
+    \begin{minipage}{\columnwidth}
+      \centering
+      \includegraphics[width=\columnwidth]{figures/attn_Kvasir_M7_r32_pam_vs_M112.png}\\[-4pt]
+      \includegraphics[width=0.68\columnwidth]{figures/hot_color_code.png}
+    \end{minipage}}
+  \caption{PAM contribution maps ($\|\text{output} - \text{input}\|_2$, per-panel normalised; colorbar below) on three Kvasir-SEG polyp images. Each row: input with GT contour (left), windowed PAM ($M{=}7$; center), global PAM ($M{=}112$; right). Brighter color indicates larger PAM contribution at that location; panels are independently normalised so magnitudes are not comparable across panels.}
   \label{fig:attn_map}
 \end{figure}
 
@@ -118,7 +123,7 @@ Finally, we investigate whether adaptive routing contributes to approximation pe
 \begin{figure}[ht]
   \centering
   \includegraphics[width=\columnwidth]{figures/fig_entropy_scatter.png}
-  \caption{Gate value vs.\ per-block feature entropy $H(F)$ ($M{=}7$, gate=learn). Panels (TL$\to$BR): \texttt{embeddings.approx\_block} (bottleneck), \texttt{0.da3}, \texttt{1.da2}, \texttt{2.da} (skip connections at 28$^2$, 56$^2$, 112$^2$). All four locations collapse to $g{\approx}0.5$ with $\Delta g{\leq}0.0002$, confirming uniform gate collapse across scales.}
+  \caption{Gate value $g$ vs.\ per-block feature entropy $H(F)$ ($M{=}7$, gate=learn). Top-left: bottleneck; top-right: 28$^2$ skip; bottom-left: 56$^2$ skip; bottom-right: 112$^2$ skip. All four locations cluster at $g{\approx}0.5$ with $\Delta g{\leq}0.0002$.}
   \label{fig:gate_analysis}
 \end{figure}
 
@@ -145,7 +150,7 @@ Finally, we investigate whether adaptive routing contributes to approximation pe
 
 Gate=pam (78.64\%) outperforms gate=cam (78.26\%) and both gate=learn configurations (77.78\% at $M{=}7$; 78.04\% at $M{=}14$, $r{=}64$). Notably, gate=learn with a larger window and higher rank (M=14, r=64) still underperforms gate=pam at M=7 (78.04\% vs.\ 78.64\%), confirming that gate collapse is more damaging than a suboptimal window choice. In both gate=learn configurations, the gate converges to $g{\approx}0.5$ regardless of window size, producing a fixed 50/50 blend that performs below both single-branch modes.
 
-Figure~\ref{fig:gate_analysis} provides direct evidence: gate values show no correlation with feature entropy across all four ApproxDABlock locations (Spearman $r_s{\approx}0$), ruling out sample-adaptive routing. This collapse is identical at both $M{=}7$ and $M{=}14$, confirming it is a fundamental property of symmetric two-branch gating rather than a windowing artifact.
+Figure~\ref{fig:gate_analysis} provides direct evidence across all four ApproxDABlock locations (top-left: bottleneck; top-right: 28$^2$ skip; bottom-left: 56$^2$ skip; bottom-right: 112$^2$ skip): gate values show no correlation with feature entropy (Spearman $r_s{\approx}0$), ruling out sample-adaptive routing. This collapse is identical at both $M{=}7$ and $M{=}14$, confirming it is a fundamental property of symmetric two-branch gating rather than a windowing artifact.
 
 \textbf{Optimization intuition.} Given fused output $\mathbf{F} = g\mathbf{F}_\text{P} + (1-g)\mathbf{F}_\text{C}$, the gate gradient is:
 \begin{equation}
@@ -160,8 +165,8 @@ Simple scalar gating cannot provide effective adaptive routing because branch sy
 
 \subsection*{Summary of Findings}
 
-Overall, the ablation studies reveal three important findings. First, approximation strength should primarily preserve spatial receptive field rather than aggressively compress feature representations: intermediate windows outperform both too-local and too-global configurations, and increasing rank yields no additional benefit. Second, approximation effectiveness depends on task-specific contextual requirements (GCS): high-GCS tasks such as multi-organ CT require careful window tuning while low-GCS tasks such as polyp and skin lesion segmentation are window-robust, with a 3.6$\times$ sensitivity ratio confirming this distinction. Third, current scalar gating collapses to a stable degenerate equilibrium due to gradient symmetry, contributing little to adaptive routing. Together, these findings explain why ApproxDA-TransUNet consistently improves performance and provide practical guidelines for future attention approximation design.
+The ablation studies yield three converging insights: (1) spatial receptive field matters more than approximation rank---intermediate windows outperform both extremes while increasing rank yields no additional benefit; (2) task-specific GCS governs window sensitivity, with a 3.6$\times$ span ratio between Synapse and Kvasir-SEG confirming that high-GCS tasks require careful window tuning while low-GCS tasks are window-robust; and (3) scalar gating is insufficient for adaptive routing due to gradient symmetry, collapsing to a degenerate $g{\approx}0.5$ equilibrium. Together, these findings position attention approximation as a task-dependent inductive bias rather than a universal efficiency gain.
 
 \subsection{Limitations}
 
-Although the $\Delta\text{DSC}$ measure provides a computable GCS estimate from the window sensitivity ablation, a rigorous GCS estimator that generalizes across imaging modalities and training protocols---without requiring the ablation itself---remains to be developed. The cross-task comparison covers three benchmarks (Synapse, Kvasir-SEG, and ISIC 2018); the GCS hypothesis should be validated on a broader range of medical segmentation tasks before being applied prescriptively. Finally, the two mechanisms---inductive bias alignment and context interference---are empirically motivated but not formally proven; their relative contributions and the conditions under which each dominates warrant further investigation.
+GCS is currently an empirical characterization rather than a predictive metric: estimating task GCS without performing window-size ablations remains an open problem, and future work should validate the hypothesis on a broader range of datasets and develop theoretically grounded estimators. In addition, the proposed inductive-bias explanation remains an empirical hypothesis whose formal theoretical basis warrants further investigation.
