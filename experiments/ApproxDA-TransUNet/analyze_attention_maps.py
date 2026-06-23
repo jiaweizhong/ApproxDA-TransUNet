@@ -47,6 +47,7 @@ from matplotlib.transforms import Bbox
 
 from datasets.dataset_kvasir import Kvasir_dataset
 from datasets.dataset_isic import ISIC_dataset
+from datasets.dataset_synapse import Synapse_dataset
 from Architecture.ApproxDATransUNet import ApproxDATransUNet
 from Architecture.ApproxDATransUNet import CONFIGS as CONFIGS_ViT_seg
 from Architecture.block import LowRankWindowedPAM
@@ -285,12 +286,24 @@ def main():
             'volume_path': '../data/Kvasir-SEG',
             'list_dir':    './lists/lists_Kvasir',
             'num_classes': 2,
+            'split':       'test_vol',
+            'binary_gt':   False,
         },
         'ISIC': {
             'Dataset':     ISIC_dataset,
             'volume_path': '../data/ISIC2018',
             'list_dir':    './lists/lists_ISIC',
             'num_classes': 2,
+            'split':       'test_vol',
+            'binary_gt':   False,
+        },
+        'Synapse': {
+            'Dataset':     Synapse_dataset,
+            'volume_path': '../data/Synapse/train_npz',
+            'list_dir':    './lists/lists_Synapse',
+            'num_classes': 9,
+            'split':       'train',
+            'binary_gt':   True,   # binarize multi-class GT for overlap metric
         },
     }
     cfg         = dataset_config[args.dataset]
@@ -316,7 +329,7 @@ def main():
         compare_label = None
 
     # --- Load test data ---
-    db_test = cfg['Dataset'](base_dir=cfg['volume_path'], split='test_vol',
+    db_test = cfg['Dataset'](base_dir=cfg['volume_path'], split=cfg['split'],
                               list_dir=cfg['list_dir'])
     loader  = DataLoader(db_test, batch_size=1, shuffle=False, num_workers=1)
 
@@ -330,8 +343,12 @@ def main():
     for i, batch in enumerate(loader):
         if i not in idxs:
             continue
-        image_raw = batch['image'].squeeze(0).cpu().numpy()   # (H, W)
+        image_raw = batch['image'].squeeze(0).cpu().numpy()   # (H, W) or (C,H,W)
         label_raw = batch['label'].squeeze(0).cpu().numpy()   # (H, W)
+        if image_raw.ndim == 3:   # (C, H, W) — take first channel
+            image_raw = image_raw[0]
+        if cfg['binary_gt']:
+            label_raw = (label_raw > 0).astype(label_raw.dtype)
 
         # Normalise image to [0,1] for display
         img_disp = (image_raw - image_raw.min()) / (image_raw.max() - image_raw.min() + 1e-8)

@@ -28,16 +28,16 @@ Checkpoint files you need (already trained):
 
 ## 1. Synapse Multi-Organ CT
 
-**Not on Kaggle.** Use the preprocessed h5 files distributed by the TransUNet authors.
+### Download from Kaggle
 
-### Download
+```bash
+# Dataset: https://www.kaggle.com/datasets/dogcdt/synapse
+kaggle datasets download -d dogcdt/synapse -p ../../data --unzip
+```
 
-From the [TransUNet Google Drive](https://drive.google.com/drive/folders/1ACJEoTp-uqfFJ73qS3eUObQh52nGuzCd):
+The zip unpacks directly as `Synapse/test_vol_h5/` and `Synapse/train_npz/` — no further rearrangement needed. Only `test_vol_h5/` is required for inference.
 
-- Download the **Synapse** folder → contains `train_npz/` and `test_vol_h5/`
-- You only need `test_vol_h5/` for inference
-
-### Arrange
+### Expected layout after download
 
 ```
 data/

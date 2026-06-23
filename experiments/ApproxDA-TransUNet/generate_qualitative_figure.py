@@ -109,6 +109,8 @@ parser.add_argument('--ckpt_da_isic',   default=None, help='DA-TransUNet ISIC ck
 parser.add_argument('--cases_log',
                     default='../results/paper_figures/cases_used.json',
                     help='JSON written by cross_task, read by da_only')
+parser.add_argument('--syn_case', default=None,
+                    help='Force a specific Synapse case, e.g. case0022 (default: first in test_vol.txt)')
 args = parser.parse_args()
 
 os.makedirs(args.out_dir, exist_ok=True)
