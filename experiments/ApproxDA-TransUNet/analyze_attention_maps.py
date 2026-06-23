@@ -240,7 +240,7 @@ def show_mask(ax, image_224, gt_224, pred_224, title):
 def main():
     parser = argparse.ArgumentParser(description="Phase E — PAM Attention Map Visualization")
     parser.add_argument('--dataset',          type=str,  default='Kvasir',
-                        choices=['Kvasir', 'ISIC'])
+                        choices=['Kvasir', 'ISIC', 'Synapse'])
     parser.add_argument('--vit_name',         type=str,  default='R50-ViT-B_16')
     parser.add_argument('--img_size',         type=int,  default=224)
     parser.add_argument('--n_skip',           type=int,  default=3)
