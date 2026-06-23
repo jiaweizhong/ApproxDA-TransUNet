@@ -306,10 +306,10 @@ def main():
         },
         'Synapse': {
             'Dataset':     Synapse_dataset,
-            'volume_path': '../data/Synapse/train_npz',
+            'volume_path': '../data/Synapse/test_vol_h5',
             'list_dir':    './lists/lists_Synapse',
             'num_classes': 9,
-            'split':       'train',
+            'split':       'test_vol',
             'binary_gt':   True,   # binarize multi-class GT for overlap metric
         },
     }
@@ -350,10 +350,14 @@ def main():
     for i, batch in enumerate(loader):
         if i not in idxs:
             continue
-        image_raw = batch['image'].squeeze(0).cpu().numpy()   # (H, W) or (C,H,W)
-        label_raw = batch['label'].squeeze(0).cpu().numpy()   # (H, W)
-        if image_raw.ndim == 3:   # (C, H, W) — take first channel
-            image_raw = image_raw[0]
+        image_raw = batch['image'].squeeze(0).cpu().numpy()
+        label_raw = batch['label'].squeeze(0).cpu().numpy()
+        # Synapse test_vol returns (D, H, W) volumes — pick best-covered slice
+        if image_raw.ndim == 3:
+            gt_coverage = [(label_raw[s] > 0).sum() for s in range(image_raw.shape[0])]
+            best_s = int(np.argmax(gt_coverage))
+            image_raw = image_raw[best_s]
+            label_raw = label_raw[best_s]
         if cfg['binary_gt']:
             label_raw = (label_raw > 0).astype(label_raw.dtype)
 
