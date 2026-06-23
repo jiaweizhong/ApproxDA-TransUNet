@@ -306,7 +306,7 @@ def main():
         },
         'Synapse': {
             'Dataset':     Synapse_dataset,
-            'volume_path': '../data/Synapse/test_vol_h5',
+            'volume_path': '../../data/Synapse/test_vol_h5',
             'list_dir':    './lists/lists_Synapse',
             'num_classes': 9,
             'split':       'test_vol',
