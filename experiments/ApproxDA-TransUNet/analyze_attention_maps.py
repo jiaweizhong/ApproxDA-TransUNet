@@ -121,7 +121,14 @@ def build_model(args, num_classes, window_size, gate_mode, snapshot_path):
         sys.exit(1)
     ckpt = load_checkpoint(snapshot_path)
     ckpt = {k.replace('.ada_block.', '.approx_block.'): v for k, v in ckpt.items()}
-    model.load_state_dict(ckpt)
+    # auto-detect gate_mode from checkpoint
+    detected_gate = 'learn' if any('gate_fc' in k for k in ckpt) else gate_mode
+    if detected_gate != gate_mode:
+        print(f'  [auto] gate_mode {gate_mode!r} -> {detected_gate!r} (from checkpoint)')
+        config_vit.gate_mode = detected_gate
+        model = ApproxDATransUNet(config_vit, img_size=args.img_size,
+                                  num_classes=num_classes).cuda()
+    model.load_state_dict(ckpt, strict=False)
     model.eval()
     print(f'  Loaded: {snapshot_path}')
     return model
