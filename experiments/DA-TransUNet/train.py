@@ -331,17 +331,17 @@ if __name__ == "__main__":
     dataset_name = args.dataset
     dataset_config = {
         'Synapse': {
-            'root_path': '../data/Synapse/train_npz',
+            'root_path': '../../data/Synapse/train_npz',
             'list_dir': './lists/lists_Synapse',
             'num_classes': 9,
         },
         'Kvasir': {
-            'root_path': '../data/Kvasir-SEG',
+            'root_path': '../../data/Kvasir-SEG',
             'list_dir': './lists/lists_Kvasir',
             'num_classes': 2,
         },
         'ISIC': {
-            'root_path': '../data/ISIC2018',
+            'root_path': '../../data/ISIC2018',
             'list_dir': './lists/lists_ISIC',
             'num_classes': 2,
         },
