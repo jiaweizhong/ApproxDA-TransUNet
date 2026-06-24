@@ -138,7 +138,7 @@ def _trainer_2d(args, model, snapshot_path, db_train, dataset_class):
                                  worker_init_fn=worker_init_fn)
         model = DDP(model, device_ids=[local_rank], find_unused_parameters=True)
     else:
-        trainloader = DataLoader(db_train, batch_size=batch_size, shuffle=True, num_workers=8,
+        trainloader = DataLoader(db_train, batch_size=batch_size, shuffle=True, num_workers=4,
                                  pin_memory=True, worker_init_fn=worker_init_fn)
     model.train()
     ce_loss = CrossEntropyLoss()
@@ -285,7 +285,7 @@ def trainer_synapse(args, model, snapshot_path):
                                  worker_init_fn=worker_init_fn)
         model = DDP(model, device_ids=[local_rank], find_unused_parameters=True)
     else:
-        trainloader = DataLoader(db_train, batch_size=batch_size, shuffle=True, num_workers=8, pin_memory=True,
+        trainloader = DataLoader(db_train, batch_size=batch_size, shuffle=True, num_workers=4, pin_memory=True,
                                  worker_init_fn=worker_init_fn)
     model.train()
     ce_loss = CrossEntropyLoss()

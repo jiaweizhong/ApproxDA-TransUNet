@@ -102,7 +102,7 @@ def _trainer_2d(args, model, snapshot_path, db_train, dataset_class):
     def worker_init_fn(worker_id):
         random.seed(args.seed + worker_id)
 
-    trainloader = DataLoader(db_train, batch_size=batch_size, shuffle=True, num_workers=8,
+    trainloader = DataLoader(db_train, batch_size=batch_size, shuffle=True, num_workers=4,
                              pin_memory=True, worker_init_fn=worker_init_fn,
                              persistent_workers=True)
     if args.n_gpu > 1:
@@ -221,7 +221,7 @@ def trainer_synapse(args, model, snapshot_path):
     def worker_init_fn(worker_id):
         random.seed(args.seed + worker_id)
 
-    trainloader = DataLoader(db_train, batch_size=batch_size, shuffle=True, num_workers=8, pin_memory=True,
+    trainloader = DataLoader(db_train, batch_size=batch_size, shuffle=True, num_workers=4, pin_memory=True,
                              worker_init_fn=worker_init_fn, persistent_workers=True)
     if args.n_gpu > 1:
         model = nn.DataParallel(model)
