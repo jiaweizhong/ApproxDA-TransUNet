@@ -37,7 +37,7 @@ Examples:
     --ckpt_isic_best  <path/isic_m7_learn/best_model.pth>
 """
 
-import argparse, os, sys, json
+import argparse, os, sys, json, importlib.util
 import numpy as np
 import torch
 from scipy.ndimage import zoom as nd_zoom
@@ -158,18 +158,19 @@ def load_model(ckpt_path, window_size, rank=32, gate_mode='pam', num_classes=9):
 
 
 def load_da_model(ckpt_path, num_classes=9):
-    """Load original DA-TransUNet from the sibling DA-TransUNet directory."""
-    if DA_ARCH_PATH not in sys.path:
-        sys.path.insert(0, DA_ARCH_PATH)
-    from Architecture.DATransUNet import DA_Transformer
-    from Architecture.DATransUNet import CONFIGS as DA_CONFIGS
+    """Load original DA-TransUNet from the sibling DA-TransUNet/networks/ directory."""
+    modeling_path = os.path.join(DA_ARCH_PATH, 'networks', 'vit_seg_modeling.py')
+    spec = importlib.util.spec_from_file_location("da_vit_seg_modeling", modeling_path)
+    mod  = importlib.util.module_from_spec(spec)
+    sys.modules["da_vit_seg_modeling"] = mod
+    spec.loader.exec_module(mod)
 
-    cfg = DA_CONFIGS['R50-ViT-B_16']
+    cfg = mod.CONFIGS['R50-ViT-B_16']
     cfg.n_classes = num_classes
-    cfg.n_skip = args.n_skip
+    cfg.n_skip    = args.n_skip
     cfg.patches.grid = (args.img_size // 16, args.img_size // 16)
 
-    net = DA_Transformer(cfg, img_size=args.img_size, num_classes=num_classes)
+    net = mod.VisionTransformer(cfg, img_size=args.img_size, num_classes=num_classes)
     state = torch.load(ckpt_path, map_location='cpu', weights_only=False)
     net.load_state_dict(state, strict=False)
     net.eval()
