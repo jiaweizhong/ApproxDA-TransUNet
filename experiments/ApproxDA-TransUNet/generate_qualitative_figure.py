@@ -265,19 +265,22 @@ def pick_synapse_slice(img_vol, lbl_vol, net=None):
 
 
 # ── load Synapse volumes ───────────────────────────────────────────────────────
-def load_synapse_cases(n_cases=2):
+def load_synapse_cases(n_cases=2, target_name=None):
+    """Load Synapse volumes. If target_name is given, seek directly to that case."""
     from datasets.dataset_synapse import Synapse_dataset
     db = Synapse_dataset(base_dir=args.volume_path_syn, split='test_vol',
                          list_dir=args.list_dir_syn)
-    loader = DataLoader(db, batch_size=1, shuffle=False, num_workers=1)
+    loader = DataLoader(db, batch_size=1, shuffle=False, num_workers=0)
     cases = []
     for i, s in enumerate(loader):
-        if i >= n_cases:
-            break
+        name = s['case_name'][0]
+        if target_name is not None and name != target_name:
+            continue   # skip all cases except the one we logged
         img = s['image'].squeeze(0).cpu().numpy()
         lbl = s['label'].squeeze(0).cpu().numpy()
-        name = s['case_name'][0]
         cases.append((name, img, lbl))
+        if target_name is not None or len(cases) >= n_cases:
+            break
     return cases
 
 
@@ -583,14 +586,13 @@ elif args.mode == 'da_only':
         info = log[ds_key]
 
         if ds_key == 'synapse':
-            cases = load_synapse_cases(n_cases=12)
-            # find the logged case by name
             target = info.get('case_name', '')
-            match = [(n, iv, lv) for n, iv, lv in cases if n == target]
-            if not match:
-                print(f"  [warn] case '{target}' not in first-12; using first")
-                match = [cases[0]]
-            _, img_vol, lbl_vol = match[0]
+            cases = load_synapse_cases(target_name=target)
+            if not cases:
+                print(f"  [warn] case '{target}' not found; skipping synapse")
+                del net
+                continue
+            _, img_vol, lbl_vol = cases[0]
             s_idx = info.get('slice_idx', img_vol.shape[0] // 2)
             img_sl, lbl_sl = img_vol[s_idx], lbl_vol[s_idx]
             pred = predict_slice(net, img_sl.astype(np.float32))
