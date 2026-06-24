@@ -1,0 +1,2 @@
+# Run datasets/generate_lists.py --dataset ISIC --data_dir ../data/ISIC2018
+# to populate this file on Lightning AI.

@@ -2,7 +2,7 @@
 \section{Results}
 \label{sec:experiments}
 
-We evaluate ApproxDA-TransUNet on three medical image segmentation benchmarks. Section~\ref{sec:understanding} provides mechanistic analysis of the observed task-dependent patterns.
+We evaluate ApproxDA-TransUNet on three benchmarks spanning tasks with fundamentally different spatial context requirements, comparing against DA-TransUNet and other competitive baselines.
 
 \subsection{Experimental Setup}
 
@@ -107,13 +107,13 @@ Tables~\ref{tab:synapse}--\ref{tab:isic} compare ApproxDA-TransUNet against publ
   \footnotesize{ApproxDA: gate=learn, $M{=}7$, $r{=}32$, $G{=}8$.}
 \end{table}
 
-ApproxDA-TransUNet achieves state-of-the-art results across all three benchmarks (Figure~\ref{fig:qualitative}). The task-dependent window preferences and cross-task sensitivity differences are examined in Section~\ref{sec:understanding}.
+ApproxDA-TransUNet achieves state-of-the-art results across all three benchmarks (Figure~\ref{fig:qualitative}), with task-dependent window sensitivity emerging as the key differentiating pattern across datasets.
 
 
 
 \begin{figure}[ht]
   \centering
-  \includegraphics[width=0.9\columnwidth]{figures/fig_qualitative_cross_task.png}
+  \includegraphics[width=\columnwidth]{figures/fig_qualitative_cross_task.png}
   \caption{Qualitative segmentation comparison. \textbf{Top (Synapse, $M{=}28$):} multi-organ CT; ApproxDA 80.94\% DSC ($+$1.14\%). \textbf{Middle (Kvasir-SEG, $M{=}56$):} polyp; 90.17\% DSC ($+$1.73\%). \textbf{Bottom (ISIC 2018, $M{=}7$):} skin lesion; 89.58\% DSC ($+$0.70\%).}
   \label{fig:qualitative}
 \end{figure}

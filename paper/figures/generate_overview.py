@@ -60,7 +60,7 @@ def add_circle(ax, cx, cy, r=0.13):
 
 
 # ── figure layout ────────────────────────────────────────────────────────────
-fig_w, fig_h = 12.5, 6.0
+fig_w, fig_h = 12.55, 6.0
 fig, ax = plt.subplots(figsize=(fig_w, fig_h))
 ax.set_xlim(0, fig_w)
 ax.set_ylim(0.40, 5.40)
@@ -127,13 +127,14 @@ for xi in XS[1:4]:
 # INSET — ViT-B/16 Transformer Block
 # ════════════════════════════════════════════════════════════════════════════
 VIX  = 9.35
-VIW  = 2.80
+VIW  = 3.10   # wider to fit 30%-larger text
 VIH  = 4.26
 VIY  = 0.58
-VIXC = VIX + VIW / 2   # 10.60
-VBW  = 2.00             # content boxes; res bar extends ~0.45 beyond right edge
-BH_LN  = 0.33
-BH_BLK = 0.46
+VIXC = VIX + VIW / 2   # 10.90
+VBW  = 2.36             # content box width (30% larger text needs more room)
+BH_LN  = 0.40           # layer-norm box height (up from 0.33)
+BH_BLK = 0.56           # MHSA / MLP box height (up from 0.46)
+h_xi   = 0.46           # input-tokens box height (up from 0.38)
 
 ax.add_patch(FancyBboxPatch(
     (VIX, VIY), VIW, VIH,
@@ -142,46 +143,46 @@ ax.add_patch(FancyBboxPatch(
 ))
 ax.text(VIXC, VIY + VIH - 0.14,
         "ViT-B/16 Transformer Block ×12",
-        ha="center", va="center", fontsize=10,
+        ha="center", va="center", fontsize=12,
         fontweight="bold", color="#7A4800", zorder=6)
 
-# element y-centres — well-spaced so inter-block arrows are clearly visible
-vit_xi_y   = 4.34
-vit_ln1_y  = 3.82
-vit_msa_y  = 3.28
-vit_add1_y = 2.74
-vit_ln2_y  = 2.24
-vit_mlp_y  = 1.70
-vit_add2_y = 1.16
-vit_xo_y   = 0.73
+# element y-centres — recalculated for larger boxes
+vit_xi_y   = 4.27
+vit_ln1_y  = 3.73
+vit_msa_y  = 3.12
+vit_add1_y = 2.60
+vit_ln2_y  = 2.14
+vit_mlp_y  = 1.56
+vit_add2_y = 1.05
+vit_xo_y   = 0.66
 
-box(ax, VIXC, vit_xi_y,  VBW, 0.38,   C_IO,  "Input tokens",
-    "196 × 768",                fs=9, sfs=8)
-box(ax, VIXC, vit_ln1_y, VBW, BH_LN,  C_IO,  "Layer Norm",         fs=9)
+box(ax, VIXC, vit_xi_y,  VBW, h_xi,   C_IO,  "Input tokens",
+    "196 × 768",                fs=11, sfs=9.5)
+box(ax, VIXC, vit_ln1_y, VBW, BH_LN,  C_IO,  "Layer Norm",         fs=11)
 box(ax, VIXC, vit_msa_y, VBW, BH_BLK, C_VIT,
-    "Multi-Head Self-Attention", "12 heads · d_h = 64", fs=9, sfs=8)
+    "Multi-Head Self-Attention", "12 heads · d_h = 64", fs=11, sfs=9.5)
 add_circle(ax, VIXC, vit_add1_y)
-box(ax, VIXC, vit_ln2_y, VBW, BH_LN,  C_IO,  "Layer Norm",         fs=9)
+box(ax, VIXC, vit_ln2_y, VBW, BH_LN,  C_IO,  "Layer Norm",         fs=11)
 box(ax, VIXC, vit_mlp_y, VBW, BH_BLK, C_MLP,
-    "MLP / FFN",                 "768 → 3072 → 768",   fs=9, sfs=8)
+    "MLP / FFN",                 "768 → 3072 → 768",   fs=11, sfs=9.5)
 add_circle(ax, VIXC, vit_add2_y)
 ax.text(VIXC, vit_xo_y, "Output tokens (196 × 768)",
-        ha="center", va="center", fontsize=8.5, color="#333333", zorder=6)
+        ha="center", va="center", fontsize=10, color="#333333", zorder=6)
 
 # vertical flow arrows
 for y0, y1 in [
-    (vit_xi_y   - 0.19,      vit_ln1_y  + BH_LN/2),
-    (vit_ln1_y  - BH_LN/2,   vit_msa_y  + BH_BLK/2),
-    (vit_msa_y  - BH_BLK/2,  vit_add1_y + 0.13),
-    (vit_add1_y - 0.13,      vit_ln2_y  + BH_LN/2),
-    (vit_ln2_y  - BH_LN/2,   vit_mlp_y  + BH_BLK/2),
-    (vit_mlp_y  - BH_BLK/2,  vit_add2_y + 0.13),
-    (vit_add2_y - 0.13,      vit_xo_y   + 0.13),
+    (vit_xi_y   - h_xi/2,      vit_ln1_y  + BH_LN/2),
+    (vit_ln1_y  - BH_LN/2,     vit_msa_y  + BH_BLK/2),
+    (vit_msa_y  - BH_BLK/2,    vit_add1_y + 0.13),
+    (vit_add1_y - 0.13,         vit_ln2_y  + BH_LN/2),
+    (vit_ln2_y  - BH_LN/2,     vit_mlp_y  + BH_BLK/2),
+    (vit_mlp_y  - BH_BLK/2,    vit_add2_y + 0.13),
+    (vit_add2_y - 0.13,         vit_xo_y   + 0.10),
 ]:
     arrow(ax, VIXC, y0, VIXC, y1, lw=1.0)
 
-# residual bar — black, right of boxes
-res_x = VIXC + VBW/2 + 0.28
+# residual bar — right of boxes; 'res.' same size as block text, white background
+res_x = VIXC + VBW/2 + 0.20
 ax.plot([VIXC + VBW/2, res_x, res_x],
         [vit_xi_y, vit_xi_y, vit_add2_y],
         color=EDGE, lw=1.1, zorder=5)
@@ -191,18 +192,17 @@ ax.annotate("", xy=(VIXC + 0.14, vit_add1_y),
 ax.annotate("", xy=(VIXC + 0.14, vit_add2_y),
             xytext=(res_x + 0.001, vit_add2_y),
             arrowprops=dict(arrowstyle="->", color=EDGE, lw=1.1), zorder=5)
-ax.text(res_x + 0.12, (vit_xi_y + vit_add2_y) / 2,
+ax.text(res_x + 0.10, (vit_xi_y + vit_add2_y) / 2,
         "res.", ha="center", va="center",
-        fontsize=8.5, color=EDGE, style="italic", rotation=90, zorder=6)
+        fontsize=11, color=EDGE, style="italic", rotation=90, zorder=6,
+        bbox=dict(facecolor='white', edgecolor='none', pad=3))
 
 
-# ── connector: ViT main box → ViT inset ──────────────────────────────────────
-ax.annotate("", xy=(VIX + 0.10, VIY + VIH / 2),
-            xytext=(XS[4] + BW_VIT/2 + 0.05, Y_ENC),
-            arrowprops=dict(arrowstyle="->", color="#AAAAAA", lw=0.9,
-                            linestyle=(0, (3, 2)),
-                            connectionstyle="arc3,rad=-0.2"), zorder=5)
-ax.text(9.10, 3.72, "detail", ha="center", fontsize=7.5, color="#AAAAAA", zorder=6)
+# ── connector: ViT main box → ViT inset (dashed horizontal arrow, no occlusion)
+arrow(ax,
+      XS[4] + BW_VIT/2, Y_ENC,
+      VIX + 0.10, Y_ENC,
+      color="#AAAAAA", lw=1.1, dashed=True)
 
 
 # ── legend ────────────────────────────────────────────────────────────────────

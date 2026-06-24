@@ -1,0 +1,2 @@
+# Run datasets/generate_lists.py --dataset Kvasir --data_dir ../data/Kvasir-SEG
+# to populate this file on Lightning AI.

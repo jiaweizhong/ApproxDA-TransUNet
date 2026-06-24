@@ -2775,7 +2775,7 @@
 % test if is a for a figure or table
 \ifx\@captype\@IEEEtablestring%
 % if a table, do table caption
-\footnotesize\bgroup\par\centering\@IEEEtabletopskipstrut{\normalfont\footnotesize #1}~{\normalfont\footnotesize\scshape #2}\par\addvspace{0.5\baselineskip}\egroup%
+\footnotesize\bgroup\par\centering\@IEEEtabletopskipstrut{\normalfont\footnotesize #1}\\{\normalfont\footnotesize\scshape #2}\par\addvspace{0.5\baselineskip}\egroup%
 \@IEEEtablecaptionsepspace
 % if not a table, format it as a figure
 \else
