@@ -15,6 +15,13 @@ Figure~\ref{fig:framework} illustrates the overall architecture: ApproxDA-TransU
   \label{fig:framework}
 \end{figure*}
 
+\begin{figure*}[tbp]
+  \centering
+  \includegraphics[width=\textwidth]{figures/approxda_block}
+  \caption{ApproxDABlock internals with three independently controllable approximation axes: spatial scope ($M$, window size), representation fidelity ($r$, projection rank), and channel interaction ($G$, group count). Input $\mathbf{x}$ splits into a Low-Rank Windowed PAM branch (lavender, upper) and a Grouped CAM branch (green, lower); gate $g$ fuses the outputs and $\mathbf{x}$ is added as a residual.}
+  \label{fig:approxda_block}
+\end{figure*}
+
 \subsection{Attention Approximation Formulation}
 
 The original DA module performs dense spatial and channel attention over the full feature map, with quadratic complexity in both spatial resolution and channel dimension. ApproxDA-TransUNet reduces this cost along three independent axes, each targeting a distinct aspect of the approximation:
@@ -25,14 +32,7 @@ The original DA module performs dense spatial and channel attention over the ful
 
 \textbf{Channel interaction} (groups $G$) controls \emph{which channels} may interact in CAM. Partitioning $C$ channels into $G$ independent groups limits cross-channel dependency to within-group interactions, reducing the interaction scope.
 
-These axes correspond to three distinct types of approximation: \emph{spatial approximation} (how far attention reaches, controlled by $M$), \emph{representation approximation} (how precisely affinity is computed, controlled by $r$), and \emph{channel approximation} (how broadly channels interact, controlled by $G$). The axes are fully independent: any two of $\{M,\,r,\,G\}$ can be held fixed while the third varies, enabling clean ablations that isolate individual approximation effects. Figure~\ref{fig:approxda_block} shows the resulting block structure, with both branches fused through the configurable gate.
-
-\begin{figure*}[tbp]
-  \centering
-  \includegraphics[width=\textwidth]{figures/approxda_block}
-  \caption{ApproxDABlock internals with three independently controllable approximation axes: spatial scope ($M$, window size), representation fidelity ($r$, projection rank), and channel interaction ($G$, group count). Input $\mathbf{x}$ splits into a Low-Rank Windowed PAM branch (lavender, upper) and a Grouped CAM branch (green, lower); gate $g$ fuses the outputs and $\mathbf{x}$ is added as a residual.}
-  \label{fig:approxda_block}
-\end{figure*}
+These axes correspond to three distinct types of approximation: \emph{spatial approximation} (how far attention reaches, controlled by $M$), \emph{representation approximation} (how precisely affinity is computed, controlled by $r$), and \emph{channel approximation} (how broadly channels interact, controlled by $G$). The axes are fully independent: any two of $\{M,\,r,\,G\}$ can be held fixed while the third varies, enabling clean ablations that isolate individual approximation effects.
 
 \subsection{Spatial Approximation}
 
@@ -87,4 +87,3 @@ The training objective combines Dice loss and cross-entropy loss with equal weig
   \label{eq:loss}
 \end{equation}
 
-These approximations reduce layer-level attention complexity: windowed PAM from $\mathcal{O}(N^2C)$ to $\mathcal{O}(NrC)$ ($r \ll N$); grouped CAM from $\mathcal{O}(C^2N)$ to $\mathcal{O}(C^2N/G)$.
