@@ -89,9 +89,9 @@ parser.add_argument('--ckpt_kvasir_best', default=None)
 parser.add_argument('--ckpt_isic_best',   default=None)
 
 # data paths
-parser.add_argument('--volume_path_syn',  default='../data/Synapse/test_vol_h5')
-parser.add_argument('--volume_path_kv',   default='../data/Kvasir-SEG')
-parser.add_argument('--volume_path_isic', default='../data/ISIC2018')
+parser.add_argument('--volume_path_syn',  default='../../data/Synapse/test_vol_h5')
+parser.add_argument('--volume_path_kv',   default='../../data/Kvasir-SEG')
+parser.add_argument('--volume_path_isic', default='../../data/ISIC2018')
 parser.add_argument('--list_dir_syn',     default='./lists/lists_Synapse')
 parser.add_argument('--list_dir_kv',      default='./lists/lists_Kvasir')
 parser.add_argument('--list_dir_isic',    default='./lists/lists_ISIC')
