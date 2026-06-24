@@ -266,21 +266,36 @@ def pick_synapse_slice(img_vol, lbl_vol, net=None):
 
 # ── load Synapse volumes ───────────────────────────────────────────────────────
 def load_synapse_cases(n_cases=2, target_name=None):
-    """Load Synapse volumes. If target_name is given, seek directly to that case."""
+    """Load Synapse volumes. If target_name is given, load ONLY that case by index
+    (avoids iterating through earlier cases whose .h5 files may not exist)."""
     from datasets.dataset_synapse import Synapse_dataset
     db = Synapse_dataset(base_dir=args.volume_path_syn, split='test_vol',
                          list_dir=args.list_dir_syn)
+
+    if target_name is not None:
+        names = [l.strip('\n').strip() for l in db.sample_list]
+        if target_name not in names:
+            print(f"  [warn] '{target_name}' not in Synapse sample list")
+            return []
+        idx = names.index(target_name)
+        sample = db[idx]   # loads only case0022.npy.h5
+        img = sample['image']
+        lbl = sample['label']
+        if hasattr(img, 'numpy'):
+            img = img.numpy()
+        if hasattr(lbl, 'numpy'):
+            lbl = lbl.numpy()
+        return [(target_name, np.array(img), np.array(lbl))]
+
     loader = DataLoader(db, batch_size=1, shuffle=False, num_workers=0)
     cases = []
     for i, s in enumerate(loader):
-        name = s['case_name'][0]
-        if target_name is not None and name != target_name:
-            continue   # skip all cases except the one we logged
+        if i >= n_cases:
+            break
         img = s['image'].squeeze(0).cpu().numpy()
         lbl = s['label'].squeeze(0).cpu().numpy()
+        name = s['case_name'][0]
         cases.append((name, img, lbl))
-        if target_name is not None or len(cases) >= n_cases:
-            break
     return cases
 
 
