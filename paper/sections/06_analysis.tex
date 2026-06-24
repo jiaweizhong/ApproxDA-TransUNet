@@ -35,7 +35,7 @@ The Synapse DSC-vs-$M$ curve is \emph{non-monotonic}: peak at $M{=}28$ (80.94\%,
 
 \begin{figure}[ht]
 \centering
-\scalebox{0.85}{%
+\scalebox{0.9}{%
 \begin{tikzpicture}
 \begin{axis}[
   width=\columnwidth, height=5.3cm,
@@ -102,12 +102,8 @@ We validate this locality bias hypothesis via controlled attention-map analysis:
 
 \begin{figure}[ht]
   \centering
-  \scalebox{0.9}{%
-    \begin{minipage}{\columnwidth}
-      \centering
-      \includegraphics[width=\columnwidth]{figures/attn_Kvasir_M7_r32_pam_vs_M112.png}\\[-4pt]
-      \includegraphics[width=0.68\columnwidth]{figures/hot_color_code.png}
-    \end{minipage}}
+  \includegraphics[width=\columnwidth]{figures/attn_Kvasir_M7_r32_pam_vs_M112.png}\\[-4pt]
+  \includegraphics[width=0.68\columnwidth]{figures/hot_color_code.png}
   \caption{PAM contribution maps ($\|\text{output} - \text{input}\|_2$, per-panel normalised; colorbar below) on three Kvasir-SEG polyp images. Each row: input with GT contour (left), windowed PAM ($M{=}7$; center), global PAM ($M{=}112$; right). Brighter color indicates larger PAM contribution at that location; panels are independently normalised so magnitudes are not comparable across panels.}
   \label{fig:attn_map}
 \end{figure}
@@ -163,10 +159,3 @@ At initialization $g{\approx}0.5$, both branches receive equal gradient $\tfrac{
 
 Simple scalar gating cannot provide effective adaptive routing because branch symmetry prevents meaningful specialization. Future adaptive attention mechanisms should explicitly encourage branch diversity---through asymmetric initialization, diversity-encouraging loss terms, or non-symmetric routing---rather than relying solely on learnable fusion weights.
 
-\subsection{Summary of Findings}
-
-The ablation studies yield three converging insights: (1) spatial receptive field matters more than approximation rank---intermediate windows outperform both extremes while increasing rank yields no additional benefit; (2) task-specific GCS governs window sensitivity, with a 3.6$\times$ span ratio between Synapse and Kvasir-SEG confirming that high-GCS tasks require careful window tuning while low-GCS tasks are window-robust; and (3) scalar gating is insufficient for adaptive routing due to gradient symmetry, collapsing to a degenerate $g{\approx}0.5$ equilibrium. Together, these findings position attention approximation as a task-dependent inductive bias rather than a universal efficiency gain.
-
-\subsection{Limitations}
-
-GCS is currently an empirical characterization rather than a predictive metric: estimating task GCS without performing window-size ablations remains an open problem, and future work should validate the hypothesis on a broader range of datasets and develop theoretically grounded estimators. In addition, the proposed inductive-bias explanation remains an empirical hypothesis whose formal theoretical basis warrants further investigation.

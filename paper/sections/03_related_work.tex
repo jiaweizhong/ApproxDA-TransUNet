@@ -4,11 +4,11 @@
 
 \subsection{CNN-based Medical Image Segmentation}
 
-Convolutional encoder-decoder architectures established the foundational paradigm for medical image segmentation, with U-Net~\cite{ronneberger2015unet} and its successors~\cite{zhou2018unetpp,oktay2018attention,diakogiannis2020resunet} progressively refining skip connections, attention gating, and multi-scale feature representations. Despite strong performance on local-feature-dominant tasks, their limited receptive fields hinder long-range anatomical reasoning.
+Convolutional encoder-decoder architectures established the foundational paradigm for medical image segmentation, with U-Net~\cite{ronneberger2015unet} and its successors~\cite{zhou2018unetpp,oktay2018attention,diakogiannis2020resunet,ibtehaz2020multiresunet} progressively refining skip connections, attention gating, and multi-scale feature representations. Despite strong performance on local-feature-dominant tasks, their limited receptive fields hinder long-range anatomical reasoning.
 
 \subsection{Transformer-based Medical Image Segmentation}
 
-Transformer architectures have significantly advanced medical image segmentation by enabling global dependency modeling beyond the locality of convolutional neural networks. Representative methods such as TransUNet~\cite{chen2021transunet}, Swin-Unet~\cite{cao2022swinunet}, UNETR~\cite{hatamizadeh2022unetr}, UCTransNet~\cite{wang2022uctransnet}, and DAEformer~\cite{azad2023daeformer} combine convolutional feature extraction with transformer-based contextual modeling to achieve state-of-the-art segmentation performance across a wide range of medical imaging tasks. These methods treat global context modeling as uniformly beneficial, however, without examining whether different tasks require different degrees of spatial context.
+Transformer architectures have significantly advanced medical image segmentation by enabling global dependency modeling beyond the locality of convolutional neural networks. Representative methods such as TransUNet~\cite{chen2021transunet}, Swin-Unet~\cite{cao2022swinunet}, UNETR~\cite{hatamizadeh2022unetr}, UCTransNet~\cite{wang2022uctransnet}, TransNorm~\cite{wang2022transnorm}, and DAEformer~\cite{azad2023daeformer} combine convolutional feature extraction with transformer-based contextual modeling to achieve state-of-the-art segmentation performance across a wide range of medical imaging tasks. These methods treat global context modeling as uniformly beneficial, however, without examining whether different tasks require different degrees of spatial context.
 
 \subsection{Dual Attention and DA-TransUNet}
 
