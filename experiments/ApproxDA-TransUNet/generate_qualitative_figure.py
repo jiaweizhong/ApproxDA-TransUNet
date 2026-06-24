@@ -158,11 +158,11 @@ def load_model(ckpt_path, window_size, rank=32, gate_mode='pam', num_classes=9):
 
 
 def load_da_model(ckpt_path, num_classes=9):
-    """Load original DA-TransUNet from the sibling DA-TransUNet/networks/ directory."""
-    modeling_path = os.path.join(DA_ARCH_PATH, 'networks', 'vit_seg_modeling.py')
-    spec = importlib.util.spec_from_file_location("da_vit_seg_modeling", modeling_path)
+    """Load original DA-TransUNet from the sibling DA-TransUNet/Architecture/ directory."""
+    modeling_path = os.path.join(DA_ARCH_PATH, 'Architecture', 'DATransUNet.py')
+    spec = importlib.util.spec_from_file_location("da_dat_modeling", modeling_path)
     mod  = importlib.util.module_from_spec(spec)
-    sys.modules["da_vit_seg_modeling"] = mod
+    sys.modules["da_dat_modeling"] = mod
     spec.loader.exec_module(mod)
 
     cfg = mod.CONFIGS['R50-ViT-B_16']
@@ -170,7 +170,7 @@ def load_da_model(ckpt_path, num_classes=9):
     cfg.n_skip    = args.n_skip
     cfg.patches.grid = (args.img_size // 16, args.img_size // 16)
 
-    net = mod.VisionTransformer(cfg, img_size=args.img_size, num_classes=num_classes)
+    net = mod.DA_Transformer(cfg, img_size=args.img_size, num_classes=num_classes)
     state = torch.load(ckpt_path, map_location='cpu', weights_only=False)
     net.load_state_dict(state, strict=False)
     net.eval()
