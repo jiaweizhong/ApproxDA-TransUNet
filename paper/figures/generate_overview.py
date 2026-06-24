@@ -131,10 +131,10 @@ VIW  = 3.10   # wider to fit 30%-larger text
 VIH  = 4.26
 VIY  = 0.58
 VIXC = VIX + VIW / 2   # 10.90
-VBW  = 2.36             # content box width (30% larger text needs more room)
-BH_LN  = 0.40           # layer-norm box height (up from 0.33)
-BH_BLK = 0.56           # MHSA / MLP box height (up from 0.46)
-h_xi   = 0.46           # input-tokens box height (up from 0.38)
+VBW  = 2.36             # content box width
+BH_LN  = 0.32           # layer-norm box height
+BH_BLK = 0.46           # MHSA / MLP box height
+h_xi   = 0.38           # input-tokens box height
 
 ax.add_patch(FancyBboxPatch(
     (VIX, VIY), VIW, VIH,
@@ -146,15 +146,15 @@ ax.text(VIXC, VIY + VIH - 0.14,
         ha="center", va="center", fontsize=12,
         fontweight="bold", color="#7A4800", zorder=6)
 
-# element y-centres — recalculated for larger boxes
+# element y-centres — spread across full panel height for visible arrows
 vit_xi_y   = 4.27
-vit_ln1_y  = 3.73
-vit_msa_y  = 3.12
-vit_add1_y = 2.60
-vit_ln2_y  = 2.14
-vit_mlp_y  = 1.56
-vit_add2_y = 1.05
-vit_xo_y   = 0.66
+vit_ln1_y  = 3.67
+vit_msa_y  = 3.03
+vit_add1_y = 2.54
+vit_ln2_y  = 2.11
+vit_mlp_y  = 1.47
+vit_add2_y = 0.98
+vit_xo_y   = 0.65
 
 box(ax, VIXC, vit_xi_y,  VBW, h_xi,   C_IO,  "Input tokens",
     "196 × 768",                fs=11, sfs=9.5)
