@@ -22,7 +22,7 @@ We evaluate ApproxDA-TransUNet on three benchmarks spanning tasks with fundament
 
 Tables~\ref{tab:synapse}--\ref{tab:isic} compare ApproxDA-TransUNet against published baselines across all three benchmarks.
 
-\textbf{Synapse.} Table~\ref{tab:synapse} benchmarks against 9 published methods. CNN-based models plateau at 76--78\% DSC, with Att-UNet leading at 77.77\%. Transformer-based methods progressively improve: TransUNet (77.48\%), UCTransNet (78.23\%), MIM (78.59\%), Swin-Unet (79.13\%), and DA-TransUNet (79.80\%). ApproxDA-TransUNet with gate=pam, $M{=}28$, $r{=}32$ achieves \textbf{80.94\%} DSC and 27.49\,mm HD95---the highest DSC across all compared methods, surpassing DA-TransUNet by $+$1.14\%. The intermediate window $M{=}28$ captures sufficient cross-organ context while limiting spurious long-range correlations; Section~\ref{sec:understanding} analyzes this behavior in detail.
+\textbf{Synapse.} Table~\ref{tab:synapse} benchmarks against 11 published methods. CNN-based models plateau at 76--78\% DSC, with Att-UNet leading at 77.77\%. Transformer-based methods progressively improve: TransUNet (77.48\%), UCTransNet (78.23\%), MIM (78.59\%), Swin-Unet (79.13\%), and DA-TransUNet (79.80\%). ApproxDA-TransUNet with gate=pam, $M{=}28$, $r{=}32$ achieves \textbf{80.94\%} DSC and 27.49\,mm HD95---the highest DSC across all compared methods, surpassing DA-TransUNet by $+$1.14\%. The intermediate window $M{=}28$ captures sufficient cross-organ context while limiting spurious long-range correlations; Section~\ref{sec:understanding} analyzes this behavior in detail.
 
 \begin{table}[ht]
   \caption{Segmentation Results on Synapse Multi-Organ CT}
@@ -120,7 +120,7 @@ ApproxDA-TransUNet achieves state-of-the-art results across all three benchmarks
 
 \subsection{Efficiency Analysis}
 
-Although the proposed approximation substantially reduces the theoretical complexity of the dual-attention module, the overall computational cost is dominated by the ViT backbone and convolutional encoder, which remain unchanged. Consequently, end-to-end GFLOPs and memory exhibit only marginal differences from DA-TransUNet. The practical advantage of ApproxDA-TransUNet therefore lies in improved architectural compatibility rather than total model complexity reduction: DA-TransUNet fails under DDP, while ApproxDA-TransUNet trains natively across multiple GPUs, enabling cost-effective distributed training on commodity clusters.
+Although the proposed approximation substantially reduces the theoretical complexity of the dual-attention module, the overall computational cost is dominated by the ViT backbone and convolutional encoder, which remain unchanged. As shown in Table~\ref{tab:efficiency}, end-to-end GFLOPs and memory exhibit only marginal differences from DA-TransUNet. The practical advantage of ApproxDA-TransUNet therefore lies in improved architectural compatibility rather than total model complexity reduction: DA-TransUNet fails under DDP, while ApproxDA-TransUNet trains natively across multiple GPUs, enabling cost-effective distributed training on commodity clusters.
 
 \begin{table*}[ht]
   \caption{Efficiency Comparison on Synapse (NVIDIA Tesla T4)}

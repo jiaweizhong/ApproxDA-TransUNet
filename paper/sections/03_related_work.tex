@@ -4,7 +4,7 @@
 
 \subsection{CNN-based Medical Image Segmentation}
 
-Convolutional encoder-decoder architectures established the foundational paradigm for medical image segmentation, with U-Net~\cite{ronneberger2015unet} and its successors~\cite{zhou2018unetpp,oktay2018attention,diakogiannis2020resunet,ibtehaz2020multiresunet} progressively refining skip connections, attention gating, and multi-scale feature representations. Despite strong performance on local-feature-dominant tasks, their limited receptive fields hinder long-range anatomical reasoning.
+Convolutional encoder-decoder architectures established the foundational paradigm for medical image segmentation, with U-Net~\cite{ronneberger2015unet} introducing the skip-connection design that underpins most segmentation networks, and successors~\cite{zhou2018unetpp,oktay2018attention,diakogiannis2020resunet,ibtehaz2020multiresunet} progressively adding dense connections, attention gating, and residual learning for improved feature reuse and training stability. These models offer strong computational efficiency and favorable inductive biases for local texture patterns, but their fixed receptive fields cannot capture long-range spatial dependencies across anatomical structures, limiting performance on tasks requiring global context.
 
 \subsection{Transformer-based Medical Image Segmentation}
 

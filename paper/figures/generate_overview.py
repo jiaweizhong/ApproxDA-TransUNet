@@ -25,7 +25,7 @@ C_MLP  = "#D5F0E0"
 EDGE   = "#444444"
 
 # ── helpers ──────────────────────────────────────────────────────────────────
-def box(ax, cx, cy, w, h, color, label, sublabel="", fs=10, sfs=9):
+def box(ax, cx, cy, w, h, color, label, sublabel="", fs=10, sfs=10):
     rect = FancyBboxPatch(
         (cx - w/2, cy - h/2), w, h,
         boxstyle="round,pad=0.04",
@@ -36,7 +36,7 @@ def box(ax, cx, cy, w, h, color, label, sublabel="", fs=10, sfs=9):
         ax.text(cx, cy + 0.10, label, ha="center", va="center",
                 fontsize=fs, fontweight="bold", zorder=4)
         ax.text(cx, cy - 0.14, sublabel, ha="center", va="center",
-                fontsize=sfs, color="#333333", zorder=4)
+                fontsize=sfs, fontweight="bold", color="#333333", zorder=4)
     else:
         ax.text(cx, cy, label, ha="center", va="center",
                 fontsize=fs, fontweight="bold", zorder=4)

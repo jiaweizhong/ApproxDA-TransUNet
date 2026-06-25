@@ -118,7 +118,7 @@ Finally, we investigate whether adaptive routing contributes to approximation pe
 \begin{figure}[ht]
   \centering
   \includegraphics[width=\columnwidth]{figures/fig_entropy_scatter.png}
-  \caption{Gate value $g$ vs.\ per-block feature entropy $H(F)$ ($M{=}7$, gate=learn). Top-left: bottleneck; top-right: 28$^2$ skip; bottom-left: 56$^2$ skip; bottom-right: 112$^2$ skip. All four locations cluster at $g{\approx}0.5$ with $\Delta g{\leq}0.0002$.}
+  \caption{Gate value $g$ vs.\ feature entropy $H(F)$ at all four skip locations ($M{=}7$, gate=learn): bottleneck, 28$^2$, 56$^2$, 112$^2$. All cluster at $g{\approx}0.5$ ($\Delta g{\leq}0.0002$), confirming gate collapse.}
   \label{fig:gate_analysis}
 \end{figure}
 
@@ -154,7 +154,7 @@ The collapse is not isolated to one location but is uniform across the entire ar
 \end{equation}
 At initialization $g{\approx}0.5$, both branches receive equal gradient $\tfrac{1}{2}\partial\mathcal{L}/\partial\mathbf{F}$. Without incentive to differentiate, $\mathbf{F}_\text{P} \approx \mathbf{F}_\text{C}$, so Eq.~\eqref{eq:gate_grad}$\approx \mathbf{0}$. This is self-reinforcing: equal gradients $\to$ convergent representations $\to$ near-zero gate gradient $\to$ $g$ fixed at~0.5---a stable equilibrium of symmetric dual-branch optimization.
 
-\textbf{Empirical evidence.} Quantitative gate monitoring confirms this collapse is near-total across all window configurations. After 300 epochs, the gate range at $M{=}7$ is $[0.4993,\,0.5010]$ with $\Delta g{=}0.0017$. At $M{=}14$: $g{\approx}0.5002$ with $\Delta g{\approx}0.0000$.
+\textbf{Empirical evidence.} Quantitative gate monitoring confirms this collapse is near-total across all window configurations. After 300 epochs, all four locations show $\Delta g{\leq}0.0002$ at both $M{=}7$ and $M{=}14$, confirming the collapse is independent of window size.
 
 Simple scalar gating cannot provide effective adaptive routing because branch symmetry prevents meaningful specialization. Future adaptive attention mechanisms should explicitly encourage branch diversity---through asymmetric initialization, diversity-encouraging loss terms, or non-symmetric routing---rather than relying solely on learnable fusion weights.
 

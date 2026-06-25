@@ -79,11 +79,10 @@ where $\hat{\mathbf{P}}$ and $\hat{\mathbf{C}}$ are the normalized PAM and CAM o
 
 In gate=learn, $g \in (0,1)^C$ is a per-channel routing coefficient broadcast over all spatial positions; it collapses to a channel-wise blend rather than a spatially-adaptive or input-dependent scalar. This single-parameter design enables systematic ablation of routing strategy without any other architectural change. ApproxDA-TransUNet does not treat this routing module as a primary architectural contribution; rather, it serves as an analyzable component whose optimization dynamics---including an unexpected convergence to $g{\approx}0.5$ regardless of window size---are investigated in Section~\ref{sec:understanding}.
 
-\subsection{Loss Function}
-
-The training objective combines Dice loss and cross-entropy loss with equal weights:
+The network is trained with a combined Dice and cross-entropy objective with equal weights:
 \begin{equation}
-  \mathcal{L} = \tfrac{1}{2}\mathcal{L}_{\text{Dice}} + \tfrac{1}{2}\mathcal{L}_{\text{CE}}.
+  \mathcal{L} = \tfrac{1}{2}\mathcal{L}_{\text{Dice}} + \tfrac{1}{2}\mathcal{L}_{\text{CE}},
   \label{eq:loss}
 \end{equation}
+following DA-TransUNet~\cite{sun2024datransunet} for direct comparability. Dice loss optimizes the overlap metric used at evaluation and handles class imbalance naturally; cross-entropy provides stable per-pixel gradient signal throughout training.
 
