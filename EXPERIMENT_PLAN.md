@@ -610,81 +610,145 @@ python train.py --dataset Kvasir --gate_mode pam --window_size 56 --rank 32 \
 
 ---
 
-#### F3 — Non-Collapsing Routing Mechanisms (requires training, ~60h)
+#### ~~F3 — Non-Collapsing Routing Mechanisms~~ — DROPPED
 
-**Goal:** Replace the collapsed scalar gate with a mechanism that maintains branch specialization. Three candidates:
+**Decision (2026-06-26):** Removed from journal scope for three reasons:
+1. Conference narrative frames gate collapse as a *finding*, not a bug — redesigning it changes the story.
+2. If the new gate underperforms gate=pam, the journal narrative breaks.
+3. High cost (~60h) for uncertain benefit.
 
-**F3-A: Asymmetric initialization** — Initialize g=0.8 (PAM-dominant) to break symmetry. Cheapest: no architecture change, just change `nn.init` in the gate layer.
-
-**F3-B: Orthogonal branch loss** — Add `λ · max(0, cos_sim(F_P, F_C) − ε)` to the training loss, penalizing PAM/CAM output similarity. Forces branches to encode complementary information.
-
-**F3-C: MoE-style hard routing** — Replace soft scalar gate with a top-1 router (Gumbel-softmax or argmax with straight-through estimator). Each sample is routed to exactly one branch — no blending.
-
-| Run | Config | Dataset | Status | Est. time |
-|-----|--------|---------|--------|-----------|
-| F3-A | asym init g=0.8 | Synapse | ⏳ | ~12h |
-| F3-B | ortho loss λ=0.01 | Synapse | ⏳ | ~12h |
-| F3-B | ortho loss λ=0.1 | Synapse | ⏳ | ~12h |
-| F3-C | hard route Gumbel | Synapse | ⏳ | ~12h |
-| Best F3 variant | winner config | Kvasir + ISIC | ⏳ | ~12h |
-
-Success criterion: gate range Δg > 0.1 after 300ep AND test DSC ≥ gate=pam baseline (78.64% Synapse).
+**Replacement:** Gate collapse is presented as a **formally stated open problem** in the journal Discussion section, with the gradient symmetry argument (Eq. in conference paper) elevated to a proposition-level statement. Future work to fix it is explicitly invited. This is more credible than an incomplete empirical fix.
 
 ---
 
-#### F4 — Expanded Dataset CS Spectrum (requires training, ~80h)
+#### F4 — Expanded Dataset GCS Spectrum (requires training, ~80h)
 
-**Goal:** Add 2 new datasets to widen the CS spectrum beyond the 3 conference datasets.
+**Goal:** Extend GCS from 3 datasets to a 6-dataset spectrum with Low / Medium / High tiers, providing statistical power for the SSD theory and proxy validation.
 
-| Dataset | Task | CS prediction | Reason |
-|---------|------|---------------|--------|
-| **CVC-ClinicDB** | Polyp (colonoscopy) | Low CS (similar to Kvasir) | Local boundary-driven, ~612 images | 
-| **Chest X-Ray** (e.g., JSRT / NIH Chest) | Lung/heart segmentation | Medium-High CS | Organs defined by global anatomical context |
+**Revised dataset list** (updated 2026-06-26):
 
-Training config: same as conference (gate=pam, r=32, M ablation over {7,28,56,112}, 300ep SGD).
+| Dataset | Task | Classes | Predicted GCS | Reason |
+|---------|------|---------|--------------|--------|
+| Synapse | Multi-organ CT | 8 | High | High inter-organ SSD confirmed |
+| BTCV | Multi-organ CT | 13 | High | More classes than Synapse → same or higher SSD |
+| **ACDC** | Cardiac MRI (LV/RV/Myo) | 3 | **Medium** ← KEY | 3 classes but stereotyped anatomy — tests SSD vs class-count |
+| Kvasir-SEG | Polyp | 1 | Low | Confirmed low GCS |
+| CVC-ClinicDB | Polyp (colonoscopy) | 1 | Low | Similar to Kvasir |
+| ISIC 2018 | Skin lesion | 1 | Low | Confirmed low GCS |
 
-Expected outcome: CS spectrum table across 5 datasets ordered by empirical ΔDSC, demonstrating CS as a generalizable task property.
+**Why ACDC is the most important new dataset:**
+ACDC has 3 classes (LV, RV, Myocardium) but cardiac anatomy is spatially stereotyped — LV always beside RV. If ACDC's empirical ΔDSC is intermediate (~1.4 pp) → SSD spectrum is continuous. If ACDC ΔDSC is low (~0.6 pp, like Kvasir) → spatial stereotypy reduces SSD despite multiple classes, supporting SSD > class count as the true driver.
+
+Training config: gate=pam, r=32, M ∈ {7, 28, 56, 112}, 300ep SGD (identical to conference).
 
 | Step | Status |
 |------|--------|
-| Download and preprocess CVC-ClinicDB | ⏳ |
-| Download and preprocess Chest X-Ray dataset | ⏳ |
-| Write dataset_cvc.py and dataset_chestxray.py | ⏳ |
-| Run M ablation (4 checkpoints × 2 datasets) | ⏳ |
-| Compute CS (ΔDSC) and add to spectrum table | ⏳ |
+| **ACDC window ablation (4 runs × ~5h = ~20h)** | ⏳ HIGHEST PRIORITY |
+| BTCV window ablation (4 runs × ~12h = ~48h) | ⏳ |
+| CVC-ClinicDB (4 runs × ~4h = ~16h) | ⏳ |
+| Write dataset_acdc.py, dataset_btcv.py, dataset_cvc.py | ⏳ |
+| Compute empirical ΔDSC for all 6 datasets | ⏳ |
+| Run analyze_gcs_causal.py on all 6 datasets | ⏳ |
 
 ---
 
 #### F5 — Per-Organ Analysis on Synapse (inference-only, ~2h)
 
-**Goal:** Disaggregate Synapse M=28 best result by organ to understand which organs benefit from intermediate windowing and which prefer global context.
+**Role:** Supporting evidence for SSD theory — not a standalone contribution.
 
-**Method:** `test.py` already outputs per-class DSC. Compare M=7, M=28, M=112 per-organ DSC across 8 Synapse classes. Hypothesis: large organs (liver, spleen) may prefer larger M; small organs (gallbladder, pancreas) may prefer smaller M.
+**Goal:** Disaggregate Synapse M=28 best result by organ to test whether organs with higher inter-organ spatial dependency (pancreas, gallbladder) show higher window sensitivity than spatially independent organs (aorta).
+
+**Hypothesis (SSD-grounded):** Organs whose correct segmentation requires knowing the position of other organs (pancreas relative to stomach/duodenum) → high within-organ GCS. Organs recognizable from local appearance alone (aorta) → low within-organ GCS.
+
+**Method:** `test.py` already outputs per-class DSC. Extract from existing M=7/28/56/112 test logs (no new training needed). If logs don't have per-organ breakdown, re-run test.py (< 10 min per checkpoint).
 
 | Step | Status |
 |------|--------|
-| Extract per-organ DSC from existing M=7/28/56/112 test logs | ⏳ |
-| Plot per-organ DSC vs M heatmap | ⏳ |
+| Check existing test logs for per-organ DSC at M=7/28/56/112 | ⏳ |
+| If missing: re-run test.py on 4 Synapse checkpoints | ⏳ |
+| Plot per-organ DSC-vs-M heatmap | ⏳ |
 
 ---
 
-#### F6 — Formal CS Definition and Correlation Validation (analysis, ~1 week)
+#### F6 — GCS Mechanism: Causal Elimination + Semantic Spatial Dependency (analysis, ~1 week)
 
-**Goal:** Replace the empirical ΔDSC proxy with a principled CS metric grounded in information theory or task geometry. Validate that it correlates with approximation sensitivity across all datasets.
+**Revised goal (2026-06-26):** Rather than finding one perfect proxy metric, systematically rule out alternative explanations and converge on Semantic Spatial Dependency (SSD) as the underlying mechanism. This is a "causal elimination" narrative, not a metric search.
 
-**Candidate definitions:**
-1. **Fourier energy ratio** — Fraction of label power in low spatial frequencies (large structures = high CS, fine textures = low CS). Computable from ground truth masks alone, no model needed.
-2. **Receptive field sensitivity** — Measure DSC drop when model receptive field is artificially limited (already partially done by window ablation).
-3. **Mutual information with context** — MI between a pixel's label and pixels at distance d, averaged over d.
+**Theory chain:**
+```
+Semantic Spatial Dependency (SSD)
+        ↓ need to identify regions relative to other structures
+Cross-structure reasoning
+        ↓ requires attending beyond local window
+Sensitivity to attention window size
+        ↓ = GCS
+```
+n_classes is an **empirical proxy** for SSD (more classes → richer inter-structure dependencies), not the theoretical cause.
 
-**Deliverable:** A single scalar CS score per dataset, computed before any model training, that predicts the shape of the DSC-vs-M curve (steep = high CS, flat = low CS).
+---
+
+**Zero-cost sanity checks (all training-free, completed/in-progress):**
+
+| Check | Metric | Result | Verdict |
+|-------|--------|--------|---------|
+| SC0: Image statistics | Fourier HFR | ρ=+0.50, wrong direction | ❌ GCS ≠ image texture |
+| SC1: Object size | Foreground ratio | run analyze_gcs_causal.py | expect ❌ |
+| SC2: Boundary shape | Isoperimetric ratio | run analyze_gcs_causal.py | expect ❌ |
+| SC3: Spatial dispersion | Spatial entropy | run analyze_gcs_causal.py | expect ❌ |
+| SC4: Window crossing | Window Crossing Ratio | run analyze_gcs_causal.py | expect ✅ |
+| SC5: Inter-class sep. | Class-pair window distance | Synapse only | expect ✅ |
+| Proxy: Class count | n_classes | ρ=+0.866 | ✅ best proxy so far |
+| Proxy: n_components | Connected components | ρ=+0.50, ISIC noise breaks it | ❌ |
+
+Scripts:
+- `experiments/analyze_fourier_gcs.py` — SC0 (done)
+- `experiments/analyze_gcs_mask.py` — class count, n_components (done)
+- `experiments/analyze_gcs_causal.py` — SC1–SC5 (run next)
+
+**Run command:**
+```bash
+python analyze_gcs_causal.py \
+    --synapse_dir ../data/Synapse/train_npz \
+    --kvasir_dir  ../data/Kvasir-SEG \
+    --isic_dir    ../data/ISIC2018 \
+    --n_images 200 --window_size 7 --resize 256
+```
+
+---
+
+**Key discriminating experiments (low training cost):**
+
+| Experiment | Purpose | Cost | Status |
+|-----------|---------|------|--------|
+| ACDC window ablation | Is ΔDSC intermediate? SSD vs class-count | ~20h | ⏳ |
+| F5 per-organ analysis | Do high-SSD organs show higher window sensitivity? | ~0h | ⏳ |
+| DRIVE retinal vessel ablation | Can binary task have high GCS? | ~12h | ⏳ after ACDC |
+
+**Decision logic for DRIVE:**
+- DRIVE ΔDSC high → binary can be high GCS → class count theory broken, SSD confirmed
+- DRIVE ΔDSC low → binary tasks universally low GCS → class count is a reliable proxy
+
+---
+
+**Journal section structure:**
+```
+§ GCS Mechanism Analysis
+  4.1 GCS is not explained by image statistics (Fourier ❌)
+  4.2 GCS is not explained by object size/boundary (foreground ratio ❌, isoperimetric ❌)
+  4.3 GCS is not explained by spatial dispersion (entropy ❌, n_components ❌)
+  4.4 Semantic Spatial Dependency as the unifying explanation
+      - Window Crossing Ratio (mechanistic evidence)
+      - n_classes as empirical proxy (with ACDC validation)
+      - Per-organ SSD gradient (supporting evidence)
+```
 
 | Step | Status |
 |------|--------|
-| Implement Fourier energy ratio on Synapse/Kvasir/ISIC masks | ⏳ |
-| Compute CS scores for all 5 datasets (inc. F4) | ⏳ |
-| Fit CS score vs. empirical ΔDSC (Pearson r) | ⏳ |
-| Report in journal as Table: dataset, CS score, ΔDSC, correlation | ⏳ |
+| Run analyze_gcs_causal.py on 3 existing datasets | ⏳ |
+| Run ACDC window ablation | ⏳ |
+| Run analyze_gcs_causal.py on all 6 F4 datasets | ⏳ |
+| Fit Spearman ρ for all metrics across 6 datasets | ⏳ |
+| Write journal §4 narrative | ⏳ |
 
 ---
 
@@ -696,13 +760,15 @@ Expected outcome: CS spectrum table across 5 datasets ordered by empirical ΔDSC
 
 ---
 
-#### Journal Phase F Priority Order
+#### Journal Phase F Priority Order (updated 2026-06-26)
 
 | Priority | Phase | Effort | Impact | Status |
 |----------|-------|--------|--------|--------|
-| 1 | F1 — Generalization gap | 1 day | CS-dependent volatility crossover confirmed (18× on Kvasir, sign reversal on Synapse) | ✅ Done |
-| 2 | F5 — Per-organ analysis | 2h | Free insight from existing checkpoints | ⏳ Next |
-| 3 | F6 — Formal CS definition | 1 week | Strongest theoretical contribution | ⏳ |
-| 4 | F2 — Dataset size study | 40h | Validates regularization quantitatively | ⏳ |
-| 5 | F4 — Expanded datasets | 80h | Broadens CS claim generalizability | ⏳ |
-| 6 | F3 — Non-collapsing routing | 60h | Engineering contribution for gate collapse fix | ⏳ |
+| 1 | F1 — Generalization gap | 1 day | Volatility crossover: ApproxDA 18× more stable on low-GCS, less stable on high-GCS | ✅ Done |
+| 2 | F6 — Causal elimination (zero-cost) | ~1h | Run analyze_gcs_causal.py; SC1–SC5 evidence for SSD theory | ⏳ Next (no training) |
+| 3 | F4 — ACDC window ablation | ~20h | Decisive: is ΔDSC intermediate? Validates SSD spectrum | ⏳ |
+| 4 | F5 — Per-organ analysis | ~2h | Supporting evidence: high-SSD organs more window-sensitive | ⏳ |
+| 5 | F2 — Dataset size study | ~40h | Validates regularization hypothesis quantitatively | ⏳ |
+| 6 | F4 — Full 6-dataset spectrum | ~80h | Statistical power for proxy correlation | ⏳ |
+| 7 | DRIVE ablation | ~12h | Discriminating: binary task with high spatial extent | ⏳ after ACDC |
+| — | ~~F3 — Non-collapsing routing~~ | ~~60h~~ | Dropped — story conflict + high risk | ❌ Dropped |
