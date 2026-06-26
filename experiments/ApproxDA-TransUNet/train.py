@@ -252,6 +252,126 @@ def trainer_isic(args, model, snapshot_path):
     return _trainer_2d(args, model, snapshot_path, db_train, ISIC_dataset)
 
 
+def trainer_acdc(args, model, snapshot_path):
+    from datasets.dataset_acdc import ACDC_dataset, RandomGenerator
+
+    local_rank = int(os.environ.get('LOCAL_RANK', -1))
+    world_size = int(os.environ.get('WORLD_SIZE', 1))
+    use_ddp = dist.is_initialized() and world_size > 1
+    is_main = not use_ddp or local_rank == 0
+
+    if is_main:
+        logging.basicConfig(filename=snapshot_path + "/log.txt", level=logging.INFO,
+                            format='[%(asctime)s.%(msecs)03d] %(message)s', datefmt='%H:%M:%S')
+        logging.getLogger().addHandler(logging.StreamHandler(sys.stdout))
+    logging.info(str(args))
+    base_lr = args.base_lr
+    num_classes = args.num_classes
+    batch_size = args.batch_size
+    db_train = ACDC_dataset(base_dir=args.root_path, list_dir=args.list_dir, split="train",
+                            transform=transforms.Compose(
+                                [RandomGenerator(output_size=[args.img_size, args.img_size])]))
+    if is_main:
+        print("The length of train set is: {}".format(len(db_train)))
+        print("DDP: {} GPU(s), world_size={}".format(world_size if use_ddp else 1, world_size))
+
+    def worker_init_fn(worker_id):
+        random.seed(args.seed + worker_id)
+
+    if use_ddp:
+        sampler = DistributedSampler(db_train, shuffle=True)
+        trainloader = DataLoader(db_train, batch_size=batch_size, sampler=sampler,
+                                 shuffle=False, num_workers=4, pin_memory=True,
+                                 worker_init_fn=worker_init_fn)
+        model = DDP(model, device_ids=[local_rank], find_unused_parameters=True)
+    else:
+        trainloader = DataLoader(db_train, batch_size=batch_size, shuffle=True, num_workers=4,
+                                 pin_memory=True, worker_init_fn=worker_init_fn)
+    model.train()
+    ce_loss = CrossEntropyLoss()
+    dice_loss = DiceLoss(num_classes)
+    optimizer = optim.SGD(model.parameters(), lr=base_lr, momentum=0.9, weight_decay=0.0001)
+    writer = SummaryWriter(snapshot_path + '/log') if is_main else None
+    iter_num = 0
+    max_epoch = args.max_epochs
+    max_iterations = args.max_epochs * len(trainloader)
+    if is_main:
+        logging.info("{} iterations per epoch. {} max iterations ".format(len(trainloader), max_iterations))
+    best_performance = 0.0
+    iterator = tqdm(range(max_epoch), ncols=70, disable=not is_main)
+    train_start = time.time()
+    val_time_s = 0.0
+    if torch.cuda.is_available():
+        torch.cuda.reset_peak_memory_stats()
+    for epoch_num in iterator:
+        epoch_loss_sum = 0.0
+        epoch_loss_ce_sum = 0.0
+        epoch_batches = 0
+        for i_batch, sampled_batch in enumerate(trainloader):
+            image_batch, label_batch = sampled_batch['image'], sampled_batch['label']
+            image_batch, label_batch = image_batch.cuda(), label_batch.cuda()
+            outputs = model(image_batch)
+            loss_ce = ce_loss(outputs, label_batch[:].long())
+            loss_dice = dice_loss(outputs, label_batch, softmax=True)
+            loss = 0.5 * loss_ce + 0.5 * loss_dice
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
+            lr_ = base_lr * (1.0 - iter_num / max_iterations) ** 0.9
+            for param_group in optimizer.param_groups:
+                param_group['lr'] = lr_
+            iter_num = iter_num + 1
+            epoch_loss_sum += loss.item()
+            epoch_loss_ce_sum += loss_ce.item()
+            epoch_batches += 1
+            if writer is not None:
+                writer.add_scalar('info/lr', lr_, iter_num)
+                writer.add_scalar('info/total_loss', loss, iter_num)
+                writer.add_scalar('info/loss_ce', loss_ce, iter_num)
+                if iter_num % 20 == 0:
+                    image = image_batch[0, 0:1, :, :]
+                    image = (image - image.min()) / (image.max() - image.min())
+                    writer.add_image('train/Image', image, iter_num)
+                    outputs_vis = torch.argmax(torch.softmax(outputs, dim=1), dim=1, keepdim=True)
+                    writer.add_image('train/Prediction', outputs_vis[0, ...] * 50, iter_num)
+                    labs = label_batch[0, ...].unsqueeze(0) * 50
+                    writer.add_image('train/GroundTruth', labs, iter_num)
+
+        if is_main:
+            elapsed_h = (time.time() - train_start - val_time_s) / 3600
+            avg_loss = epoch_loss_sum / epoch_batches
+            avg_loss_ce = epoch_loss_ce_sum / epoch_batches
+            logging.info("epoch %d/%d  loss: %.4f  loss_ce: %.4f  lr: %.6f  elapsed: %.2fh" % (
+                epoch_num + 1, max_epoch, avg_loss, avg_loss_ce, lr_, elapsed_h))
+
+            save_interval = 50
+            if epoch_num > int(max_epoch / 2) and (epoch_num + 1) % save_interval == 0:
+                save_mode_path = os.path.join(snapshot_path, 'epoch_' + str(epoch_num) + '.pth')
+                torch.save(model.state_dict(), save_mode_path)
+                logging.info("save model to {}".format(save_mode_path))
+
+        if epoch_num >= max_epoch - 1:
+            if is_main:
+                save_mode_path = os.path.join(snapshot_path, 'epoch_' + str(epoch_num) + '.pth')
+                torch.save(model.state_dict(), save_mode_path)
+                logging.info("save model to {}".format(save_mode_path))
+            iterator.close()
+            break
+
+    if is_main:
+        total_hours = (time.time() - train_start - val_time_s) / 3600
+        logging.info("Total training time: {:.2f} hours (excl. {:.1f} min validation overhead)".format(
+            total_hours, val_time_s / 60))
+        if torch.cuda.is_available():
+            peak_mb = torch.cuda.max_memory_allocated() / 1024**2
+            logging.info("Peak VRAM: {:.0f} MB ({:.1f} GB)".format(peak_mb, peak_mb / 1024))
+        if writer is not None:
+            writer.close()
+    if use_ddp:
+        dist.destroy_process_group()
+    return "Training Finished!"
+
+
 def trainer_synapse(args, model, snapshot_path):
     from datasets.dataset_synapse import Synapse_dataset, RandomGenerator
 
@@ -417,6 +537,11 @@ if __name__ == "__main__":
             'list_dir': './lists/lists_Synapse',
             'num_classes': 9,
         },
+        'ACDC': {
+            'root_path': '../data/ACDC/ACDC_training_slices',
+            'list_dir': './lists/lists_ACDC',
+            'num_classes': 4,
+        },
         'Kvasir': {
             'root_path': '../data/Kvasir-SEG',
             'list_dir': './lists/lists_Kvasir',
@@ -466,6 +591,7 @@ if __name__ == "__main__":
 
     trainer = {
         'Synapse': trainer_synapse,
+        'ACDC':    trainer_acdc,
         'Kvasir':  trainer_kvasir,
         'ISIC':    trainer_isic,
     }

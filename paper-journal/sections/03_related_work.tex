@@ -1,0 +1,19 @@
+% !TEX root = ../ApproxDA-TransUNet.tex
+\section{Related Work}
+\label{sec:related_work}
+
+\subsection{CNN-based Medical Image Segmentation}
+
+Convolutional encoder-decoder architectures established the foundational paradigm for medical image segmentation, with U-Net~\cite{ronneberger2015unet} introducing the skip-connection design that underpins most segmentation networks, and successors~\cite{zhou2018unetpp,oktay2018attention,diakogiannis2020resunet,ibtehaz2020multiresunet} progressively adding dense connections, attention gating, and residual learning for improved feature reuse and training stability. These models offer strong computational efficiency and favorable inductive biases for local texture patterns, but their fixed receptive fields cannot capture long-range spatial dependencies across anatomical structures, limiting performance on tasks requiring global context.
+
+\subsection{Transformer-based Medical Image Segmentation}
+
+Transformer architectures have significantly advanced medical image segmentation by enabling global dependency modeling beyond the locality of convolutional neural networks. Representative methods such as TransUNet~\cite{chen2021transunet}, Swin-Unet~\cite{cao2022swinunet}, UNETR~\cite{hatamizadeh2022unetr}, UCTransNet~\cite{wang2022uctransnet}, TransNorm~\cite{wang2022transnorm}, and DAEformer~\cite{azad2023daeformer} combine convolutional feature extraction with transformer-based contextual modeling to achieve state-of-the-art segmentation performance across a wide range of medical imaging tasks. These methods treat global context modeling as uniformly beneficial, however, without examining whether different tasks require different degrees of spatial context.
+
+\subsection{Dual Attention and DA-TransUNet}
+
+DANet~\cite{fu2019dual} introduced Position Attention Modules (PAM) and Channel Attention Modules (CAM), capturing spatial and channel correlations at $\mathcal{O}(N^2C)$ and $\mathcal{O}(C^2N)$ complexity respectively. DA-TransUNet~\cite{sun2024datransunet} adapted this design for medical image segmentation by inserting dual-attention blocks at multiple skip connections of a hybrid R50-ViT-B/16 encoder-decoder, achieving state-of-the-art accuracy while inheriting the quadratic cost of full-map attention. DBAANet~\cite{li2025dbaanet} further extends dual-branch attention by aggregating position and channel attention across multiple scales, demonstrating the continued appeal of dual-attention paradigms for medical image segmentation.
+
+\subsection{Efficient Attention and Adaptive Routing}
+
+Windowed local attention~\cite{liu2021swin}, low-rank projection~\cite{wang2020linformer}, and grouped channel interaction~\cite{rahman2024emcad} have become standard strategies for reducing the cost of global attention, with learnable gating widely adopted to fuse multi-branch outputs~\cite{azad2023daeformer,rahman2024emcad}. DAMamba~\cite{ding2025damamba} further shows that dual-attention routing transfers effectively to state-space models for lightweight breast ultrasound segmentation, confirming the versatility of multi-branch attention beyond standard transformer architectures. Existing efficient attention methods primarily optimize computational efficiency while implicitly assuming approximation is universally applicable. Whether approximation itself changes representation learning, and why it behaves differently across tasks with different contextual requirements, remains largely unexplored. This work addresses both questions by studying the context-sensitive behavior of approximation across heterogeneous segmentation tasks and exposing the gradient symmetry dynamics that cause adaptive routing to degenerate into fixed blending.

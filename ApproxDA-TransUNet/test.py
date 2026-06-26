@@ -11,6 +11,7 @@ import torch.nn as nn
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 from datasets.dataset_synapse import Synapse_dataset
+from datasets.dataset_acdc import ACDC_dataset
 from datasets.dataset_kvasir import Kvasir_dataset
 from datasets.dataset_isic import ISIC_dataset
 from utils import test_single_volume
@@ -136,6 +137,13 @@ if __name__ == "__main__":
             'volume_path': '../data/Synapse/test_vol_h5',
             'list_dir': './lists/lists_Synapse',
             'num_classes': 9,
+            'z_spacing': 1,
+        },
+        'ACDC': {
+            'Dataset': ACDC_dataset,
+            'volume_path': '../data/ACDC/ACDC_training_volumes',
+            'list_dir': './lists/lists_ACDC',
+            'num_classes': 4,
             'z_spacing': 1,
         },
         'Kvasir': {

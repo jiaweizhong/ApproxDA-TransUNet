@@ -1,0 +1,143 @@
+% !TEX root = ../ApproxDA-TransUNet.tex
+\section{Results}
+\label{sec:experiments}
+
+We evaluate ApproxDA-TransUNet on three benchmarks spanning tasks with fundamentally different spatial context requirements, comparing against DA-TransUNet and other competitive baselines.
+
+\subsection{Experimental Setup}
+
+\textbf{Datasets.} We evaluate on three representative medical image segmentation benchmarks.
+
+\textit{Synapse Multi-Organ CT}~\cite{landman2015miccai}: 30 abdominal CT scans with an 18/12 train/test split covering 8 organ classes. Metrics: mean DSC and HD95.
+
+\textit{Kvasir-SEG}~\cite{jha2020kvasir}: 1000 endoscopy polyp images (binary) with an 800/200 train/test split. Metrics: DSC and mIoU.
+
+\textit{ISIC 2018}~\cite{codella2019isic}: 2594 dermoscopy skin lesion images (binary) with a 2075/519 train/test split. Metrics: DSC and mIoU.
+
+\textbf{Implementation Details.} All experiments use an R50-ViT-B/16 backbone pretrained on ImageNet-21K, trained on NVIDIA Tesla T4 (16\,GB) GPUs. Optimizer: SGD, lr$=$0.01; batch size 24; input $224{\times}224$; 300 epochs; best checkpoint selected by evaluating every 15 epochs. Default ApproxDA-TransUNet configuration: $M{=}7$, $r{=}32$, $G{=}8$.
+
+\textbf{Gate Protocol.} ApproxDA-TransUNet supports four gate modes: \texttt{pam} ($g{=}1.0$, PAM only), \texttt{cam} ($g{=}0.0$, CAM only), \texttt{fixed} ($g{=}0.5$, equal blend), and \texttt{learn} ($g$ learned per channel). Unless otherwise specified, all main-result experiments use \texttt{gate=pam}.
+
+\subsection{Comparison with State-of-the-Art}
+
+Tables~\ref{tab:synapse}--\ref{tab:isic} compare ApproxDA-TransUNet against published baselines across all three benchmarks.
+
+\textbf{Synapse.} Table~\ref{tab:synapse} benchmarks against 11 published methods. CNN-based models plateau at 76--78\% DSC, with Att-UNet leading at 77.77\%. Transformer-based methods progressively improve: TransUNet (77.48\%), UCTransNet (78.23\%), MIM (78.59\%), Swin-Unet (79.13\%), and DA-TransUNet (79.80\%). ApproxDA-TransUNet with gate=pam, $M{=}28$, $r{=}32$ achieves \textbf{80.94\%} DSC and 27.49\,mm HD95---the highest DSC across all compared methods, surpassing DA-TransUNet by $+$1.14\%. The intermediate window $M{=}28$ captures sufficient cross-organ context while limiting spurious long-range correlations; Section~\ref{sec:understanding} analyzes this behavior in detail.
+
+\begin{table}[ht]
+  \caption{Segmentation Results on Synapse Multi-Organ CT}
+  \label{tab:synapse}
+  \begin{center}
+  \renewcommand{\arraystretch}{1.15}
+  \setlength{\tabcolsep}{6pt}
+  \begin{tabular}{lcc}
+    \toprule
+    Method & DSC (\%) $\uparrow$ & HD95 (mm) $\downarrow$ \\
+    \midrule
+    \multicolumn{3}{l}{\textit{CNN-based}} \\
+    U-Net~\cite{ronneberger2015unet}              & 76.85 & 39.70 \\
+    U-Net++~\cite{zhou2018unetpp}                 & 76.91 & 36.93 \\
+    Residual U-Net~\cite{diakogiannis2020resunet} & 76.95 & 38.44 \\
+    MultiResUNet~\cite{ibtehaz2020multiresunet}   & 77.42 & 36.84 \\
+    Att-Unet~\cite{oktay2018attention}            & 77.77 & 36.02 \\
+    \midrule
+    \multicolumn{3}{l}{\textit{Transformer-based}} \\
+    TransUNet~\cite{chen2021transunet}            & 77.48 & 31.69 \\
+    UCTransNet~\cite{wang2022uctransnet}          & 78.23 & 26.75 \\
+    TransNorm~\cite{wang2022transnorm}            & 78.40 & 30.25 \\
+    MIM~\cite{wang2022mim}                        & 78.59 & 26.59 \\
+    Swin-Unet~\cite{cao2022swinunet}              & 79.13 & \textbf{21.55} \\
+    DA-TransUNet~\cite{sun2024datransunet}        & \underline{79.80} & \underline{23.48} \\
+    \midrule
+    \multicolumn{3}{l}{\textit{Dual-attention approximation (ours)}} \\
+    \textbf{ApproxDA-TransUNet (ours)}            & \textbf{80.94} & 27.49 \\
+    \bottomrule
+  \end{tabular}
+  \end{center}
+\end{table}
+
+\textbf{Kvasir-SEG.} On polyp segmentation (Table~\ref{tab:kvasir}), U-Net leads the CNN-based group (88.22\% DSC) while TransUNet (87.91\%) and DA-TransUNet$^\dag$ (88.44\%) are the strongest Transformer-based entries. ApproxDA-TransUNet with gate=pam, $M{=}56$ achieves \textbf{90.17\%} DSC, \textbf{84.27\%} mIoU, and \textbf{44.35\,mm} HD95---state-of-the-art across all three metrics, with a $+$1.73\% DSC gain and $-$8.69\,mm HD95 improvement over the nearest baseline.
+
+\begin{table}[ht]
+  \caption{Segmentation Results on Kvasir-SEG Polyp}
+  \label{tab:kvasir}
+  \begin{center}
+  \setlength{\tabcolsep}{3pt}
+  \begin{tabular}{lccc}
+    \toprule
+    Method & DSC (\%) $\uparrow$ & mIoU (\%) $\uparrow$ & HD95 (mm) $\downarrow$ \\
+    \midrule
+    U-Net~\cite{ronneberger2015unet}           & 88.22 & 80.12 & -- \\
+    Att-Unet~\cite{oktay2018attention}         & 86.61 & 78.01 & -- \\
+    U-Net++~\cite{zhou2018unetpp}              & 86.57 & 77.67 & -- \\
+    Res-UNet~\cite{diakogiannis2020resunet}    & 77.85 & 66.04 & -- \\
+    TransUNet~\cite{chen2021transunet}         & 87.91 & 80.03 & -- \\
+    DA-TransUNet~\cite{sun2024datransunet}$^\dag$ & \underline{88.44} & \underline{81.70} & \underline{53.04} \\
+    \midrule
+    \textbf{ApproxDA-TransUNet (ours)}         & \textbf{90.17} & \textbf{84.27} & \textbf{44.35} \\
+    \bottomrule
+  \end{tabular}
+  \end{center}
+  \vspace{-0.3em}
+  \footnotesize{$^\dag$We are able to closely reproduce paper-reported results (88.47\% DSC, 81.02\% mIoU) and capture the HD95. ApproxDA: gate=pam, $M{=}56$, $r{=}32$.}
+\end{table}
+
+\textbf{ISIC 2018.} On skin lesion segmentation (Table~\ref{tab:isic}), CNN-based methods cluster between 83--88\% DSC, with TransUNet (88.78\%) and DA-TransUNet (88.88\%) leading among Transformer-based approaches. ApproxDA-TransUNet with gate=learn, $M{=}7$ achieves \textbf{89.58\%} DSC ($+$0.70\% over DA-TransUNet) and 82.66\% mIoU, attaining the best DSC across all compared methods. This window-robust pattern is consistent with the low-GCS behavior observed on Kvasir-SEG, analyzed in Section~\ref{sec:understanding}.
+
+\begin{table}[ht]
+  \caption{Segmentation Results on ISIC 2018 Skin Lesion}
+  \label{tab:isic}
+  \begin{center}
+  \renewcommand{\arraystretch}{1.15}
+  \setlength{\tabcolsep}{6pt}
+  \begin{tabular}{lcc}
+    \toprule
+    Method & DSC (\%) $\uparrow$ & mIoU (\%) $\uparrow$ \\
+    \midrule
+    U-Net~\cite{ronneberger2015unet}           & 87.22 & 81.14 \\
+    Att-Unet~\cite{oktay2018attention}         & 87.60 & 81.51 \\
+    U-Net++~\cite{zhou2018unetpp}              & 87.30 & 81.33 \\
+    Res-UNet~\cite{diakogiannis2020resunet}    & 83.32 & 76.51 \\
+    TransUNet~\cite{chen2021transunet}         & 88.78 & 82.63 \\
+    DA-TransUNet~\cite{sun2024datransunet}     & \underline{88.88} & \textbf{82.78} \\
+    \midrule
+    \textbf{ApproxDA-TransUNet (ours)}         & \textbf{89.58} & \underline{82.66} \\
+    \bottomrule
+  \end{tabular}
+  \end{center}
+  \vspace{-0.3em}
+  \footnotesize{ApproxDA: gate=learn, $M{=}7$, $r{=}32$, $G{=}8$.}
+\end{table}
+
+ApproxDA-TransUNet achieves state-of-the-art results across all three benchmarks (Figure~\ref{fig:qualitative}), with task-dependent window sensitivity emerging as the key differentiating pattern across datasets.
+
+\begin{figure}[ht]
+  \centering
+  \includegraphics[width=\columnwidth]{figures/fig_qualitative_cross_task.png}
+  \caption{Qualitative segmentation comparison (columns: input, ground truth, DA-TransUNet, ApproxDA). \textbf{Top (Synapse, $M{=}28$):} multi-organ CT; ApproxDA 80.94\% DSC ($+$1.14\%). \textbf{Middle (Kvasir-SEG, $M{=}56$):} polyp; 90.17\% DSC ($+$1.73\%). \textbf{Bottom (ISIC 2018, $M{=}7$):} skin lesion; 89.58\% DSC ($+$0.70\%).}
+  \label{fig:qualitative}
+\end{figure}
+
+\subsection{Efficiency Analysis}
+
+Although the proposed approximation substantially reduces the theoretical complexity of the dual-attention module, the overall computational cost is dominated by the ViT backbone and convolutional encoder, which remain unchanged. As shown in Table~\ref{tab:efficiency}, end-to-end GFLOPs and memory exhibit only marginal differences from DA-TransUNet. The practical advantage of ApproxDA-TransUNet therefore lies in improved architectural compatibility rather than total model complexity reduction: DA-TransUNet fails under DDP, while ApproxDA-TransUNet trains natively across multiple GPUs, enabling cost-effective distributed training on commodity clusters.
+
+\begin{table*}[ht]
+  \caption{Efficiency Comparison on Synapse (NVIDIA Tesla T4)}
+  \label{tab:efficiency}
+  \begin{center}
+  \setlength{\tabcolsep}{5pt}
+  \begin{tabular}{lcccccc}
+    \toprule
+    Method & Params (M) & GFLOPs & Train VRAM & Train Time & Infer (s/vol) & Multi-GPU \\
+    \midrule
+    DA-TransUNet~\cite{sun2024datransunet} & 107.95 & 30.2 & 11.5\,G & 11.4h & 120.0 & No$^\dagger$ \\
+    \midrule
+    ApproxDA-TransUNet (gate=pam, $M$=7)  & 112.98 & 32.1 & 6.4\,G ($\times$2 GPU) & 8.3h ($\times$2 GPU) & 121.3 & Yes (DDP) \\
+    ApproxDA-TransUNet (gate=learn, $M$=7) & 114.90 & 32.1 & 10.6\,G & 11.5h & 114.2 & Yes (DDP) \\
+    \bottomrule
+  \end{tabular}
+  \end{center}
+  \vspace{-0.3em}
+  \footnotesize{$^\dagger$DA-TransUNet does not support multi-GPU training. ApproxDA-TransUNet uses Distributed Data Parallel (DDP); per-GPU batch 12, LR unchanged.}
+\end{table*}
