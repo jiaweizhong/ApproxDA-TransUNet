@@ -159,7 +159,7 @@ def _find_mask(mask_dir: str, stem: str) -> str | None:
     return None
 
 
-def load_binary(base_dir: str, n: int) -> list[np.ndarray]:
+def load_binary(base_dir: str, n: int, resize: int = 0) -> list[np.ndarray]:
     img_dir  = os.path.join(base_dir, "images")
     mask_dir = os.path.join(base_dir, "masks")
     if not os.path.isdir(img_dir) or not os.path.isdir(mask_dir):
@@ -179,7 +179,10 @@ def load_binary(base_dir: str, n: int) -> list[np.ndarray]:
         if mp is None:
             continue
         try:
-            mask = (np.array(Image.open(mp).convert("L")) > 127).astype(np.uint8)
+            pil = Image.open(mp).convert("L")
+            if resize > 0:
+                pil = pil.resize((resize, resize), Image.NEAREST)
+            mask = (np.array(pil) > 127).astype(np.uint8)
             labels.append(mask)
         except Exception as e:
             print(f"  Warning: {mp}: {e}")
@@ -259,6 +262,9 @@ def main():
     parser.add_argument("--kvasir_dir",  default="../data/Kvasir-SEG")
     parser.add_argument("--isic_dir",    default="../data/ISIC2018")
     parser.add_argument("--n_images",    type=int, default=200)
+    parser.add_argument("--resize",      type=int, default=256,
+                        help="Resize masks to NxN before analysis (0=no resize). "
+                             "Speeds up loading of high-res datasets like ISIC.")
     parser.add_argument("--seed",        type=int, default=42)
     parser.add_argument("--out",         default="gcs_mask_sanity.png")
     args = parser.parse_args()
@@ -280,7 +286,7 @@ def main():
             continue
 
         labels = load_synapse(path, args.n_images) if is_multi \
-                 else load_binary(path, args.n_images)
+                 else load_binary(path, args.n_images, resize=args.resize)
 
         if not labels:
             print("  ⚠  No labels loaded, skipping.")
