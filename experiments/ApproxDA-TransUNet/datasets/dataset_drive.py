@@ -48,23 +48,18 @@ class DRIVE_dataset(Dataset):
     """
     DRIVE retinal vessel segmentation dataset (binary).
 
-    Standard DRIVE layout (official download):
+    DRIVE layout (official public download — test GT not publicly available):
         {base_dir}/
           training/
             images/       — 21_training.tif ... 40_training.tif
             1st_manual/   — 21_manual1.gif  ... 40_manual1.gif
-          test/
-            images/       — 01_test.tif ... 20_test.tif
-            1st_manual/   — 01_manual1.gif ... 20_manual1.gif
 
-    Also supports a flat preprocessed layout:
-        {base_dir}/
-          images/   — *.png or *.tif
-          masks/    — *.png (binary 0/255)
+    Both train and test splits are drawn from the 20 labelled training images
+    (80/20 split via generate_lists.py). All lookups go into training/.
 
     List files (one stem per line, without extension):
         {list_dir}/train.txt  — e.g.  21_training
-        {list_dir}/test.txt   — e.g.  01_test
+        {list_dir}/test.txt   — e.g.  37_training  (held-out subset)
 
     test.py calls with split='test_vol'; remapped to 'test' transparently.
     """
@@ -72,46 +67,29 @@ class DRIVE_dataset(Dataset):
         self.transform = transform
         self.base_dir = base_dir
         list_split = 'test' if split == 'test_vol' else split
-        self.split = list_split
         self.sample_list = [
             l for l in open(os.path.join(list_dir, list_split + '.txt')).readlines()
             if l.strip() and not l.strip().startswith('#')
         ]
-        # Auto-detect flat vs hierarchical layout
-        self._flat = os.path.isdir(os.path.join(base_dir, 'images'))
+        self.img_dir  = os.path.join(base_dir, 'training', 'images')
+        self.mask_dir = os.path.join(base_dir, 'training', '1st_manual')
 
     def _load_image(self, stem):
-        """Try common image extensions; return grayscale float32 array in [0,1]."""
-        if self._flat:
-            dirs = [os.path.join(self.base_dir, 'images')]
-        else:
-            sub = 'training' if self.split == 'train' else 'test'
-            dirs = [os.path.join(self.base_dir, sub, 'images')]
-        for d in dirs:
-            for ext in ('.tif', '.tiff', '.png', '.jpg'):
-                p = os.path.join(d, stem + ext)
-                if os.path.exists(p):
-                    return np.array(Image.open(p).convert('L'), dtype=np.float32) / 255.0
-        raise FileNotFoundError(f"DRIVE: no image found for stem '{stem}' in {dirs}")
+        """Return grayscale float32 array in [0,1]."""
+        for ext in ('.tif', '.tiff', '.png', '.jpg'):
+            p = os.path.join(self.img_dir, stem + ext)
+            if os.path.exists(p):
+                return np.array(Image.open(p).convert('L'), dtype=np.float32) / 255.0
+        raise FileNotFoundError(f"DRIVE: no image found for stem '{stem}' in {self.img_dir}")
 
     def _load_mask(self, stem):
-        """Try standard DRIVE mask naming conventions; return binary uint8 array."""
-        if self._flat:
-            mask_dir = os.path.join(self.base_dir, 'masks')
-            for ext in ('.png', '.gif', '.tif'):
-                p = os.path.join(mask_dir, stem + ext)
-                if os.path.exists(p):
-                    return (np.array(Image.open(p).convert('L')) > 127).astype(np.uint8)
-        else:
-            sub = 'training' if self.split == 'train' else 'test'
-            mask_dir = os.path.join(self.base_dir, sub, '1st_manual')
-            # stem = '21_training' → number prefix '21'
-            num_prefix = stem.split('_')[0]
-            for ext in ('.gif', '.png', '.tif'):
-                p = os.path.join(mask_dir, num_prefix + '_manual1' + ext)
-                if os.path.exists(p):
-                    return (np.array(Image.open(p).convert('L')) > 127).astype(np.uint8)
-        raise FileNotFoundError(f"DRIVE: no mask found for stem '{stem}'")
+        """Return binary uint8 array. Stem '21_training' → mask '21_manual1.gif'."""
+        num_prefix = stem.split('_')[0]
+        for ext in ('.gif', '.png', '.tif'):
+            p = os.path.join(self.mask_dir, num_prefix + '_manual1' + ext)
+            if os.path.exists(p):
+                return (np.array(Image.open(p).convert('L')) > 127).astype(np.uint8)
+        raise FileNotFoundError(f"DRIVE: no mask found for stem '{stem}' in {self.mask_dir}")
 
     def __len__(self):
         return len(self.sample_list)

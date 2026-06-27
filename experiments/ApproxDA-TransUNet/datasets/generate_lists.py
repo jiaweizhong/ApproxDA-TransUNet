@@ -64,20 +64,19 @@ elif args.dataset == 'ISIC':
     test_names  = names[n_train:]
 
 elif args.dataset == 'DRIVE':
-    # DRIVE has a fixed official 20/20 train/test split — no random shuffling needed.
+    # Public DRIVE releases omit test-set GT (held for challenge server).
+    # We do an 80/20 split of the 20 labelled training images instead.
     list_dir = './lists/lists_DRIVE'
     train_img_dir = os.path.join(args.data_dir, 'training', 'images')
-    test_img_dir  = os.path.join(args.data_dir, 'test', 'images')
-    train_names = sorted([
+    names = sorted([
         os.path.splitext(f)[0]
         for f in os.listdir(train_img_dir)
         if f.lower().endswith(('.tif', '.tiff', '.png'))
     ])
-    test_names = sorted([
-        os.path.splitext(f)[0]
-        for f in os.listdir(test_img_dir)
-        if f.lower().endswith(('.tif', '.tiff', '.png'))
-    ])
+    random.shuffle(names)
+    n_train = int(len(names) * args.train_ratio)  # default 0.8 → 16 train / 4 val
+    train_names = names[:n_train]
+    test_names  = names[n_train:]
 
 os.makedirs(list_dir, exist_ok=True)
 with open(os.path.join(list_dir, 'train.txt'), 'w') as f:
