@@ -78,6 +78,30 @@ We term the underlying mechanism \emph{Semantic Spatial Dependency (SSD)}: the e
   \underbrace{\text{sensitivity to window scale}}_{\text{= GCS}}.
 \end{align*}
 
-The empirical proxy $n_\text{classes}$ correlates with SSD because more classes generally implies richer inter-class spatial dependencies, but class count is not the cause. A dataset with many spatially uncorrelated classes would have high count but low SSD; a binary dataset with strong global spatial structure (e.g., retinal vessel networks) could have low count but high SSD. Validating this distinction with additional datasets spanning a broader SSD spectrum is the primary direction for future work.
+The empirical proxy $n_\text{classes}$ correlates with SSD because more classes generally implies richer inter-class spatial dependencies, but class count is not the cause---and this distinction is directly validated by an additional experiment.
 
-\textbf{Practical implication.} GCS-aware window selection becomes cost-free at the data level: tasks with multiple spatially distributed semantic classes---and high SC5 inter-class window separation---are predicted to be high-GCS and require careful window tuning. Binary appearance-based tasks are predicted to be low-GCS and largely window-robust. These predictions can be verified from annotation structure alone, before any training experiments.
+\textbf{ACDC as a discriminating test case.} To separate $n_\text{classes}$ from SSD as the true driver, we ran the same window ablation ($M{\in}\{7,28,56,112\}$, gate=pam) on the ACDC cardiac MRI benchmark~\cite{bernard2018deep}, a 4-class task (background, RV, Myo, LV). If class count drives GCS, ACDC should show intermediate-to-high sensitivity. Instead, $\Delta\text{DSC}{=}0.73$\,pp---indistinguishable from the binary datasets Kvasir-SEG ($0.64$\,pp) and ISIC~2018 ($0.70$\,pp), and far below Synapse ($2.30$\,pp).
+
+\begin{table}[tb]
+  \caption{Empirical GCS ($\Delta$DSC) across four datasets. ACDC falls with binary tasks despite 4 classes, confirming that spatial co-location of structures suppresses SSD.}
+  \label{tab:gcs_spectrum}
+  \begin{center}
+  \setlength{\tabcolsep}{6pt}
+  \begin{tabular}{llcc}
+    \toprule
+    Dataset & Task & Classes & $\Delta$DSC (pp) \\
+    \midrule
+    Synapse   & Multi-organ CT & 9 & 2.30 \\
+    ACDC      & Cardiac MRI    & 4 & 0.73 \\
+    ISIC 2018 & Skin lesion    & 2 & 0.70 \\
+    Kvasir-SEG & Polyp         & 2 & 0.64 \\
+    \bottomrule
+  \end{tabular}
+  \end{center}
+\end{table}
+
+The reason is anatomical: the three cardiac structures (RV, Myo, LV) are always spatially co-located in a compact region of the short-axis scan. At any practical window size $M$, all three structures fit within a single attention window---SC5 inter-class separation is near zero, and cross-structure reasoning requires no global context. This is in sharp contrast to multi-organ CT, where the pancreas, gallbladder, and aorta are distributed across the full axial extent.
+
+The ACDC result refines the SSD theory: the key quantity is not class count per se but \emph{spatial spread of classes relative to the attention window}. A multi-class task with compact, stereotyped anatomy behaves as a low-SSD task and consequently exhibits low GCS. A training-free SSD estimate---fraction of class-centroid pairs separated by more than $M$ pixels (SC5 generalized)---would predict this without any training.
+
+\textbf{Practical implication.} GCS-aware window selection reduces to an annotation-level check: tasks with multiple spatially \emph{distributed} semantic classes---high SC5 inter-class separation---are predicted high-GCS and require window tuning. Tasks where all classes are co-located within a single window, whether binary or multi-class, are predicted low-GCS and largely window-robust.
