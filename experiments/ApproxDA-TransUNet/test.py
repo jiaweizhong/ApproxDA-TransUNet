@@ -14,7 +14,7 @@ from datasets.dataset_synapse import Synapse_dataset
 from datasets.dataset_acdc import ACDC_dataset
 from datasets.dataset_kvasir import Kvasir_dataset
 from datasets.dataset_isic import ISIC_dataset
-from datasets.dataset_drive import DRIVE_dataset
+from datasets.dataset_cvc import CVC_dataset
 from utils import test_single_volume
 from Architecture.ApproxDATransUNet import ApproxDATransUNet
 from Architecture.ApproxDATransUNet import CONFIGS as CONFIGS_ViT_seg
@@ -161,10 +161,10 @@ if __name__ == "__main__":
             'num_classes': 2,
             'z_spacing': 1,
         },
-        'DRIVE': {
-            'Dataset': DRIVE_dataset,
-            'volume_path': '../../data/DRIVE',
-            'list_dir': './lists/lists_DRIVE',
+        'CVC': {
+            'Dataset': CVC_dataset,
+            'volume_path': '../data/CVC-ClinicDB',
+            'list_dir': './lists/lists_CVC',
             'num_classes': 2,
             'z_spacing': 1,
         },

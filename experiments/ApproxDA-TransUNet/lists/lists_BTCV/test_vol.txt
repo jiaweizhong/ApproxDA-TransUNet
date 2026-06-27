@@ -1,0 +1,2 @@
+# Populate with H5 volume stems after preprocessing.
+# Expected format: one stem per line, e.g. "img0001"

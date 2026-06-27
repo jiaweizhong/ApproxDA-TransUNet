@@ -1,0 +1,2 @@
+# Run datasets/generate_lists.py --dataset CVC --data_dir ../data/CVC-ClinicDB
+# to populate this file on Lightning AI.

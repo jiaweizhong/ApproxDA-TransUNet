@@ -1,0 +1,3 @@
+# Populate with NPZ slice stems after preprocessing.
+# See TransUNet preprocessing scripts for BTCV → NPZ conversion.
+# Expected format: one stem per line, e.g. "img0001_slice050"
