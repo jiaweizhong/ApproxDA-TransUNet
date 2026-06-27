@@ -163,7 +163,7 @@ if __name__ == "__main__":
         },
         'DRIVE': {
             'Dataset': DRIVE_dataset,
-            'volume_path': '../data/DRIVE',
+            'volume_path': '../../data/DRIVE',
             'list_dir': './lists/lists_DRIVE',
             'num_classes': 2,
             'z_spacing': 1,

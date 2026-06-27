@@ -561,7 +561,7 @@ if __name__ == "__main__":
             'num_classes': 2,
         },
         'DRIVE': {
-            'root_path': '../data/DRIVE',
+            'root_path': '../../data/DRIVE',
             'list_dir': './lists/lists_DRIVE',
             'num_classes': 2,
         },

@@ -13,7 +13,7 @@ Run ONCE on Lightning AI after attaching the dataset volumes:
   python datasets/generate_lists.py --dataset ISIC --data_dir ../data/ISIC2018
 
   # DRIVE retinal vessels (fixed official 20/20 train/test split)
-  python datasets/generate_lists.py --dataset DRIVE --data_dir ../data/DRIVE
+  python datasets/generate_lists.py --dataset DRIVE --data_dir ../../data/DRIVE
 
 List format: one image stem per line, no extension.
   Kvasir  -> stem = filename without extension  (e.g.  cju0qkwl9qokg0993l0dewei2)
