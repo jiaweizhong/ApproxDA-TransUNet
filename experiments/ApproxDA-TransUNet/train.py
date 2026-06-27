@@ -252,6 +252,14 @@ def trainer_isic(args, model, snapshot_path):
     return _trainer_2d(args, model, snapshot_path, db_train, ISIC_dataset)
 
 
+def trainer_drive(args, model, snapshot_path):
+    from datasets.dataset_drive import DRIVE_dataset, RandomGenerator
+    db_train = DRIVE_dataset(
+        base_dir=args.root_path, list_dir=args.list_dir, split="train",
+        transform=transforms.Compose([RandomGenerator([args.img_size, args.img_size])]))
+    return _trainer_2d(args, model, snapshot_path, db_train, DRIVE_dataset)
+
+
 def trainer_acdc(args, model, snapshot_path):
     from datasets.dataset_acdc import ACDC_dataset, RandomGenerator
 
@@ -552,6 +560,11 @@ if __name__ == "__main__":
             'list_dir': './lists/lists_ISIC',
             'num_classes': 2,
         },
+        'DRIVE': {
+            'root_path': '../data/DRIVE',
+            'list_dir': './lists/lists_DRIVE',
+            'num_classes': 2,
+        },
     }
 #     if args.batch_size != 24 and args.batch_size % 6 == 0:
 #         args.base_lr *= args.batch_size / 24
@@ -594,5 +607,6 @@ if __name__ == "__main__":
         'ACDC':    trainer_acdc,
         'Kvasir':  trainer_kvasir,
         'ISIC':    trainer_isic,
+        'DRIVE':   trainer_drive,
     }
     trainer[dataset_name](args, net, snapshot_path)

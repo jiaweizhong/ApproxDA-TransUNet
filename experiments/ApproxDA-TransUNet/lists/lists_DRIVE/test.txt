@@ -1,0 +1,2 @@
+# Run datasets/generate_lists.py --dataset DRIVE --data_dir ../data/DRIVE
+# to populate this file on Lightning AI.
