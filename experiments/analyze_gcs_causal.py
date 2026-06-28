@@ -309,8 +309,81 @@ def compute_dataset_metrics(labels: list, is_multiclass: bool, M: int) -> dict:
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Plotting
+# Plotting helpers
 # ─────────────────────────────────────────────────────────────────────────────
+
+def _place_labels(ax, xs, ys, names, fontsize=8.5):
+    """
+    Annotate scatter points with non-overlapping labels.
+    Uses adjustText when available; falls back to a repulsion-vector approach.
+    """
+    xs = np.asarray(xs, float)
+    ys = np.asarray(ys, float)
+
+    try:
+        from adjustText import adjust_text
+        texts = [ax.text(x, y, name, fontsize=fontsize)
+                 for x, y, name in zip(xs, ys, names)]
+        adjust_text(
+            texts, x=xs, y=ys, ax=ax,
+            arrowprops=dict(arrowstyle="-", color="#aaa", lw=0.5),
+            expand_points=(2.0, 2.0),
+            expand_text=(1.4, 1.4),
+            force_text=(0.8, 1.5),
+            force_points=(0.5, 1.0),
+        )
+        return
+
+    except ImportError:
+        pass
+
+    # ── Fallback: inverse-distance repulsion ─────────────────────────────────
+    xr = xs.ptp() or 1.0
+    yr = ys.ptp() or 1.0
+
+    # Get current axes limits to push labels inward from borders
+    xlim = ax.get_xlim()
+    ylim = ax.get_ylim()
+
+    PAD = 18   # base offset in points
+    offsets = []
+    for i in range(len(names)):
+        dx, dy = 0.0, 0.0
+        for j in range(len(names)):
+            if i == j:
+                continue
+            ddx = (xs[i] - xs[j]) / xr
+            ddy = (ys[i] - ys[j]) / yr
+            dist2 = ddx ** 2 + ddy ** 2 + 1e-9
+            dx += ddx / dist2
+            dy += ddy / dist2
+        mag = np.sqrt(dx ** 2 + dy ** 2) + 1e-9
+        ox = dx / mag * PAD
+        oy = dy / mag * PAD
+
+        # Nudge away from axes borders (normalised [0,1] → points scale)
+        margin_x = (xlim[1] - xlim[0]) * 0.05
+        margin_y = (ylim[1] - ylim[0]) * 0.05
+        if xs[i] - xlim[0] < margin_x:
+            ox = abs(ox)
+        if xlim[1] - xs[i] < margin_x:
+            ox = -abs(ox)
+        if ys[i] - ylim[0] < margin_y:
+            oy = abs(oy)
+        if ylim[1] - ys[i] < margin_y:
+            oy = -abs(oy)
+
+        offsets.append((ox, oy))
+
+    for name, x, y, (ox, oy) in zip(names, xs, ys, offsets):
+        ax.annotate(
+            name, (x, y),
+            textcoords="offset points", xytext=(ox, oy),
+            fontsize=fontsize,
+            arrowprops=dict(arrowstyle="-", color="#bbb", lw=0.4)
+            if (abs(ox) > 10 or abs(oy) > 8) else None,
+        )
+
 
 RULE_OUT = [
     ("foreground_ratio",    "SC1: Foreground Ratio",    "expect ρ ≈ 0"),
@@ -356,8 +429,13 @@ def plot_results(results: dict, M: int, out_path: str):
         for name, v, d, c in zip(names, vals, delta_dscs, colors):
             ax.scatter(v, d, s=110, color=c, edgecolors="#444",
                        linewidth=0.7, zorder=3)
-            ax.annotate(name, (v, d), textcoords="offset points",
-                        xytext=(5, 3), fontsize=8.5)
+        # Expand axes limits before placing labels so border-avoidance works
+        ax.autoscale(enable=True)
+        xmarg = (max(vals) - min(vals) or 1) * 0.15
+        ymarg = (max(delta_dscs) - min(delta_dscs) or 1) * 0.18
+        ax.set_xlim(min(vals) - xmarg, max(vals) + xmarg)
+        ax.set_ylim(min(delta_dscs) - ymarg, max(delta_dscs) + ymarg)
+        _place_labels(ax, vals, delta_dscs, names, fontsize=8.5)
         rho_color = ("#2a7a2a" if rho > 0.5 else
                      ("#cc4400" if rho < -0.3 else "#888"))
         ax.set_title(f"ρ = {rho:+.3f}   p = {pval:.3f}",
