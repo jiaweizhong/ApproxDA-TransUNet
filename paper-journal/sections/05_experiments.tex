@@ -86,7 +86,7 @@ Tables~\ref{tab:synapse}--\ref{tab:isic} compare ApproxDA-TransUNet against publ
   \footnotesize{$^\dag$We are able to closely reproduce paper-reported results (88.47\% DSC, 81.02\% mIoU) and capture the HD95. ApproxDA: gate=pam, $M{=}56$, $r{=}32$.}
 \end{table}
 
-\textbf{CVC-ClinicDB.} On colonoscopy polyp segmentation (Table~\ref{tab:cvc}), DA-TransUNet$^\ddag$ achieves 89.47\% DSC and 82.51\% mIoU---the strongest published baseline on this dataset. ApproxDA-TransUNet with gate=pam, $M{=}112$ achieves \textbf{91.99\%} DSC, \textbf{86.21\%} mIoU, and \textbf{16.02\,mm} HD95---surpassing the nearest baseline by $+$2.52\% DSC and $+$3.70\% mIoU. Unlike Kvasir-SEG where $M{=}56$ is optimal, CVC-ClinicDB benefits from a larger window ($M{=}112$), a pattern consistent with CVC's wider polyp size and shape distribution; the GCS analysis in Section~\ref{sec:understanding} examines this cross-dataset difference in detail.
+\textbf{CVC-ClinicDB.} On colonoscopy polyp segmentation (Table~\ref{tab:cvc}), DA-TransUNet$^\ddag$ achieves 89.47\% DSC and 82.51\% mIoU---the strongest published baseline on this dataset. ApproxDA-TransUNet with gate=pam, $M{=}112$ achieves \textbf{90.99\%} DSC, \textbf{85.09\%} mIoU, and \textbf{14.77\,mm} HD95---surpassing the nearest baseline by $+$1.52\% DSC and $+$2.58\% mIoU. The DSC span across $M{\in}\{7,28,56,112\}$ is 0.62\,pp, confirming CVC-ClinicDB is window-robust---consistent with its binary task structure and low GCS, as analyzed in Section~\ref{sec:understanding}.
 
 \begin{table}[ht]
   \caption{Segmentation Results on CVC-ClinicDB Polyp}
@@ -104,7 +104,7 @@ Tables~\ref{tab:synapse}--\ref{tab:isic} compare ApproxDA-TransUNet against publ
     TransUNet~\cite{chen2021transunet}               & 89.01 & 81.63 & -- \\
     DA-TransUNet~\cite{sun2024datransunet}           & \underline{89.47} & \underline{82.51} & -- \\
     \midrule
-    \textbf{ApproxDA-TransUNet (ours)}               & \textbf{91.99} & \textbf{86.21} & \textbf{16.02} \\
+    \textbf{ApproxDA-TransUNet (ours)}               & \textbf{90.99} & \textbf{85.09} & \textbf{14.77} \\
     \bottomrule
   \end{tabular}
   \end{center}

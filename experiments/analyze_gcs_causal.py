@@ -43,8 +43,9 @@ KNOWN_GCS = {
     "ACDC":    0.73,   # 4-class cardiac MRI — discriminating test for SSD vs n_classes
     "Kvasir":  0.64,
     "ISIC":    0.70,
+    "CVC":     0.62,
 }
-COLORS = {"Synapse": "#D97C6B", "ACDC": "#A07BC3", "Kvasir": "#6BAD8F", "ISIC": "#6B8FAD"}
+COLORS = {"Synapse": "#D97C6B", "ACDC": "#A07BC3", "Kvasir": "#6BAD8F", "ISIC": "#6B8FAD", "CVC": "#C4A35A"}
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -360,6 +361,7 @@ def main():
     parser.add_argument("--acdc_dir",   default="../data/ACDC/ACDC_training_slices")
     parser.add_argument("--kvasir_dir",  default="../data/Kvasir-SEG")
     parser.add_argument("--isic_dir",    default="../data/ISIC2018")
+    parser.add_argument("--cvc_dir",     default="../data/CVC-ClinicDB")
     parser.add_argument("--n_images",    type=int, default=200)
     parser.add_argument("--window_size", type=int, default=28,
                         help="Window size in pixel space.  M=7 in feature space "
@@ -380,6 +382,7 @@ def main():
         ("ACDC",    args.acdc_dir,   True,  "acdc"),
         ("Kvasir",  args.kvasir_dir,  False, "binary"),
         ("ISIC",    args.isic_dir,    False, "binary"),
+        ("CVC",     args.cvc_dir,     False, "binary"),
     ]
 
     results = {}

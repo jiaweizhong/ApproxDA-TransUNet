@@ -81,7 +81,7 @@ Tables~\ref{tab:synapse}--\ref{tab:isic} compare ApproxDA-TransUNet against publ
   \end{tabular}
   \end{center}
   \vspace{-0.3em}
-  \footnotesize{$^\dag$We are able to closely reproduce paper-reported results (88.47\% DSC, 81.02\% mIoU) and capture the HD95. ApproxDA: gate=pam, $M{=}56$, $r{=}32$.}
+  \footnotesize{$^\dag$DA-TransUNet re-run under our protocol (DSC 88.44\%, vs.\ paper-reported 88.47\%). ApproxDA: gate=pam, $M{=}56$, $r{=}32$.}
 \end{table}
 
 \textbf{ISIC 2018.} On skin lesion segmentation (Table~\ref{tab:isic}), CNN-based methods cluster between 83--88\% DSC, with TransUNet (88.78\%) and DA-TransUNet (88.88\%) leading among Transformer-based approaches. ApproxDA-TransUNet with gate=learn, $M{=}7$ achieves \textbf{89.58\%} DSC ($+$0.70\% over DA-TransUNet) and 82.66\% mIoU, attaining the best DSC across all compared methods. This window-robust pattern is consistent with the low-GCS behavior observed on Kvasir-SEG, analyzed in Section~\ref{sec:understanding}.

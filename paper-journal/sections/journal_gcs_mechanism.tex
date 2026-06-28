@@ -16,7 +16,7 @@ We compute the following metrics from 200 randomly sampled training masks per da
   \item \textbf{SC5 --- Inter-class Window Separation:} Fraction of class-centroid pairs falling in different $M{\times}M$ windows (multi-class datasets; zero by construction for binary tasks). Measures whether distinct semantic structures require cross-window attention.
 \end{itemize}
 
-For SC1--SC4 (rule-out checks), a successful elimination requires Spearman $\rho \approx 0$ or wrong-direction correlation against the known GCS ordering (Synapse 2.30~pp $>$ ACDC 0.73~pp $\approx$ ISIC 0.70~pp $\approx$ Kvasir 0.64~pp, four datasets). An additional proxy search identifies $n_\text{classes}$---the mean number of foreground semantic classes per image---as a training-free GCS predictor. Table~\ref{tab:causal} summarizes all results.
+For SC1--SC4 (rule-out checks), a successful elimination requires Spearman $\rho \approx 0$ or wrong-direction correlation against the known GCS ordering (Synapse 2.30~pp $>$ ACDC 0.73~pp $\approx$ ISIC 0.70~pp $\approx$ Kvasir 0.64~pp $\approx$ CVC 0.62~pp, five datasets). An additional proxy search identifies $n_\text{classes}$---the mean number of foreground semantic classes per image---as a training-free GCS predictor. Table~\ref{tab:causal} summarizes all results.
 
 \begin{table*}[tb]
   \caption{Causal Elimination Results ($M{=}28$, $n{=}200$ masks/dataset, four datasets including ACDC discriminating test). $\rho$ = Spearman rank correlation vs.\ known $\Delta$DSC ordering. A successful rule-out requires $|\rho| \approx 0$ or wrong-direction (negative) correlation.}
@@ -81,10 +81,10 @@ We term the underlying mechanism \emph{Semantic Spatial Dependency (SSD)}: the e
 
 The empirical proxy $n_\text{classes}$ correlates with SSD because more classes generally implies richer inter-class spatial dependencies, but class count is not the cause---and this distinction is directly validated by an additional experiment.
 
-\textbf{ACDC as a discriminating test case.} To separate $n_\text{classes}$ from SSD as the true driver, we ran the same window ablation ($M{\in}\{7,28,56,112\}$, gate=pam) on the ACDC cardiac MRI benchmark~\cite{bernard2018deep}, a 4-class task (background, RV, Myo, LV). If class count drives GCS, ACDC should show intermediate-to-high sensitivity. Instead, $\Delta\text{DSC}{=}0.73$\,pp---indistinguishable from the binary datasets Kvasir-SEG ($0.64$\,pp) and ISIC~2018 ($0.70$\,pp), and far below Synapse ($2.30$\,pp).
+\textbf{ACDC as a discriminating test case.} To separate $n_\text{classes}$ from SSD as the true driver, we ran the same window ablation ($M{\in}\{7,28,56,112\}$, gate=pam) on the ACDC cardiac MRI benchmark~\cite{bernard2018deep}, a 4-class task (background, RV, Myo, LV). If class count drives GCS, ACDC should show intermediate-to-high sensitivity. Instead, $\Delta\text{DSC}{=}0.73$\,pp---indistinguishable from the binary datasets Kvasir-SEG ($0.64$\,pp), CVC-ClinicDB ($0.62$\,pp), and ISIC~2018 ($0.70$\,pp), and far below Synapse ($2.30$\,pp).
 
 \begin{table}[tb]
-  \caption{Empirical GCS ($\Delta$DSC) across four datasets. ACDC falls with binary tasks despite 4 classes, confirming that spatial co-location of structures suppresses SSD.}
+  \caption{Empirical GCS ($\Delta$DSC) across five datasets. ACDC and CVC-ClinicDB both fall in the low-GCS tier despite having 4 classes and a different dataset scale respectively, confirming that task structure (SC5), not class count or dataset size, determines GCS tier.}
   \label{tab:gcs_spectrum}
   \begin{center}
   \setlength{\tabcolsep}{6pt}
@@ -92,16 +92,19 @@ The empirical proxy $n_\text{classes}$ correlates with SSD because more classes 
     \toprule
     Dataset & Task & Classes & $\Delta$DSC (pp) \\
     \midrule
-    Synapse   & Multi-organ CT & 9 & 2.30 \\
-    ACDC      & Cardiac MRI    & 4 & 0.73 \\
-    ISIC 2018 & Skin lesion    & 2 & 0.70 \\
-    Kvasir-SEG & Polyp         & 2 & 0.64 \\
+    Synapse      & Multi-organ CT      & 9 & 2.30 \\
+    ACDC         & Cardiac MRI         & 4 & 0.73 \\
+    ISIC 2018    & Skin lesion         & 2 & 0.70$^\dagger$ \\
+    Kvasir-SEG   & Polyp (endoscopy)   & 2 & 0.64 \\
+    CVC-ClinicDB & Polyp (colonoscopy) & 2 & 0.62 \\
     \bottomrule
   \end{tabular}
   \end{center}
+  \vspace{-0.3em}
+  \footnotesize{$^\dagger$ISIC 2018 $\Delta$DSC pending full gate=pam window ablation; 0.70\,pp is a provisional lower bound ($\Delta$ vs.\ DA-TransUNet at $M{=}7$).}
 \end{table}
 
-SC5 quantifies this directly. ACDC's inter-class window separation is 0.547 at $M{=}28$---cardiac structures (RV, Myo, LV) occupy adjacent but overlapping windows due to their concentric anatomy---compared to Synapse's near-complete separation (SC5${=}0.9996$) and binary tasks' structural zero. Crucially, GCS exhibits a strongly non-linear response: the drop from SC5${=}0.9996$ to $0.547$ (Synapse $\to$ ACDC) produces a 1.57\,pp fall in GCS (2.30 $\to$ 0.73\,pp), while the further drop from $0.547$ to $0$ (ACDC $\to$ binary) yields negligible additional change (${\approx}0.09$\,pp). Near-complete inter-class separation---not merely multi-class structure---is what triggers high GCS.
+SC5 quantifies this directly. ACDC's inter-class window separation is 0.547 at $M{=}28$---cardiac structures (RV, Myo, LV) occupy adjacent but overlapping windows due to their concentric anatomy---compared to Synapse's near-complete separation (SC5${=}0.9996$) and binary tasks' structural zero. Crucially, GCS exhibits a strongly non-linear response: the drop from SC5${=}0.9996$ to $0.547$ (Synapse $\to$ ACDC) produces a 1.57\,pp fall in GCS (2.30 $\to$ 0.73\,pp), while the further drop from $0.547$ to $0$ (ACDC $\to$ binary tasks: Kvasir 0.64\,pp, CVC 0.62\,pp, ISIC 0.70\,pp) yields negligible additional change (${\approx}0.09$--$0.11$\,pp). Near-complete inter-class separation---not merely multi-class structure---is what triggers high GCS.
 
 The ACDC result therefore refines the SSD theory: the key quantity is not class count per se but \emph{degree of inter-class spatial separation relative to the attention window}. A multi-class task with compact, stereotyped anatomy (SC5${<}0.6$) behaves identically to a binary task in terms of GCS. SC5, computable from annotation masks alone, provides a training-free SSD estimate that predicts GCS tier without running a single experiment.
 

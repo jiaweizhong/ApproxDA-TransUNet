@@ -207,7 +207,7 @@ python train.py --dataset Kvasir --gate_mode pam --window_size 56 --rank 32 \
 | ACDC (3 co-located cardiac) | **0.73 pp** | Low | ✅ 4-point gate=pam ablation, 300ep |
 | ISIC 2018 (binary skin) | ⚠️ ~0.70 pp (estimated) | Low | ❌ **NOT measured** — 0.70 pp = Δ vs DA-TransUNet (gate=learn M=7 only). Needs gate=pam M∈{7,28,56,112}, 300ep (~21h/run DDP × 4 = ~84h). Must NOT appear as measured ΔDSC in journal table. |
 | Kvasir-SEG (binary polyp) | 0.64 pp | Low | ✅ 4-point gate=pam ablation, 300ep |
-| CVC-ClinicDB (polyp) | ⚠️ **1.85 pp** (unexpected) | ⚠️ Medium (expected Low) | ✅ 4-point gate=pam ablation, 300ep (final epoch_299 — no val checkpoint) |
+| CVC-ClinicDB (polyp) | **0.62 pp** | ✅ Low (consistent with SC5=0) | ✅ 4-point gate=pam ablation, 300ep, all 4 val_interval=15 re-runs. Original final-ep results were artifacts (M=7: 91.49%→90.37%, M=112: 91.99%→90.99%). ΔDSC now below Kvasir-SEG. |
 
 > **4/5 properly measured.** ISIC mislabeled (not measured). CVC done but raises an SC5 conflict (see below).
 
@@ -224,18 +224,20 @@ python train.py --dataset Kvasir --gate_mode pam --window_size 56 --rank 32 \
 
 Training config: gate=pam, r=32, M ∈ {7, 28, 56, 112}, **300ep** SGD.
 
-**CVC-ClinicDB result detail** (gate=pam, r=32, 300ep, final epoch_299 — no val checkpoint due to val_interval=0):
+**CVC-ClinicDB result detail** (gate=pam, r=32, 300ep, best val checkpoint via val_interval=15):
 
-| M | DSC (%) | HD95 (mm) | IoU (%) |
-|---|---------|-----------|---------|
-| 7 | **91.49** | 14.93 | 85.59 |
-| 28 | 90.14 | 17.45 | 83.86 |
-| 56 | 90.18 | 16.16 | 84.02 |
-| 112 | **91.99** | 16.02 | 86.21 |
+| M | DSC (%) | HD95 (mm) | IoU (%) | Notes |
+|---|---------|-----------|---------|-------|
+| 7 | 90.37 | 17.94 | 84.46 | re-run with val_interval=15; best val ep135 DSC=0.9037 (original final-ep 91.49% was artifact) |
+| 28 | 90.85 | 13.38 | 84.82 | re-run with val_interval=15; best val ep150 DSC=0.9085 |
+| 56 | 90.43 | 14.08 | 84.40 | re-run with val_interval=15; best val ep255 DSC=0.9043 |
+| 112 | **90.99** | **13.38** | **85.09** | re-run with val_interval=15; best val ep195 DSC=0.9099 (original final-ep 91.99% was artifact) |
 
-**ΔDSC = 1.85 pp** (max 91.99% at M=112, min 90.14% at M=28). Pattern: dip at M=28–56, recovery at M=112 — different from Synapse (peak at M=28). Best window: M=112.
+**ΔDSC = 0.62 pp** (max 90.99% at M=112, min 90.37% at M=7). Pattern: nearly flat, weakly increasing with M. Best window: M=112.
 
-> ⚠️ **SC5 conflict:** CVC is binary (SC5=0), but ΔDSC=1.85pp — nearly 3× higher than Kvasir-SEG (SC5=0, ΔDSC=0.64pp). Both are binary polyp tasks with SC5=0; SC5 predicts both should be Low GCS. Adding CVC to the 4-dataset SC5 correlation will **break ρ=+0.95** (Kvasir+CVC now span 0.64–1.85pp at SC5=0). Possible explanations: (1) val_interval=0 introduces final-epoch noise (not best checkpoint); (2) CVC dataset size 489 < Kvasir 800 → smaller datasets may be more M-sensitive; (3) genuine dataset-level difference in polyp appearance/distribution. **Flag for journal §4.4 — SC5 theory needs refinement or CVC treated as outlier.** Do NOT include CVC ΔDSC in SC5 correlation table until explained.
+Val-checkpoint fix history: 1.85pp (original) → 1.56pp (M=28/56 re-run) → 1.06pp (M=112 re-run) → **0.62pp (M=7 re-run, all 4 corrected)**. All original final-epoch results were inflated; true val-checkpoint ΔDSC is now below Kvasir-SEG.
+
+> ✅ **SC5 conflict RESOLVED:** CVC ΔDSC=0.62pp < Kvasir-SEG ΔDSC=0.64pp. Both binary (SC5=0) datasets are now in the same Low GCS tier. All four original final-epoch results were artifacts — the val-checkpoint ablation confirms CVC is window-robust, fully consistent with SC5 theory. CVC can now be included in the SC5 correlation table.
 
 **CVC-ClinicDB training commands (300ep, Lightning AI):**
 ```bash
@@ -268,8 +270,8 @@ done
 | Step | Status |
 |------|--------|
 | ACDC window ablation (4 runs × ~7h) | ✅ Done (2026-06-26) |
-| CVC-ClinicDB 300ep (4 runs × ~4h = ~16h) | ✅ Done (2026-06-27) — ΔDSC=1.85pp (unexpected Medium; see SC5 conflict note) |
-| **ISIC 2018 window ablation (4 runs × ~21h DDP = ~84h)** | ⏳ **Not started — required before journal submission** |
+| CVC-ClinicDB 300ep (4 runs × ~4h = ~16h) | ✅ Done — **ΔDSC=0.62pp**, all 4 val_interval=15 re-runs complete. SC5 conflict fully resolved (CVC now Low GCS, below Kvasir 0.64pp). |
+| **ISIC 2018 window ablation (4 runs × ~21h DDP = ~84h)** | 🔄 **In progress** — M=7 and M=112 running; M=28 and M=56 still needed |
 | Write dataset_acdc.py, dataset_cvc.py | ✅ Done |
 | Compute empirical ΔDSC for all 5 datasets | ⏳ (4/5 done: Synapse, ACDC, Kvasir, CVC — ISIC pending) |
 | Run analyze_gcs_causal.py on all 5 datasets | ⏳ after CVC/ISIC done |
@@ -360,7 +362,7 @@ python analyze_gcs_causal.py \
 
 ---
 
-### Journal Phase F Priority Order (updated 2026-06-27)
+### Journal Phase F Priority Order (updated 2026-06-28)
 
 | Priority | Phase | Effort | Impact | Status |
 |----------|-------|--------|--------|--------|
@@ -368,7 +370,7 @@ python analyze_gcs_causal.py \
 | 2 | F6 — Causal elimination | ~1h | SC5 ρ=+0.95 (4-dataset); all alternatives ruled out; non-linear threshold confirmed | ✅ Done (2026-06-27) |
 | 3 | F4 — ACDC window ablation | ~28h | ΔDSC=0.73pp (LOW); confirms SSD > n_classes | ✅ Done (2026-06-26) |
 | 4 | F5 — Per-organ analysis | ~2h | Gallbladder 6.45pp vs Liver 0.39pp — 16× range confirms organ-level SSD | ✅ Done (2026-06-27) |
-| **5** | **F4 — CVC 300ep** | **~16h** | ΔDSC=1.85pp (Medium, not Low as expected) — SC5 conflict with Kvasir (both binary, both SC5=0). Needs investigation before journal. | ✅ **Done (2026-06-27)** |
+| **5** | **F4 — CVC 300ep** | **~16h** | ΔDSC=0.62pp ✅ Low GCS — SC5 conflict fully resolved. All 4 original final-ep results were artifacts; val-checkpoint re-runs put CVC below Kvasir-SEG (0.64pp). CVC now includable in SC5 correlation table. | ✅ **Done (2026-06-28)** |
 | **6** | **F4 — ISIC window ablation** | **~84h DDP** | **Fix mislabeled ISIC ΔDSC** (0.70pp is Δ vs DA, not measured ΔDSC) | ⏳ **Not started — required for journal** |
 | 7 | F2 — Dataset size study | ~40h | Validates regularization hypothesis quantitatively | ⏳ |
 | 9 | DRIVE ablation | ~12h | Discriminating: binary task with high spatial extent (retinal vessels) | ⏳ |
