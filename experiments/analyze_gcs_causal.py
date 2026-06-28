@@ -98,6 +98,28 @@ def _find_mask(mask_dir: str, stem: str) -> str | None:
     return None
 
 
+def load_cvc_labels(base_dir: str, n: int, resize: int = 256,
+                    seed: int = 42) -> list:
+    """CVC-ClinicDB: Kaggle layout PNG/Original + PNG/Ground Truth."""
+    mask_dir = os.path.join(base_dir, "PNG", "Ground Truth")
+    if not os.path.isdir(mask_dir):
+        return []
+    masks = []
+    files = sorted(glob.glob(os.path.join(mask_dir, "*.png")) +
+                   glob.glob(os.path.join(mask_dir, "*.tif")))
+    rng = random.Random(seed)
+    rng.shuffle(files)
+    for f in files[:n]:
+        try:
+            pil = Image.open(f).convert("L")
+            if resize > 0:
+                pil = pil.resize((resize, resize), Image.NEAREST)
+            masks.append((np.array(pil) > 127).astype(np.uint8))
+        except Exception:
+            pass
+    return masks
+
+
 def load_binary_labels(base_dir: str, n: int, resize: int = 256,
                        seed: int = 42) -> list:
     img_dir  = os.path.join(base_dir, "images")
@@ -382,7 +404,7 @@ def main():
         ("ACDC",    args.acdc_dir,   True,  "acdc"),
         ("Kvasir",  args.kvasir_dir,  False, "binary"),
         ("ISIC",    args.isic_dir,    False, "binary"),
-        ("CVC",     args.cvc_dir,     False, "binary"),
+        ("CVC",     args.cvc_dir,     False, "cvc"),
     ]
 
     results = {}
@@ -396,6 +418,9 @@ def main():
             labels = load_synapse_labels(path, args.n_images, args.seed)
         elif loader_type == "acdc":
             labels = load_acdc_labels(path, args.n_images, args.seed)
+        elif loader_type == "cvc":
+            labels = load_cvc_labels(path, args.n_images,
+                                     resize=args.resize, seed=args.seed)
         else:
             labels = load_binary_labels(path, args.n_images,
                                         resize=args.resize, seed=args.seed)
