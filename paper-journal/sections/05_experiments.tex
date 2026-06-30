@@ -112,7 +112,7 @@ Tables~\ref{tab:synapse}--\ref{tab:isic} compare ApproxDA-TransUNet against publ
   \footnotesize{ApproxDA: gate=pam, $M{=}112$, $r{=}32$.}
 \end{table}
 
-\textbf{ISIC 2018.} On skin lesion segmentation (Table~\ref{tab:isic}), CNN-based methods cluster between 83--88\% DSC, with TransUNet (88.78\%) and DA-TransUNet (88.88\%) leading among Transformer-based approaches. ApproxDA-TransUNet with gate=learn, $M{=}7$ achieves \textbf{89.58\%} DSC ($+$0.70\% over DA-TransUNet) and 82.66\% mIoU, attaining the best DSC across all compared methods. This window-robust pattern is consistent with the low-GCS behavior observed on Kvasir-SEG, analyzed in Section~\ref{sec:understanding}.
+\textbf{ISIC 2018.} On skin lesion segmentation (Table~\ref{tab:isic}), CNN-based methods cluster between 83--88\% DSC, with TransUNet (88.78\%) and DA-TransUNet (88.88\%) leading among Transformer-based approaches. ApproxDA-TransUNet with gate=learn, $M{=}7$ achieves \textbf{89.58\%} DSC ($+$0.70\% over DA-TransUNet) and 82.66\% mIoU, attaining the best DSC across all compared methods. This window-robust pattern is consistent with the low-GCS behavior observed on Kvasir-SEG above.
 
 \begin{table}[ht]
   \caption{Segmentation Results on ISIC 2018 Skin Lesion}
@@ -141,7 +141,7 @@ Tables~\ref{tab:synapse}--\ref{tab:isic} compare ApproxDA-TransUNet against publ
 
 ApproxDA-TransUNet achieves state-of-the-art results across all four benchmarks (Figure~\ref{fig:qualitative}), with task-dependent window sensitivity emerging as the key differentiating pattern across datasets.
 
-\begin{figure}[ht]
+\begin{figure}[b]
   \centering
   \includegraphics[width=\columnwidth]{figures/fig_qualitative_cross_task.png}
   \caption{Qualitative segmentation comparison (columns: input, ground truth, DA-TransUNet, ApproxDA). \textbf{Top (Synapse, $M{=}28$):} multi-organ CT; ApproxDA 80.94\% DSC ($+$1.14\%). \textbf{Middle (Kvasir-SEG, $M{=}56$):} polyp; 90.17\% DSC ($+$1.73\%). \textbf{Bottom (ISIC 2018, $M{=}7$):} skin lesion; 89.58\% DSC ($+$0.70\%).}

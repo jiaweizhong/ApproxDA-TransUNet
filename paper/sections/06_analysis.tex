@@ -108,7 +108,7 @@ We validate this locality bias hypothesis via controlled attention-map analysis:
   \label{fig:attn_map}
 \end{figure}
 
-Together, these findings reframe the role of approximation: not as a capability reduction but as a task-dependent inductive bias adjustment whose value depends on how well the enforced locality prior aligns with the task's intrinsic context scale.
+Notably, all three datasets achieve their highest segmentation accuracy under approximate attention rather than full attention, suggesting that preserving all pairwise interactions is not always optimal. Instead, task-aligned approximation can act as a beneficial inductive bias.
 
 \subsection{Gate Ablation and Mechanistic Analysis}
 \label{sec:collapse}
