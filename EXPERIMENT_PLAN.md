@@ -205,7 +205,7 @@ python train.py --dataset Kvasir --gate_mode pam --window_size 56 --rank 32 \
 |---------|------|----------|--------------------|
 | Synapse (8 distributed organs) | 2.30 pp | High | ✅ 4-point gate=pam ablation, 300ep |
 | ACDC (3 co-located cardiac) | **0.73 pp** | Low | ✅ 4-point gate=pam ablation, 300ep |
-| ISIC 2018 (binary skin) | ⚠️ ~0.70 pp (estimated) | Low | ❌ **NOT measured** — 0.70 pp = Δ vs DA-TransUNet (gate=learn M=7 only). Needs gate=pam M∈{7,28,56,112}, 300ep (~21h/run DDP × 4 = ~84h). Must NOT appear as measured ΔDSC in journal table. |
+| ISIC 2018 (binary skin) | ⚠️ TBD (M=28 pending) | Low | 🔄 **Partial** — M=7: 89.41% ✅; M=56: 89.05% ✅; M=112: 89.51% ✅; M=28 not started (DDP crash, needs single-GPU run). ΔDSC cannot be computed until M=28 done. Must NOT use 0.70pp (gate=learn) as measured ΔDSC. |
 | Kvasir-SEG (binary polyp) | 0.64 pp | Low | ✅ 4-point gate=pam ablation, 300ep |
 | CVC-ClinicDB (polyp) | **0.62 pp** | ✅ Low (consistent with SC5=0) | ✅ 4-point gate=pam ablation, 300ep, all 4 val_interval=15 re-runs. Original final-ep results were artifacts (M=7: 91.49%→90.37%, M=112: 91.99%→90.99%). ΔDSC now below Kvasir-SEG. |
 
@@ -256,6 +256,19 @@ for M in 7 28 56 112; do
 done
 ```
 
+**ISIC 2018 result detail** (gate=pam, r=32, 300ep, best val checkpoint via val_interval=15):
+
+| M | DSC (%) | HD95 (mm) | IoU (%) | ΔDSC vs DA-TransUNet (88.88%) | Status |
+|---|---------|-----------|---------|-------------------------------|--------|
+| 7  | **89.41** | 142.79 | 82.46 | **+0.53** | ✅ Done (2026-06-30) |
+| 28 | [B] | — | — | [B]−88.88 | ⏳ training not started (DDP crash; run single-GPU bs=24) |
+| 56 | 89.05 | 151.29 | 81.84 | **+0.17** | ✅ Done (2026-07-01) bs=6 |
+| 112 | **89.51** | 142.99 | 82.56 | **+0.63** | ✅ Done (2026-06-30) |
+
+Inference config: 519 test images, peak VRAM 0.9 GB. M=56 note: trained with bs=6 (vs bs=24 for M=7/M=112); best_model.pth used.
+ΔDSC (GCS) = max−min across all 4 M values — **cannot be computed until M=28 done**. Partial (3/4): max=89.51%(M=112), min=89.05%(M=56) → lower bound ≥0.46pp.
+DA-TransUNet ISIC baseline: 88.88% DSC (from paper; gate=pam M=112 is 89.51%, +0.63 pp above baseline).
+
 **ISIC window ablation commands (300ep, DDP):**
 ```bash
 for M in 7 28 56 112; do
@@ -271,7 +284,7 @@ done
 |------|--------|
 | ACDC window ablation (4 runs × ~7h) | ✅ Done (2026-06-26) |
 | CVC-ClinicDB 300ep (4 runs × ~4h = ~16h) | ✅ Done — **ΔDSC=0.62pp**, all 4 val_interval=15 re-runs complete. SC5 conflict fully resolved (CVC now Low GCS, below Kvasir 0.64pp). |
-| **ISIC 2018 window ablation (4 runs × ~21h DDP = ~84h)** | 🔄 **In progress** — M=7 and M=112 running; M=28 and M=56 still needed |
+| **ISIC 2018 window ablation (4 runs × ~21h DDP = ~84h)** | 🔄 **In progress (3/4)** — M=7 ✅ 89.41%; M=56 ✅ 89.05%; M=112 ✅ 89.51%; **M=28 ⏳ not started** (DDP NCCL timeout crash; must run single-GPU: `python train.py --batch_size 24 --window_size 28`) |
 | Write dataset_acdc.py, dataset_cvc.py | ✅ Done |
 | Compute empirical ΔDSC for all 5 datasets | ⏳ (4/5 done: Synapse, ACDC, Kvasir, CVC — ISIC pending) |
 | Run analyze_gcs_causal.py on all 5 datasets | ⏳ after CVC/ISIC done |
@@ -371,7 +384,7 @@ python analyze_gcs_causal.py \
 | 3 | F4 — ACDC window ablation | ~28h | ΔDSC=0.73pp (LOW); confirms SSD > n_classes | ✅ Done (2026-06-26) |
 | 4 | F5 — Per-organ analysis | ~2h | Gallbladder 6.45pp vs Liver 0.39pp — 16× range confirms organ-level SSD | ✅ Done (2026-06-27) |
 | **5** | **F4 — CVC 300ep** | **~16h** | ΔDSC=0.62pp ✅ Low GCS — SC5 conflict fully resolved. All 4 original final-ep results were artifacts; val-checkpoint re-runs put CVC below Kvasir-SEG (0.64pp). CVC now includable in SC5 correlation table. | ✅ **Done (2026-06-28)** |
-| **6** | **F4 — ISIC window ablation** | **~84h DDP** | **Fix mislabeled ISIC ΔDSC** (0.70pp is Δ vs DA, not measured ΔDSC) | ⏳ **Not started — required for journal** |
+| **6** | **F4 — ISIC window ablation** | **~84h DDP** | **Fix mislabeled ISIC ΔDSC** (0.70pp is Δ vs DA, not measured ΔDSC). M=112 ✅ 89.51% DSC (+0.63pp). M=7 training done. M=56 ~82% done. M=28 not started. | 🔄 **In progress (2026-06-30)** |
 | 7 | F2 — Dataset size study | ~40h | Validates regularization hypothesis quantitatively | ⏳ |
 | 9 | DRIVE ablation | ~12h | Discriminating: binary task with high spatial extent (retinal vessels) | ⏳ |
 

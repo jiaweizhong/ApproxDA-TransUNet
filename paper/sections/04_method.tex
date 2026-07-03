@@ -32,7 +32,7 @@ The original DA module performs dense spatial and channel attention over the ful
 
 \textbf{Channel interaction} (groups $G$) controls \emph{which channels} may interact in CAM. Partitioning $C$ channels into $G$ independent groups limits cross-channel dependency to within-group interactions, reducing the interaction scope.
 
-These axes correspond to three distinct types of approximation: \emph{spatial approximation} (how far attention reaches, controlled by $M$), \emph{representation approximation} (how precisely affinity is computed, controlled by $r$), and \emph{channel approximation} (how broadly channels interact, controlled by $G$). The axes are fully independent: any two of $\{M,\,r,\,G\}$ can be held fixed while the third varies, enabling clean ablations that isolate individual approximation effects.
+The axes are fully independent: any two of $\{M,\,r,\,G\}$ can be held fixed while the third varies, enabling clean ablations that isolate individual approximation effects.
 
 \subsection{Spatial Approximation}
 
@@ -54,7 +54,7 @@ The original Channel Attention Module computes a $C{\times}C$ channel attention 
   X^{(g)}_{ji} = \frac{\exp(\mathbf{A}^{(g)}_i \cdot \mathbf{A}^{(g)}_j)}{\sum_{k=1}^{C_g}\exp(\mathbf{A}^{(g)}_k \cdot \mathbf{A}^{(g)}_j)},
   \label{eq:groupedcam}
 \end{equation}
-with total cost $\mathcal{O}(C^2N/G)$. Compared with dense channel interaction, grouped attention significantly reduces computational complexity while preserving local channel dependency.
+with total cost $\mathcal{O}(C^2N/G)$. Compared with dense channel interaction, grouped attention significantly reduces computational complexity while preserving local channel dependencies.
 
 The grouping number $G$ provides another controllable approximation dimension, allowing the influence of channel approximation to be studied independently from spatial approximation.
 
