@@ -28,29 +28,27 @@ Tables~\ref{tab:synapse}--\ref{tab:isic} compare ApproxDA-TransUNet against publ
   \caption{Segmentation Results on Synapse Multi-Organ CT}
   \label{tab:synapse}
   \begin{center}
-  \renewcommand{\arraystretch}{1.15}
-  \setlength{\tabcolsep}{6pt}
-  \begin{tabular}{lcc}
+  \setlength{\tabcolsep}{5pt}
+  \small\begin{tabular}{clcc}
     \toprule
-    Method & DSC (\%) $\uparrow$ & HD95 (mm) $\downarrow$ \\
+    & Method & DSC (\%) $\uparrow$ & HD95 (mm) $\downarrow$ \\
     \midrule
-    \multicolumn{3}{l}{\textit{CNN-based}} \\
-    U-Net~\cite{ronneberger2015unet}              & 76.85 & 39.70 \\
-    U-Net++~\cite{zhou2018unetpp}                 & 76.91 & 36.93 \\
-    Residual U-Net~\cite{diakogiannis2020resunet} & 76.95 & 38.44 \\
-    MultiResUNet~\cite{ibtehaz2020multiresunet}   & 77.42 & 36.84 \\
-    Att-Unet~\cite{oktay2018attention}            & 77.77 & 36.02 \\
+    \multirow{5}{*}{\rotatebox{90}{\footnotesize CNN-based}}
+      & U-Net~\cite{ronneberger2015unet}              & 76.85 & 39.70 \\
+      & U-Net++~\cite{zhou2018unetpp}                 & 76.91 & 36.93 \\
+      & Residual U-Net~\cite{diakogiannis2020resunet} & 76.95 & 38.44 \\
+      & MultiResUNet~\cite{ibtehaz2020multiresunet}   & 77.42 & 36.84 \\
+      & Att-Unet~\cite{oktay2018attention}            & 77.77 & 36.02 \\
     \midrule
-    \multicolumn{3}{l}{\textit{Transformer-based}} \\
-    TransUNet~\cite{chen2021transunet}            & 77.48 & 31.69 \\
-    UCTransNet~\cite{wang2022uctransnet}          & 78.23 & 26.75 \\
-    TransNorm~\cite{azad2022transnorm}            & 78.40 & 30.25 \\
-    MIM~\cite{wang2022mim}                        & 78.59 & 26.59 \\
-    Swin-Unet~\cite{cao2022swinunet}              & 79.13 & \textbf{21.55} \\
-    DA-TransUNet~\cite{sun2024datransunet}        & \underline{79.80} & \underline{23.48} \\
+    \multirow{6}{*}{\rotatebox{90}{\footnotesize Transformer-based}}
+      & TransUNet~\cite{chen2021transunet}            & 77.48 & 31.69 \\
+      & UCTransNet~\cite{wang2022uctransnet}          & 78.23 & 26.75 \\
+      & TransNorm~\cite{azad2022transnorm}            & 78.40 & 30.25 \\
+      & MIM~\cite{wang2022mim}                        & 78.59 & 26.59 \\
+      & Swin-Unet~\cite{cao2022swinunet}              & 79.13 & \textbf{21.55} \\
+      & DA-TransUNet~\cite{sun2024datransunet}        & \underline{79.80} & \underline{23.48} \\
     \midrule
-    \multicolumn{3}{l}{\textit{Dual-attention approximation (ours)}} \\
-    \textbf{ApproxDA-TransUNet (ours)}            & \textbf{80.94} & 27.49 \\
+      & \textbf{ApproxDA-TransUNet (ours)}            & \textbf{80.94} & 27.49 \\
     \bottomrule
   \end{tabular}
   \end{center}
@@ -84,7 +82,7 @@ Tables~\ref{tab:synapse}--\ref{tab:isic} compare ApproxDA-TransUNet against publ
   \footnotesize{$^\dag$DA-TransUNet re-run under our protocol (DSC 88.44\%, vs.\ paper-reported 88.47\%). ApproxDA: gate=pam, $M{=}56$, $r{=}32$.}
 \end{table}
 
-\textbf{ISIC 2018.} On skin lesion segmentation (Table~\ref{tab:isic}), CNN-based methods cluster between 83--88\% DSC, with TransUNet (88.78\%) and DA-TransUNet (88.88\%) leading among Transformer-based approaches. ApproxDA-TransUNet with gate=learn, $M{=}7$ achieves \textbf{89.58\%} DSC ($+$0.70\% over DA-TransUNet) and 82.66\% mIoU, attaining the best DSC across all compared methods. This window-robust pattern is consistent with the low-GCS behavior observed on Kvasir-SEG.
+\textbf{ISIC 2018.} On skin lesion segmentation (Table~\ref{tab:isic}), CNN-based methods cluster between 83--88\% DSC, with TransUNet (88.78\%) and DA-TransUNet (88.88\%) leading among Transformer-based approaches. ApproxDA-TransUNet with gate=learn, $M{=}7$ achieves \textbf{89.58\%} DSC ($+$0.70\% over DA-TransUNet) and 82.66\% mIoU, attaining the best DSC across all compared methods. This window-robust pattern is consistent with the low-GCS behavior observed on Kvasir-SEG (GCS defined in Section~\ref{sec:obs2}).
 
 \begin{table}[ht]
   \caption{Segmentation Results on ISIC 2018 Skin Lesion}
