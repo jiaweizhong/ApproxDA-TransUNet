@@ -42,7 +42,7 @@ KNOWN_GCS = {
     "Synapse": 2.30,
     "ACDC":    0.73,   # 4-class cardiac MRI — discriminating test for SSD vs n_classes
     "Kvasir":  0.64,
-    "ISIC":    0.70,
+    "ISIC":    0.50,
     "CVC":     0.62,
 }
 COLORS = {"Synapse": "#D97C6B", "ACDC": "#A07BC3", "Kvasir": "#6BAD8F", "ISIC": "#6B8FAD", "CVC": "#C4A35A"}

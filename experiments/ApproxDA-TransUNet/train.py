@@ -260,6 +260,22 @@ def trainer_cvc(args, model, snapshot_path):
     return _trainer_2d(args, model, snapshot_path, db_train, CVC_dataset)
 
 
+def trainer_kvasir_instrument(args, model, snapshot_path):
+    from datasets.dataset_kvasir_instrument import KvasirInstrument_dataset, RandomGenerator
+    db_train = KvasirInstrument_dataset(
+        base_dir=args.root_path, list_dir=args.list_dir, split="train",
+        transform=transforms.Compose([RandomGenerator([args.img_size, args.img_size])]))
+    return _trainer_2d(args, model, snapshot_path, db_train, KvasirInstrument_dataset)
+
+
+def trainer_chest_xray(args, model, snapshot_path):
+    from datasets.dataset_chest_xray import ChestXray_dataset, RandomGenerator
+    db_train = ChestXray_dataset(
+        base_dir=args.root_path, list_dir=args.list_dir, split="train",
+        transform=transforms.Compose([RandomGenerator([args.img_size, args.img_size])]))
+    return _trainer_2d(args, model, snapshot_path, db_train, ChestXray_dataset)
+
+
 def trainer_acdc(args, model, snapshot_path):
     from datasets.dataset_acdc import ACDC_dataset, RandomGenerator
 
@@ -565,6 +581,16 @@ if __name__ == "__main__":
             'list_dir': './lists/lists_CVC',
             'num_classes': 2,
         },
+        'KvasirInstrument': {
+            'root_path': '../data/Kvasir-Instrument',
+            'list_dir': './lists/lists_KvasirInstrument',
+            'num_classes': 2,
+        },
+        'ChestXray': {
+            'root_path': '../data/Montgomery',
+            'list_dir': './lists/lists_ChestXray',
+            'num_classes': 2,
+        },
     }
 #     if args.batch_size != 24 and args.batch_size % 6 == 0:
 #         args.base_lr *= args.batch_size / 24
@@ -603,10 +629,12 @@ if __name__ == "__main__":
     net.load_from(weights=np.load(config_vit.pretrained_path))
 
     trainer = {
-        'Synapse': trainer_synapse,
-        'ACDC':    trainer_acdc,
-        'Kvasir':  trainer_kvasir,
-        'ISIC':    trainer_isic,
-        'CVC':     trainer_cvc,
+        'Synapse':          trainer_synapse,
+        'ACDC':             trainer_acdc,
+        'Kvasir':           trainer_kvasir,
+        'ISIC':             trainer_isic,
+        'CVC':              trainer_cvc,
+        'KvasirInstrument': trainer_kvasir_instrument,
+        'ChestXray':        trainer_chest_xray,
     }
     trainer[dataset_name](args, net, snapshot_path)

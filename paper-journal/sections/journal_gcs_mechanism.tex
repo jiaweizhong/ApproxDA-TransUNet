@@ -16,7 +16,7 @@ We compute the following metrics from 200 randomly sampled training masks per da
   \item \textbf{SC5 --- Inter-class Window Separation:} Fraction of class-centroid pairs falling in different $M{\times}M$ windows (multi-class datasets; zero by construction for binary tasks). Measures whether distinct semantic structures require cross-window attention.
 \end{itemize}
 
-For SC1--SC4 (rule-out checks), a successful elimination requires Spearman $\rho \approx 0$ or wrong-direction correlation against the known GCS ordering (Synapse 2.30~pp $>$ ACDC 0.73~pp $\approx$ ISIC 0.70~pp $\approx$ Kvasir 0.64~pp $\approx$ CVC 0.62~pp, five datasets). An additional proxy search identifies $n_\text{classes}$---the mean number of foreground semantic classes per image---as a training-free GCS predictor. Table~\ref{tab:causal} summarizes all results.
+For SC1--SC4 (rule-out checks), a successful elimination requires Spearman $\rho \approx 0$ or wrong-direction correlation against the known GCS ordering (Synapse 2.30~pp $>$ ACDC 0.73~pp $>$ Kvasir 0.64~pp $\approx$ CVC 0.62~pp $>$ ISIC 0.50~pp, five datasets). An additional proxy search identifies $n_\text{classes}$---the mean number of foreground semantic classes per image---as a training-free GCS predictor. Table~\ref{tab:causal} summarizes all results.
 
 \begin{table*}[tb]
   \caption{Causal Elimination Results ($M{=}28$, $n{=}200$ masks/dataset, five datasets including ACDC discriminating test). $\rho$ = Spearman rank correlation vs.\ known $\Delta$DSC ordering. A successful rule-out requires $|\rho| \approx 0$ or wrong-direction (negative) correlation.}
@@ -27,10 +27,10 @@ For SC1--SC4 (rule-out checks), a successful elimination requires Spearman $\rho
     \toprule
     Check & Metric & Synapse & ACDC & Kvasir & ISIC & CVC & $\rho$ & Verdict \\
     \midrule
-    SC1 & Foreground ratio     & 0.077  & 0.040 & 0.152 & 0.214 & 0.094 & $-$0.50 & Ruled out \\
-    SC2 & Boundary complexity  & 1.355  & 0.928 & 1.023 & 1.261 & 1.163 & $+$0.30 & Ruled out$^\dagger$ \\
-    SC3 & Spatial entropy      & 0.497  & 0.359 & 0.566 & 0.605 & 0.482 & $-$0.10 & Ruled out \\
-    SC4 & WCR ($M{=}28$~px)   & 0.999  & 0.954 & 1.000 & 0.999 & 1.000 & $-$0.60 & Ruled out \\
+    SC1 & Foreground ratio     & 0.077  & 0.040 & 0.152 & 0.214 & 0.094 & $-$0.80 & Ruled out \\
+    SC2 & Boundary complexity  & 1.355  & 0.928 & 1.023 & 1.261 & 1.163 & $+$0.00 & Ruled out$^\dagger$ \\
+    SC3 & Spatial entropy      & 0.497  & 0.359 & 0.566 & 0.605 & 0.482 & $-$0.50 & Ruled out \\
+    SC4 & WCR ($M{=}28$~px)   & 0.999  & 0.954 & 1.000 & 0.999 & 1.000 & $-$0.37 & Ruled out \\
     SC5 & Inter-class sep.     & 0.9996 & 0.547 & 0 (constr.) & 0 (constr.) & 0 (constr.) & $+$0.89 & Strongest predictor \\
     \midrule
     Proxy & $n_\text{classes}$ & 3.99   & ${\approx}3.00$ & 1.00  & 1.00  & 1.00  & $+$0.87$^\ddagger$ & Best proxy (3-dataset) \\
@@ -38,22 +38,22 @@ For SC1--SC4 (rule-out checks), a successful elimination requires Spearman $\rho
   \end{tabular}
   \end{center}
   \vspace{-0.5em}
-  \footnotesize{$^\dagger$SC2 $\rho{=}+0.30$ with five datasets; CT boundary irregularity (imaging physics) inflated the 3-dataset result to $\rho{=}+1.00$ but does not survive multi-dataset inclusion.
+  \footnotesize{$^\dagger$SC2 $\rho{=}0.00$ with five datasets; CT boundary irregularity (imaging physics) inflated the 3-dataset result to $\rho{=}+0.50$ but collapses to zero with five datasets.
   $^\ddagger$$n_\text{classes}$ $\rho$ computed on original three datasets; ACDC ($n_\text{classes}{\approx}3$, GCS${=}0.73$\,pp) would further suppress this correlation, confirming class count is a proxy, not a cause.}
 \end{table*}
 
 \subsection{Ruling Out Alternative Explanations}
 
-\textbf{SC1 and SC3 are ruled out.} Foreground ratio ($\rho{=}-0.50$) and spatial entropy ($\rho{=}-0.10$) show near-zero or wrong-direction correlations across all five datasets. Synapse has the \emph{smallest} foreground coverage (7.7\%) and the \emph{lowest} spatial entropy, yet the highest GCS. GCS is not driven by how large or how uniformly distributed the foreground is.
+\textbf{SC1 and SC3 are ruled out.} Foreground ratio ($\rho{=}-0.80$) and spatial entropy ($\rho{=}-0.50$) show wrong-direction correlations across all five datasets. Synapse has the \emph{smallest} foreground coverage (7.7\%) and the \emph{lowest} spatial entropy, yet the highest GCS. GCS is not driven by how large or how uniformly distributed the foreground is.
 
-\textbf{SC4 saturation rules out component-level window crossing.} At $M{=}28$ pixels, WCR saturates near 1.0 for all five datasets ($\rho{=}-0.60$, wrong direction). Even a single large polyp crosses window boundaries in pixel space, independent of task type. The saturation itself is informative: \emph{whether an individual target region crosses window boundaries does not predict GCS}. The discriminative mechanism must operate at a higher semantic level than individual components.
+\textbf{SC4 saturation rules out component-level window crossing.} At $M{=}28$ pixels, WCR saturates near 1.0 for all five datasets ($\rho{=}-0.37$, wrong direction). Even a single large polyp crosses window boundaries in pixel space, independent of task type. The saturation itself is informative: \emph{whether an individual target region crosses window boundaries does not predict GCS}. The discriminative mechanism must operate at a higher semantic level than individual components.
 
-\textbf{SC2 does not survive the five-dataset test.} On three datasets, boundary complexity ranked Synapse~$>$~ISIC~$>$~Kvasir ($\rho{=}+1.00$). Adding ACDC and CVC drops this to $\rho{=}+0.30$, ruling it out. The three-dataset result was an imaging-modality confound: CT physics produces high boundary contrast regardless of class count, which happened to correlate with GCS when all three datasets were compared---ACDC and CVC break this spurious alignment.
+\textbf{SC2 does not survive the five-dataset test.} On three datasets, boundary complexity ranked Synapse~$>$~ISIC~$>$~Kvasir by metric value, but GCS now ranks Kvasir above ISIC ($\rho{=}+0.50$, partial alignment). Adding ACDC and CVC drops this to $\rho{=}0.00$, ruling it out. The partial three-dataset result was an imaging-modality confound: CT physics produces high boundary contrast regardless of class count, which happened to partially correlate with GCS on the original three datasets---ACDC and CVC eliminate this spurious alignment entirely.
 
 \begin{figure*}[tbp]
   \centering
   \includegraphics[width=\textwidth]{figures/gcs_causal_sanity.png}
-  \caption{Causal elimination results ($M{=}28$, 200 masks/dataset, five datasets). Top row: per-dataset metric values. Bottom row: scatter vs.\ known $\Delta$DSC (GCS). SC1 ($\rho{=}-0.50$) and SC3 ($\rho{=}-0.10$) show near-zero or wrong-direction correlations; SC4 saturates near 1.0 across all datasets ($\rho{=}-0.60$); SC2's confound ($\rho{=}+1.00$ on three datasets) collapses to $\rho{=}+0.30$ with five datasets. All four alternative explanations are eliminated; SC5 ($\rho{=}+0.89$) is the strongest predictor of GCS.}
+  \caption{Causal elimination results ($M{=}28$, 200 masks/dataset, five datasets). Top row: per-dataset metric values. Bottom row: scatter vs.\ known $\Delta$DSC (GCS). SC1 ($\rho{=}-0.80$) and SC3 ($\rho{=}-0.50$) show wrong-direction correlations; SC4 saturates near 1.0 across all datasets ($\rho{=}-0.37$); SC2's confound ($\rho{=}+0.50$ on three datasets) collapses to $\rho{=}0.00$ with five datasets. All four alternative explanations are eliminated; SC5 ($\rho{=}+0.89$) is the strongest predictor of GCS.}
   \label{fig:causal}
 \end{figure*}
 
@@ -81,7 +81,7 @@ We term the underlying mechanism \emph{Semantic Spatial Dependency (SSD)}: the e
 
 The empirical proxy $n_\text{classes}$ correlates with SSD because more classes generally implies richer inter-class spatial dependencies, but class count is not the cause---and this distinction is directly validated by an additional experiment.
 
-\textbf{ACDC as a discriminating test case.} To separate $n_\text{classes}$ from SSD as the true driver, we ran the same window ablation ($M{\in}\{7,28,56,112\}$, gate=pam) on the ACDC cardiac MRI benchmark~\cite{bernard2018deep}, a 4-class task (background, RV, Myo, LV). If class count drives GCS, ACDC should show intermediate-to-high sensitivity. Instead, $\Delta\text{DSC}{=}0.73$\,pp---indistinguishable from the binary datasets Kvasir-SEG ($0.64$\,pp), CVC-ClinicDB ($0.62$\,pp), and ISIC~2018 ($0.70$\,pp), and far below Synapse ($2.30$\,pp).
+\textbf{ACDC as a discriminating test case.} To separate $n_\text{classes}$ from SSD as the true driver, we ran the same window ablation ($M{\in}\{7,28,56,112\}$, gate=pam) on the ACDC cardiac MRI benchmark~\cite{bernard2018deep}, a 4-class task (background, RV, Myo, LV). If class count drives GCS, ACDC should show intermediate-to-high sensitivity. Instead, $\Delta\text{DSC}{=}0.73$\,pp---clustered with the binary datasets Kvasir-SEG ($0.64$\,pp), CVC-ClinicDB ($0.62$\,pp), and ISIC~2018 ($0.50$\,pp), and far below Synapse ($2.30$\,pp).
 
 \begin{table}[tb]
   \caption{Empirical GCS ($\Delta$DSC) across five datasets. ACDC and CVC-ClinicDB both fall in the low-GCS tier despite having 4 classes and a different dataset scale respectively, confirming that task structure (SC5), not class count or dataset size, determines GCS tier.}
@@ -94,17 +94,15 @@ The empirical proxy $n_\text{classes}$ correlates with SSD because more classes 
     \midrule
     Synapse      & Multi-organ CT      & 9 & 2.30 \\
     ACDC         & Cardiac MRI         & 4 & 0.73 \\
-    ISIC 2018    & Skin lesion         & 2 & 0.70$^\dagger$ \\
     Kvasir-SEG   & Polyp (endoscopy)   & 2 & 0.64 \\
     CVC-ClinicDB & Polyp (colonoscopy) & 2 & 0.62 \\
+    ISIC 2018    & Skin lesion         & 2 & 0.50 \\
     \bottomrule
   \end{tabular}
   \end{center}
-  \vspace{-0.3em}
-  \footnotesize{$^\dagger$ISIC 2018 $\Delta$DSC pending full gate=pam window ablation; 0.70\,pp is a provisional lower bound ($\Delta$ vs.\ DA-TransUNet at $M{=}7$).}
 \end{table}
 
-SC5 quantifies this directly. ACDC's inter-class window separation is 0.547 at $M{=}28$---cardiac structures (RV, Myo, LV) occupy adjacent but overlapping windows due to their concentric anatomy---compared to Synapse's near-complete separation (SC5${=}0.9996$) and binary tasks' structural zero. Crucially, GCS exhibits a strongly non-linear response: the drop from SC5${=}0.9996$ to $0.547$ (Synapse $\to$ ACDC) produces a 1.57\,pp fall in GCS (2.30 $\to$ 0.73\,pp), while the further drop from $0.547$ to $0$ (ACDC $\to$ binary tasks: Kvasir 0.64\,pp, CVC 0.62\,pp, ISIC 0.70\,pp) yields negligible additional change (${\approx}0.09$--$0.11$\,pp). Near-complete inter-class separation---not merely multi-class structure---is what triggers high GCS.
+SC5 quantifies this directly. ACDC's inter-class window separation is 0.547 at $M{=}28$---cardiac structures (RV, Myo, LV) occupy adjacent but overlapping windows due to their concentric anatomy---compared to Synapse's near-complete separation (SC5${=}0.9996$) and binary tasks' structural zero. Crucially, GCS exhibits a strongly non-linear response: the drop from SC5${=}0.9996$ to $0.547$ (Synapse $\to$ ACDC) produces a 1.57\,pp fall in GCS (2.30 $\to$ 0.73\,pp), while the further drop from $0.547$ to $0$ (ACDC $\to$ binary tasks: Kvasir 0.64\,pp, CVC 0.62\,pp, ISIC 0.50\,pp) yields only minor additional variation (${\approx}0.09$--$0.23$\,pp), far smaller than the 1.57\,pp Synapse--ACDC gap. Near-complete inter-class separation---not merely multi-class structure---is what triggers high GCS.
 
 The ACDC result therefore refines the SSD theory: the key quantity is not class count per se but \emph{degree of inter-class spatial separation relative to the attention window}. A multi-class task with compact, stereotyped anatomy (SC5${<}0.6$) behaves identically to a binary task in terms of GCS. SC5, computable from annotation masks alone, provides a training-free SSD estimate that predicts GCS tier without running a single experiment.
 

@@ -205,7 +205,7 @@ python train.py --dataset Kvasir --gate_mode pam --window_size 56 --rank 32 \
 |---------|------|----------|--------------------|
 | Synapse (8 distributed organs) | 2.30 pp | High | ✅ 4-point gate=pam ablation, 300ep |
 | ACDC (3 co-located cardiac) | **0.73 pp** | Low | ✅ 4-point gate=pam ablation, 300ep |
-| ISIC 2018 (binary skin) | ⚠️ TBD (M=28 pending) | Low | 🔄 **Partial** — M=7: 89.41% ✅; M=56: 89.05% ✅; M=112: 89.51% ✅; M=28 not started (DDP crash, needs single-GPU run). ΔDSC cannot be computed until M=28 done. Must NOT use 0.70pp (gate=learn) as measured ΔDSC. |
+| ISIC 2018 (binary skin) | **0.50 pp** | Low | ✅ **Done** — gate=pam, r=32, 300ep: M=7: 89.41% (+0.53pp), M=28: 89.55% (+0.67pp, peak), M=56: 89.05% (+0.17pp), M=112: 89.51% (+0.63pp). ΔDSC = 89.55−89.05 = **0.50pp**. |
 | Kvasir-SEG (binary polyp) | 0.64 pp | Low | ✅ 4-point gate=pam ablation, 300ep |
 | CVC-ClinicDB (polyp) | **0.62 pp** | ✅ Low (consistent with SC5=0) | ✅ 4-point gate=pam ablation, 300ep, all 4 val_interval=15 re-runs. Original final-ep results were artifacts (M=7: 91.49%→90.37%, M=112: 91.99%→90.99%). ΔDSC now below Kvasir-SEG. |
 
@@ -261,13 +261,13 @@ done
 | M | DSC (%) | HD95 (mm) | IoU (%) | ΔDSC vs DA-TransUNet (88.88%) | Status |
 |---|---------|-----------|---------|-------------------------------|--------|
 | 7  | **89.41** | 142.79 | 82.46 | **+0.53** | ✅ Done (2026-06-30) |
-| 28 | [B] | — | — | [B]−88.88 | ⏳ training not started (DDP crash; run single-GPU bs=24) |
+| 28 | **89.55** | — | 82.73 | **+0.67** (peak) | ✅ Done (single-GPU bs=24) |
 | 56 | 89.05 | 151.29 | 81.84 | **+0.17** | ✅ Done (2026-07-01) bs=6 |
 | 112 | **89.51** | 142.99 | 82.56 | **+0.63** | ✅ Done (2026-06-30) |
 
 Inference config: 519 test images, peak VRAM 0.9 GB. M=56 note: trained with bs=6 (vs bs=24 for M=7/M=112); best_model.pth used.
-ΔDSC (GCS) = max−min across all 4 M values — **cannot be computed until M=28 done**. Partial (3/4): max=89.51%(M=112), min=89.05%(M=56) → lower bound ≥0.46pp.
-DA-TransUNet ISIC baseline: 88.88% DSC (from paper; gate=pam M=112 is 89.51%, +0.63 pp above baseline).
+ΔDSC (GCS) = max(89.55, M=28) − min(89.05, M=56) = **0.50pp**. Peak at M=28 (+0.67pp vs DA-TransUNet 88.88%).
+DA-TransUNet ISIC baseline: 88.88% DSC (from paper). Main result uses gate=learn M=7 (89.58%); GCS measured under gate=pam.
 
 **ISIC window ablation commands (300ep, DDP):**
 ```bash
@@ -319,15 +319,15 @@ done
 
 **Zero-cost sanity checks (4 datasets: Synapse, ACDC, Kvasir, ISIC):**
 
-| Check | Metric | Synapse | ACDC | Kvasir | ISIC | ρ (4-dataset) | Verdict |
-|-------|--------|---------|------|--------|------|---------------|---------|
-| SC0: Image statistics | Fourier HFR | 0.0561 | — | 0.0103 | 0.0008 | +0.50 | ❌ CT physics ≠ task reasoning |
-| SC1: Object size | Foreground ratio | 0.077 | 0.040 | 0.158 | 0.226 | −0.60 | ✅ Ruled out |
-| SC2: Boundary shape | Isoperimetric ratio | 1.355 | 0.928 | 1.033 | 1.245 | +0.40 | ✅ Ruled out (ACDC broke +1.00 confound) |
-| SC3: Spatial dispersion | Spatial entropy | 0.497 | 0.359 | 0.566 | 0.589 | −0.60 | ✅ Ruled out |
-| SC4: Window crossing | WCR (M=28 px) | 0.999 | 0.954 | 1.000 | 0.994 | (saturated) | ✅ Saturation = positive finding (WCR can't explain GCS) |
-| SC5: Inter-class sep. | Class-pair window sep (M=28) | **0.9996** | **0.547** | 0 | 0 | **+0.95** | ✅ **Strongest predictor** |
-| n_classes proxy | n_classes | 3.99 | ~3.00 | 1.00 | 1.00 | +0.87 (3-dataset) | ⚠️ Proxy only; ACDC (n≈3, GCS=0.73pp) falsifies it as cause |
+| Check | Metric | Synapse | ACDC | Kvasir | ISIC | CVC | ρ (5-dataset) | Verdict |
+|-------|--------|---------|------|--------|------|-----|---------------|---------|
+| SC0: Image statistics | Fourier HFR | 0.0561 | — | 0.0103 | 0.0008 | — | +0.50 | ❌ CT physics ≠ task reasoning |
+| SC1: Object size | Foreground ratio | 0.077 | 0.040 | 0.152 | 0.214 | 0.094 | **−0.80** | ✅ Ruled out (wrong direction) |
+| SC2: Boundary shape | Isoperimetric ratio | 1.355 | 0.928 | 1.023 | 1.261 | 1.163 | **+0.00** | ✅ Ruled out (CT confound collapses with 5 datasets) |
+| SC3: Spatial dispersion | Spatial entropy | 0.497 | 0.359 | 0.566 | 0.605 | 0.482 | **−0.50** | ✅ Ruled out (wrong direction) |
+| SC4: Window crossing | WCR (M=28 px) | 0.999 | 0.954 | 1.000 | 0.999 | 1.000 | **−0.37** | ✅ Saturated; wrong direction |
+| SC5: Inter-class sep. | Class-pair window sep (M=28) | **0.9996** | **0.547** | 0 | 0 | 0 | **+0.89** | ✅ **Strongest predictor** |
+| n_classes proxy | n_classes | 3.99 | ~3.00 | 1.00 | 1.00 | 1.00 | +0.87 (3-dataset) | ⚠️ Proxy only; ACDC falsifies as cause |
 
 **SC5 key finding:** Non-linear threshold — Synapse SC5=0.9996 → high GCS (2.30pp); ACDC SC5=0.547 and binary SC5=0 both fall in the same low-GCS regime (0.64–0.73pp). **SC5 > 0.8 is the threshold for high GCS.**
 
@@ -361,9 +361,22 @@ python analyze_gcs_causal.py \
 | Run analyze_gcs_causal.py (3 datasets) | ✅ Done (2026-06-26) |
 | Run ACDC window ablation | ✅ Done (2026-06-26) |
 | Run analyze_gcs_causal.py (4 datasets + ACDC) | ✅ Done (2026-06-27) — SC5 ρ=+0.95 |
-| Run analyze_gcs_causal.py on all 5 datasets | ⏳ after CVC/ISIC data |
-| Fit Spearman ρ across 5 datasets | ⏳ |
-| Write journal §4 narrative | ⏳ |
+| Run analyze_gcs_causal.py on all 5 datasets | ⏳ Script ready (ISIC GCS updated to 0.50); needs re-run to regenerate gcs_causal_sanity.png |
+| Fit Spearman ρ across 5 datasets | ✅ Computed analytically: SC1 −0.80, SC2 0.00, SC3 −0.50, SC4 −0.37, SC5 +0.89 |
+| Write journal §4 narrative | ✅ Done (journal_gcs_mechanism.tex) |
+
+---
+
+### F7 — Additional Datasets (Pending Confirmation)
+
+**Candidates:**
+
+| Dataset | Rationale | Loader | Status |
+|---------|-----------|--------|--------|
+| Chest X-ray (DA-TransUNet原文第5个) | 补齐 DA-TransUNet 5-dataset coverage | ❌ 需创建 | ⏳ 确认具体数据集（Montgomery? Shenzhen?） |
+| Kvasir-Instrument | 手术器械，binary但形态不同于息肉，GCS特性待验证 | ❌ 需创建 | ⏳ 是否加入待决定 |
+
+> DRIVE 已从计划中删除（数据集太小，16张训练图不足以可靠训练）。
 
 ---
 
@@ -384,8 +397,8 @@ python analyze_gcs_causal.py \
 | 3 | F4 — ACDC window ablation | ~28h | ΔDSC=0.73pp (LOW); confirms SSD > n_classes | ✅ Done (2026-06-26) |
 | 4 | F5 — Per-organ analysis | ~2h | Gallbladder 6.45pp vs Liver 0.39pp — 16× range confirms organ-level SSD | ✅ Done (2026-06-27) |
 | **5** | **F4 — CVC 300ep** | **~16h** | ΔDSC=0.62pp ✅ Low GCS — SC5 conflict fully resolved. All 4 original final-ep results were artifacts; val-checkpoint re-runs put CVC below Kvasir-SEG (0.64pp). CVC now includable in SC5 correlation table. | ✅ **Done (2026-06-28)** |
-| **6** | **F4 — ISIC window ablation** | **~84h DDP** | **Fix mislabeled ISIC ΔDSC** (0.70pp is Δ vs DA, not measured ΔDSC). M=112 ✅ 89.51% DSC (+0.63pp). M=7 training done. M=56 ~82% done. M=28 not started. | 🔄 **In progress (2026-06-30)** |
+| **6** | **F4 — ISIC window ablation** | **~84h DDP** | ΔDSC=**0.50pp** (M=7: +0.53, M=28: +0.67 peak, M=56: +0.17, M=112: +0.63). 5-dataset GCS spectrum complete. | ✅ **Done (2026-07-12)** |
 | 7 | F2 — Dataset size study | ~40h | Validates regularization hypothesis quantitatively | ⏳ |
-| 9 | DRIVE ablation | ~12h | Discriminating: binary task with high spatial extent (retinal vessels) | ⏳ |
+| 8 | **F7 — Chest X-ray / Kvasir-Instrument** | **~20h/dataset** | 待确认数据集具体名称和格式；需新建 loader | ⏳ |
 
 > **⚠️ Conference paper unaffected by any of the above:** All conference ablations (Synapse, Kvasir) confirmed 300ep via epo300 in snapshot paths. ISIC used as supporting evidence (+0.70% framed as "consistent with low-sensitivity pattern") — no ΔDSC claimed. The epoch/ISIC-mislabeling issues are **journal-only**.

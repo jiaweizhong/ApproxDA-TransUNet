@@ -40,7 +40,7 @@ import matplotlib.gridspec as gridspec
 KNOWN_GCS = {
     "Synapse": 2.30,
     "Kvasir":  0.64,
-    "ISIC":    0.70,
+    "ISIC":    0.50,
 }
 
 COLORS = {"Synapse": "#D97C6B", "Kvasir": "#6BAD8F", "ISIC": "#6B8FAD"}

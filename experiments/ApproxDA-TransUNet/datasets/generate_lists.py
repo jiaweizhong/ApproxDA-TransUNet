@@ -28,7 +28,10 @@ import os
 import random
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--dataset', choices=['Kvasir', 'ISIC', 'DRIVE', 'CVC'], required=True)
+parser.add_argument('--dataset',
+                    choices=['Kvasir', 'ISIC', 'DRIVE', 'CVC',
+                             'KvasirInstrument', 'ChestXray'],
+                    required=True)
 parser.add_argument('--data_dir', required=True, help='root data directory')
 parser.add_argument('--seed', type=int, default=42, help='split seed (default 42)')
 parser.add_argument('--train_ratio', type=float, default=0.8,
@@ -74,6 +77,35 @@ elif args.dataset == 'CVC':
         for f in os.listdir(img_dir)
         if f.lower().endswith(('.png', '.jpg', '.jpeg', '.tif'))
     ], key=lambda x: int(x) if x.isdigit() else x)
+    random.shuffle(names)
+    n_train = int(len(names) * args.train_ratio)
+    train_names = names[:n_train]
+    test_names  = names[n_train:]
+
+elif args.dataset == 'KvasirInstrument':
+    list_dir = './lists/lists_KvasirInstrument'
+    img_dir = os.path.join(args.data_dir, 'images')
+    names = sorted([
+        os.path.splitext(f)[0]
+        for f in os.listdir(img_dir)
+        if f.lower().endswith(('.jpg', '.jpeg', '.png'))
+    ])
+    random.shuffle(names)
+    n_train = int(len(names) * args.train_ratio)
+    train_names = names[:n_train]
+    test_names  = names[n_train:]
+
+elif args.dataset == 'ChestXray':
+    list_dir = './lists/lists_ChestXray'
+    # Support Layout A (images/) and Layout B (CXR_png/)
+    img_dir_a = os.path.join(args.data_dir, 'images')
+    img_dir_b = os.path.join(args.data_dir, 'CXR_png')
+    img_dir = img_dir_a if os.path.isdir(img_dir_a) else img_dir_b
+    names = sorted([
+        os.path.splitext(f)[0]
+        for f in os.listdir(img_dir)
+        if f.lower().endswith(('.png', '.jpg', '.jpeg'))
+    ])
     random.shuffle(names)
     n_train = int(len(names) * args.train_ratio)
     train_names = names[:n_train]

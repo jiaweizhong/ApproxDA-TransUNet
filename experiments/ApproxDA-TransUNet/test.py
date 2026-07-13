@@ -15,6 +15,8 @@ from datasets.dataset_acdc import ACDC_dataset
 from datasets.dataset_kvasir import Kvasir_dataset
 from datasets.dataset_isic import ISIC_dataset
 from datasets.dataset_cvc import CVC_dataset
+from datasets.dataset_kvasir_instrument import KvasirInstrument_dataset
+from datasets.dataset_chest_xray import ChestXray_dataset
 from utils import test_single_volume
 from Architecture.ApproxDATransUNet import ApproxDATransUNet
 from Architecture.ApproxDATransUNet import CONFIGS as CONFIGS_ViT_seg
@@ -165,6 +167,20 @@ if __name__ == "__main__":
             'Dataset': CVC_dataset,
             'volume_path': '../data/CVC-ClinicDB',
             'list_dir': './lists/lists_CVC',
+            'num_classes': 2,
+            'z_spacing': 1,
+        },
+        'KvasirInstrument': {
+            'Dataset': KvasirInstrument_dataset,
+            'volume_path': '../data/Kvasir-Instrument',
+            'list_dir': './lists/lists_KvasirInstrument',
+            'num_classes': 2,
+            'z_spacing': 1,
+        },
+        'ChestXray': {
+            'Dataset': ChestXray_dataset,
+            'volume_path': '../data/Montgomery',
+            'list_dir': './lists/lists_ChestXray',
             'num_classes': 2,
             'z_spacing': 1,
         },

@@ -7,7 +7,7 @@ Transformers have revolutionized medical image segmentation by enabling global l
 \emph{When, and at what scale, is attention approximation\\
 beneficial for medical image segmentation?}
 \end{center}
-To investigate this, we design \textbf{ApproxDA-TransUNet}\footnote{Source code will be made available upon acceptance.}: a dual-attention architecture with three orthogonal, independently controllable approximation operators---windowed PAM, low-rank projection, and grouped CAM. ApproxDA-TransUNet serves as both a practical efficient model that improves over DA-TransUNet on all four benchmarks, and an interpretable experimental platform for studying when and why approximation helps.
+To investigate this, we design \textbf{ApproxDA-TransUNet}\footnote{Source code will be made available upon acceptance.}: a dual-attention architecture with three orthogonal, independently controllable approximation operators---windowed PAM, low-rank projection, and grouped CAM. ApproxDA-TransUNet serves as both a practical, efficient model that improves over DA-TransUNet on all four benchmarks, and an interpretable experimental platform for studying when and why approximation helps.
 
 Applying ApproxDA-TransUNet across three medical segmentation benchmarks reveals a structured pattern: the same windowed attention operator is highly window-sensitive on multi-organ CT yet largely window-robust on polyp and skin lesion segmentation. Systematic ablation confirms that appropriate window selection consistently benefits all four benchmarks, but the degree of sensitivity differs markedly across tasks with different spatial context requirements. We further find that learnable routing collapses to a fixed equilibrium due to gradient symmetry---a structural property of symmetric two-branch architectures, not a training artifact.
 
@@ -17,7 +17,7 @@ The main contributions of this paper are:
 
 \item \textbf{ApproxDA-TransUNet}: We propose ApproxDA-TransUNet, an efficient dual-attention approximation architecture with three orthogonal controllable axes---windowed PAM, low-rank projection, and grouped CAM---that consistently improves segmentation performance over the original DA-TransUNet and competitive Transformer-based baselines.
 
-\item \textbf{Empirical discovery of GCS}: Using ApproxDA-TransUNet as a controllable experimental platform, we present a systematic empirical study of attention approximation across heterogeneous medical segmentation tasks, uncovering a 3.6$\times$ difference in window sensitivity between Synapse and Kvasir-SEG. We term this task-level variability \emph{Global Context Sensitivity (GCS)} and demonstrate that it predicts window-tuning importance across tasks.
+\item \textbf{Empirical discovery of GCS}: Using ApproxDA-TransUNet as a controllable experimental platform, we present a systematic empirical study of attention approximation across heterogeneous medical segmentation tasks, uncovering up to a 4.6$\times$ difference in window sensitivity across four benchmarks. We term this task-level variability \emph{Global Context Sensitivity (GCS)} and demonstrate that it predicts window-tuning importance across tasks.
 
 \item \textbf{Mechanistic insight}: We provide empirical evidence suggesting that attention approximation introduces a task-dependent inductive bias better aligned with tasks of lower contextual requirements, and further observe gradient symmetry collapse: learnable dual-branch routing degenerates to $g{\approx}0.5$ regardless of window size---a structural limitation of symmetric two-branch gating.
 
