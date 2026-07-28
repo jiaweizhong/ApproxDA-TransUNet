@@ -31,9 +31,30 @@ python analyze_gcs_mask.py \
 
 ---
 
-## 1 — DA-TransUNet CVC Baseline (~4h)
+## 1 — DA-TransUNet Baselines: ACDC + CVC (~11h)
 
-**Why:** ApproxDA CVC ablation ran under our conditions (SGD 300ep 80/20 224×224); need matching DA-TransUNet baseline for fair Fig 3 comparison. DA-TransUNet paper used different settings.
+### 1a — DA-TransUNet ACDC Baseline (~7h) 🔴
+
+**Why（revised decision）:** 加入主结果表，即使我们不赢。理由：
+- ACDC 是 GCS 理论的**预测性验证**：low-GCS + 同心环结构 → 理论预测提升有限 → 实验结果与预测一致 → falsifiability 增强
+- 只展示赢的数据集会被 reviewer 质疑 cherry-picking；ACDC 作为"honest negative"使结论更可信
+- 在 `06_analysis.tex` 加解释段落，在 `07_conclusion.tex` 加 limitation 条目
+
+```bash
+cd experiments/ApproxDA-TransUNet
+python train_DA.py --dataset ACDC --vit_name R50-ViT-B_16 \
+    --max_epochs 300 --batch_size 24 --val_interval 15 \
+    2>&1 | tee ../../logs/acdc_DA_300ep.log
+```
+
+- [ ] Record mean DSC, per-class (RV/Myo/LV), HD95
+- [ ] Add `tab:acdc` to `05_experiments.tex`; "four" → "five benchmarks" (L5, L9, L25)
+- [ ] Add analysis paragraph in `06_analysis.tex`: ACDC 表现持平的机制解释（low GCS / 同心环不需要 locality prior / Myo 薄环精度受 r=32 限制）
+- [ ] Add limitation bullet in `07_conclusion.tex`
+
+### 1b — DA-TransUNet CVC Baseline (~4h)
+
+**Why:** ApproxDA CVC ablation ran under our conditions (SGD 300ep 80/20 224×224); need matching DA-TransUNet baseline for fair comparison. DA-TransUNet paper used different settings.
 
 ```bash
 cd experiments/ApproxDA-TransUNet
@@ -44,46 +65,6 @@ python train_DA.py --dataset CVC --vit_name R50-ViT-B_16 \
 
 - [ ] Record DSC, IoU, HD95
 - [ ] Add to `tab:cvc` in `05_experiments.tex`
-
----
-
-## 2 — Kvasir-Instrument (~15h)
-
-**Data path:** `../data/Kvasir-Instrument/` (590 images, images/ + masks/)
-
-```bash
-cd experiments/ApproxDA-TransUNet
-
-# Generate lists (once)
-python datasets/generate_lists.py --dataset KvasirInstrument \
-    --data_dir ../data/Kvasir-Instrument
-
-# DA-TransUNet baseline (~3h)
-python train_DA.py --dataset KvasirInstrument --vit_name R50-ViT-B_16 \
-    --max_epochs 300 --batch_size 24 --val_interval 15 \
-    2>&1 | tee ../../logs/ki_DA_300ep.log
-
-# ApproxDA window ablation — M=7 is also the main result
-for M in 7 28 56 112; do
-  python train.py --dataset KvasirInstrument --vit_name R50-ViT-B_16 \
-    --max_epochs 300 --batch_size 24 \
-    --gate_mode pam --window_size $M --rank 32 --groups 8 \
-    --val_interval 15 \
-    2>&1 | tee ../../logs/ki_pam_M${M}_300ep.log
-done
-```
-
-| Run | Config | Est. | Status |
-|-----|--------|------|--------|
-| DA-TransUNet baseline | 300ep | ~3h | ⏳ |
-| ApproxDA M=7 | gate=pam, r=32 (main result) | ~3h | ⏳ |
-| ApproxDA M=28 | gate=pam, r=32 | ~3h | ⏳ |
-| ApproxDA M=56 | gate=pam, r=32 | ~3h | ⏳ |
-| ApproxDA M=112 | gate=pam, r=32 | ~3h | ⏳ |
-
-- [ ] Record ΔDSC across M → GCS for Kvasir-Instrument
-- [ ] Add `tab:kvasir_instrument` in `05_experiments.tex`
-- [ ] Add GCS row to `tab:gcs_spectrum` in `journal_gcs_mechanism.tex`
 
 ---
 
@@ -115,7 +96,7 @@ Compare vs: gate=learn M=7: **77.78%** / gate=pam M=7: **78.64%**
 
 ## 5 — Post-experiment: Re-run Causal Analysis (~0.5h)
 
-**After runs 2 and 3 complete**, re-run with 7 datasets to update Spearman ρ and regenerate figures.
+**After run #0 figure regeneration**, re-run on all 5 datasets to update Spearman ρ and regenerate figures.
 
 ```bash
 cd experiments
@@ -125,13 +106,11 @@ python analyze_gcs_causal.py \
     --kvasir_dir  ../data/Kvasir-SEG \
     --isic_dir    ../data/ISIC2018 \
     --cvc_dir     ../data/CVC-ClinicDB \
-    --ki_dir      ../data/Kvasir-Instrument \
-    --cxr_dir     ../data/Montgomery \
     --n_images 200 --window_size 28 --resize 256
 ```
 
-- [ ] Update SC1–SC5 ρ values (5→7 datasets) in `journal_gcs_mechanism.tex`
-- [ ] Regenerate and copy `gcs_causal_sanity.png`
+- [ ] Verify SC1–SC5 ρ values (5 datasets) in `journal_gcs_mechanism.tex`
+- [ ] Regenerate and copy `gcs_causal_sanity.png` → `paper-journal/figures/`
 
 ---
 
@@ -160,9 +139,11 @@ done
 | # | Experiment | Est. | Priority |
 |---|-----------|------|----------|
 | 0 | Regenerate causal/mask PNG (script only) | 0.5h | 🔴 Now |
-| 1 | DA-TransUNet CVC baseline | 4h | 🔴 High |
-| 2 | Kvasir-Instrument (5 runs) | 15h | 🔴 High |
+| 1a | DA-TransUNet ACDC baseline | 7h | 🔴 High |
+| 1b | DA-TransUNet CVC baseline | 4h | 🔴 High |
 | 4 | F8 Entropy gate Synapse | 12h | 🟡 Medium |
-| 5 | Re-run causal analysis (6 datasets) | 0.5h | 🟡 After #2 |
+| 5 | Re-run causal analysis (5 datasets) | 0.5h | 🟡 After #0 |
 | 6 | F2 Dataset size study | 40h | 🟢 Low |
-| **Total** | | **~32h** | |
+| **Total** | | **~24h** | |
+
+> Kvasir-Instrument **已移除**：SC5=0（binary），与 Kvasir-SEG/CVC/ISIC 同 tier，不扩展 GCS 谱线；5 个数据集的谱线已完整。|

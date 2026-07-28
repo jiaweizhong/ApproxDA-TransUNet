@@ -373,7 +373,7 @@ python analyze_gcs_causal.py \
 
 | Dataset | Images | Split | Loader | DA-TransUNet paper result | Status |
 |---------|--------|-------|--------|--------------------------|--------|
-| Kvasir-Instrument | 590 | 472 train / 118 test | ✅ `dataset_kvasir_instrument.py` | Dice 93.81%, IoU 89.73% (no HD95) | ⏳ Needs training |
+| Kvasir-Instrument | 590 | 472 train / 118 test | ✅ `dataset_kvasir_instrument.py` | Dice 93.81%, IoU 89.73% (no HD95) | ❌ **不补跑** — binary (SC5=0)，与 Kvasir-SEG/CVC/ISIC 同 tier；5 数据集 GCS 谱线已完整，再加无法扩展谱线 |
 | Chest X-ray (Montgomery County) | 138 | 110 train / 28 test | ✅ `dataset_chest_xray.py` (Layout A+B) | Dice 95.38%, IoU 93.17% (原文) | ❌ **不补跑** — 测试集仅 28 张，ceiling 95%；引用原文 + ‡ 脚注 |
 
 > DRIVE 已从计划中删除（数据集太小，16张训练图不足以可靠训练）。
@@ -488,7 +488,7 @@ fused = self.fusion(g * pam_out + (1 - g) * cam_out)
 | **5** | **F4 — CVC 300ep** | **~16h** | ΔDSC=0.62pp ✅ Low GCS — SC5 conflict fully resolved. All 4 original final-ep results were artifacts; val-checkpoint re-runs put CVC below Kvasir-SEG (0.64pp). CVC now includable in SC5 correlation table. | ✅ **Done (2026-06-28)** |
 | **6** | **F4 — ISIC window ablation** | **~84h DDP** | ΔDSC=**0.50pp** (M=7: +0.53, M=28: +0.67 peak, M=56: +0.17, M=112: +0.63). 5-dataset GCS spectrum complete. | ✅ **Done (2026-07-12)** |
 | 7 | F2 — Dataset size study | ~40h | Validates regularization hypothesis quantitatively | ⏳ |
-| **8** | **F7 — Kvasir-Instrument only** | **~15h** | Loader ✅ created. Chest X-ray 不补跑（测试集仅 28 张；引用原文数字）。 | ⏳ |
+| **8** | **F7 — Kvasir-Instrument / Chest X-ray** | **已取消** | 两者均 ❌ 不补跑。Kvasir-Instrument: binary SC5=0，与已有 3 个 binary 数据集同 tier，不扩展 GCS 谱线。Chest X-ray: 测试集仅 28 张，ceiling 95%。5 数据集谱线完整。 | ❌ Dropped |
 | **9** | **F8 — Entropy-fusing gate ablation** | **~12h (Synapse only)** | 1 run entropy gate vs gate=learn vs gate=pam on Synapse; symmetry-breaking gate design. Journal §5 "Alternative Gate Designs" subsection. | ⏳ |
 | **10** | **Fig 3 baselines (CVC + additional)** | **~4h** | DA-TransUNet CVC baseline (~4h) for Fig 3 bar chart; UNet++ / TransUNet cite from DA-TransUNet paper Table 1 (different conditions, footnote ‡). | ⏳ |
 

@@ -2,13 +2,15 @@
 \section{Results}
 \label{sec:experiments}
 
-We evaluate ApproxDA-TransUNet on four benchmarks spanning tasks with fundamentally different spatial context requirements, comparing against DA-TransUNet and other competitive baselines.
+We evaluate ApproxDA-TransUNet on five benchmarks spanning tasks with fundamentally different spatial context requirements, comparing against DA-TransUNet and other competitive baselines.
 
 \subsection{Experimental Setup}
 
-\textbf{Datasets.} We evaluate on four representative medical image segmentation benchmarks.
+\textbf{Datasets.} We evaluate on five representative medical image segmentation benchmarks.
 
 \textit{Synapse Multi-Organ CT}~\cite{landman2015miccai}: 30 abdominal CT scans with an 18/12 train/test split covering 8 organ classes. Metrics: mean DSC and HD95.
+
+\textit{ACDC}~\cite{bernard2018deep}: 100 short-axis cardiac MRI studies with a 70/10/20 train/val/test split covering 3 cardiac structures (RV, Myo, LV). Metrics: per-class and mean DSC, HD95.
 
 \textit{Kvasir-SEG}~\cite{jha2020kvasir}: 1000 endoscopy polyp images (binary) with an 800/200 train/test split. Metrics: DSC and mIoU.
 
@@ -22,7 +24,7 @@ We evaluate ApproxDA-TransUNet on four benchmarks spanning tasks with fundamenta
 
 \subsection{Comparison with State-of-the-Art}
 
-Tables~\ref{tab:synapse}--\ref{tab:isic} compare ApproxDA-TransUNet against published baselines across all four benchmarks.
+Tables~\ref{tab:synapse}--\ref{tab:isic} compare ApproxDA-TransUNet against published baselines across all five benchmarks.
 
 \textbf{Synapse.} Table~\ref{tab:synapse} benchmarks against 11 published methods. CNN-based models plateau at 76--78\% DSC, with Att-UNet leading at 77.77\%. Transformer-based methods progressively improve: TransUNet (77.48\%), UCTransNet (78.23\%), MIM (78.59\%), Swin-Unet (79.13\%), and DA-TransUNet (79.80\%). ApproxDA-TransUNet with gate=pam, $M{=}28$, $r{=}32$ achieves \textbf{80.94\%} DSC and 27.49\,mm HD95---the highest DSC across all compared methods, surpassing DA-TransUNet by $+$1.14\%. The intermediate window $M{=}28$ captures sufficient cross-organ context while limiting spurious long-range correlations; Section~\ref{sec:understanding} analyzes this behavior in detail.
 
@@ -58,6 +60,32 @@ Tables~\ref{tab:synapse}--\ref{tab:isic} compare ApproxDA-TransUNet against publ
   \end{center}
   \vspace{-0.3em}
   \footnotesize{ApproxDA: gate=pam, $M{=}28$, $r{=}32$, $G{=}8$.}
+\end{table}
+
+\textbf{ACDC.} On cardiac MRI segmentation (Table~\ref{tab:acdc}), ApproxDA-TransUNet with gate=pam, $M{=}7$ achieves a mean DSC of 88.97\%---below TransUNet (89.71\%) and Swin-Unet (90.00\%), but with the \textbf{highest} per-class DSC on both RV (\textbf{89.61\%}) and Myo (\textbf{85.91\%}). The class-level pattern is consistent with the inductive-bias interpretation: local windowed attention benefits locally-resolvable structures whose boundaries are determined by fine-grained intensity gradients (crescent-shaped RV; thin-ring Myo), while the LV cavity (91.40\%) degrades 3--4\,pp below all baselines. LV delineation requires estimating global cavity extent---a property that spans multiple M=7 windows and cannot be recovered from within-window context alone. Within a nominally low-GCS dataset ($\Delta\text{DSC}{=}0.73$\,pp overall), the locality prior therefore produces opposing sub-class effects: improving locally-bounded structures while hurting globally-defined ones. We discuss this further in Section~\ref{sec:conclusion}.
+
+\begin{table}[ht]
+  \caption{Segmentation Results on ACDC Cardiac MRI}
+  \label{tab:acdc}
+  \begin{center}
+  \renewcommand{\arraystretch}{1.15}
+  \setlength{\tabcolsep}{2pt}
+  \resizebox{\columnwidth}{!}{\footnotesize\begin{tabular}{lcccc}
+    \toprule
+    Method & RV (\%) $\uparrow$ & Myo (\%) $\uparrow$ & LV (\%) $\uparrow$ & Mean (\%) $\uparrow$ \\
+    \midrule
+    U-Net~\cite{ronneberger2015unet}$^\dag$          & 87.10 & 80.63 & 94.92 & 87.55 \\
+    Att-UNet~\cite{oktay2018attention}$^\dag$         & 87.58 & 79.20 & 93.47 & 86.75 \\
+    TransUNet~\cite{chen2021transunet}                & \underline{88.86} & 84.53 & \underline{95.73} & \underline{89.71} \\
+    Swin-Unet~\cite{cao2022swinunet}                  & 88.55 & \underline{85.62} & \textbf{95.83} & \textbf{90.00} \\
+    DA-TransUNet~\cite{sun2024datransunet}$^\ddag$   & \multicolumn{4}{c}{\textit{pending re-run}} \\
+    \midrule
+    \shortstack[l]{\textbf{ApproxDA-TransUNet}\\\textbf{(ours)}} & \textbf{89.61} & \textbf{85.91} & 91.40 & 88.97 \\
+    \bottomrule
+  \end{tabular}}
+  \end{center}
+  \vspace{-0.3em}
+  {\footnotesize $^\dag$R50-backbone variant as reported in~\cite{chen2021transunet}. $^\ddag$DA-TransUNet not evaluated on ACDC in original paper; pending re-run under our protocol. ApproxDA: gate=pam, $M{=}7$, $r{=}32$, $G{=}8$.}
 \end{table}
 
 \textbf{Kvasir-SEG.} On polyp segmentation (Table~\ref{tab:kvasir}), U-Net leads the CNN-based group (88.22\% DSC) while TransUNet (87.91\%) and DA-TransUNet$^\dag$ (88.44\%) are the strongest Transformer-based entries. ApproxDA-TransUNet with gate=pam, $M{=}56$ achieves \textbf{90.17\%} DSC, \textbf{84.27\%} mIoU, and \textbf{44.35\,mm} HD95---state-of-the-art across all three metrics, with a $+$1.73\% DSC gain and $-$8.69\,mm HD95 improvement over the nearest baseline.
@@ -139,7 +167,7 @@ Tables~\ref{tab:synapse}--\ref{tab:isic} compare ApproxDA-TransUNet against publ
   \footnotesize{ApproxDA: gate=learn, $M{=}7$, $r{=}32$, $G{=}8$.}
 \end{table}
 
-ApproxDA-TransUNet achieves state-of-the-art results across all four benchmarks (Figure~\ref{fig:qualitative}), with task-dependent window sensitivity emerging as the key differentiating pattern across datasets.
+Across five benchmarks (Figure~\ref{fig:qualitative}), ApproxDA-TransUNet achieves state-of-the-art or competitive results. The pattern is consistent with GCS theory: large gains on high-GCS Synapse ($+$1.14\%) and low-GCS texture-boundary tasks (Kvasir $+$1.73\%, CVC $+$1.52\%, ISIC $+$0.70\%); comparable performance on low-GCS ACDC where concentric ring structure provides neither cross-structure context benefit nor texture-prior alignment.
 
 \begin{figure}[b]
   \centering
