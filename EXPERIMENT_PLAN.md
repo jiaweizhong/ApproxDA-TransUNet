@@ -284,10 +284,10 @@ done
 |------|--------|
 | ACDC window ablation (4 runs × ~7h) | ✅ Done (2026-06-26) |
 | CVC-ClinicDB 300ep (4 runs × ~4h = ~16h) | ✅ Done — **ΔDSC=0.62pp**, all 4 val_interval=15 re-runs complete. SC5 conflict fully resolved (CVC now Low GCS, below Kvasir 0.64pp). |
-| **ISIC 2018 window ablation (4 runs × ~21h DDP = ~84h)** | 🔄 **In progress (3/4)** — M=7 ✅ 89.41%; M=56 ✅ 89.05%; M=112 ✅ 89.51%; **M=28 ⏳ not started** (DDP NCCL timeout crash; must run single-GPU: `python train.py --batch_size 24 --window_size 28`) |
+| **ISIC 2018 window ablation (4 runs)** | ✅ **Done (2026-07-12)** — M=7: 89.41%, M=28: 89.55% (peak), M=56: 89.05%, M=112: 89.51%. ΔDSC=**0.50pp**. M=28 ran single-GPU bs=24. |
 | Write dataset_acdc.py, dataset_cvc.py | ✅ Done |
-| Compute empirical ΔDSC for all 5 datasets | ⏳ (4/5 done: Synapse, ACDC, Kvasir, CVC — ISIC pending) |
-| Run analyze_gcs_causal.py on all 5 datasets | ⏳ after CVC/ISIC done |
+| Compute empirical ΔDSC for all 5 datasets | ✅ Done (5/5: Synapse 2.30pp, ACDC 0.73pp, Kvasir 0.64pp, CVC 0.62pp, ISIC 0.50pp) |
+| Run analyze_gcs_causal.py on all 5 datasets | ⏳ Script updated (ISIC GCS = 0.50); needs re-run on Lightning AI to regenerate gcs_causal_sanity.png + gcs_mask_sanity.png |
 
 ---
 
@@ -367,16 +367,105 @@ python analyze_gcs_causal.py \
 
 ---
 
-### F7 — Additional Datasets (Pending Confirmation)
+### F7 — Additional Datasets: Kvasir-Instrument + Chest X-ray ⏳
 
-**Candidates:**
+**Confirmed datasets** (matching DA-TransUNet Table 2; loader code ✅ created 2026-07-27):
 
-| Dataset | Rationale | Loader | Status |
-|---------|-----------|--------|--------|
-| Chest X-ray (DA-TransUNet原文第5个) | 补齐 DA-TransUNet 5-dataset coverage | ❌ 需创建 | ⏳ 确认具体数据集（Montgomery? Shenzhen?） |
-| Kvasir-Instrument | 手术器械，binary但形态不同于息肉，GCS特性待验证 | ❌ 需创建 | ⏳ 是否加入待决定 |
+| Dataset | Images | Split | Loader | DA-TransUNet paper result | Status |
+|---------|--------|-------|--------|--------------------------|--------|
+| Kvasir-Instrument | 590 | 472 train / 118 test | ✅ `dataset_kvasir_instrument.py` | Dice 93.81%, IoU 89.73% (no HD95) | ⏳ Needs training |
+| Chest X-ray (Montgomery County) | 138 | 110 train / 28 test | ✅ `dataset_chest_xray.py` (Layout A+B) | Dice 95.38%, IoU 93.17% (原文) | ❌ **不补跑** — 测试集仅 28 张，ceiling 95%；引用原文 + ‡ 脚注 |
 
 > DRIVE 已从计划中删除（数据集太小，16张训练图不足以可靠训练）。
+
+**Training plan (once Lightning AI datasets attached at `../data/`):**
+
+```bash
+cd experiments/ApproxDA-TransUNet
+
+# Generate lists (run once)
+python datasets/generate_lists.py --dataset KvasirInstrument --data_dir ../data/Kvasir-Instrument
+python datasets/generate_lists.py --dataset ChestXray --data_dir ../data/Montgomery
+
+# DA-TransUNet baselines (needed for HD95 — not in original paper)
+python train_DA.py --dataset KvasirInstrument --max_epochs 300 --batch_size 24 ...
+python train_DA.py --dataset ChestXray --max_epochs 300 --batch_size 24 ...
+
+# ApproxDA main result (M=7, gate=pam, r=32, G=8) + window ablation for GCS
+for M in 7 28 56 112; do
+  python train.py --dataset KvasirInstrument --vit_name R50-ViT-B_16 \
+    --max_epochs 300 --batch_size 24 \
+    --gate_mode pam --window_size $M --rank 32 --groups 8 \
+    --val_interval 15 2>&1 | tee ../../logs/ki_pam_M${M}_300ep.log
+  python train.py --dataset ChestXray --vit_name R50-ViT-B_16 \
+    --max_epochs 300 --batch_size 24 \
+    --gate_mode pam --window_size $M --rank 32 --groups 8 \
+    --val_interval 15 2>&1 | tee ../../logs/cxr_pam_M${M}_300ep.log
+done
+```
+
+**Estimate:** Kvasir-Instrument ~3h/run × 5 = ~15h; ChestXray ~0.5h/run × 5 = ~2.5h.
+
+**After results:** Add `tab:kvasir_instrument` and `tab:chest_xray` in `05_experiments.tex`, add GCS rows to `tab:gcs_spectrum` in `journal_gcs_mechanism.tex`, re-run `analyze_gcs_causal.py` on 7 datasets.
+
+| Run | Config | Status |
+|-----|--------|--------|
+| DA-TransUNet Kvasir-Instrument | 300ep, baseline | ⏳ |
+| ApproxDA Kvasir-Instrument M=7 | gate=pam, r=32, main result | ⏳ |
+| Kvasir-Instrument window ablation M=28/56/112 | gate=pam, r=32 | ⏳ |
+| DA-TransUNet Chest X-ray | 300ep, baseline | ⏳ |
+| ApproxDA Chest X-ray M=7 | gate=pam, r=32, main result | ⏳ |
+| Chest X-ray window ablation M=28/56/112 | gate=pam, r=32 | ⏳ |
+
+---
+
+### F8 — Entropy-Fusing Gate Ablation ⏳
+
+**Motivation:** gate=learn collapses to g≈0.5 due to gradient symmetry (H3). An entropy-based gate breaks symmetry by weighting each branch inversely proportional to its attention entropy — more "focused" (lower entropy) branch gets higher weight.
+
+**Design:**
+```python
+def entropy_gate(attn_map):
+    # attn_map: (B, N, r) — softmaxed attention weights
+    p = attn_map.clamp(min=1e-8)
+    H = -(p * p.log()).sum(dim=-1).mean(dim=-1)  # (B,) — per-sample entropy
+    return H  # lower H → more focused → higher gate weight
+
+# In ApproxDABlock forward():
+H_pam = entropy_gate(pam_attn)  # (B,)
+H_cam = entropy_gate(cam_attn)  # (B,)
+g = torch.softmax(torch.stack([-H_pam, -H_cam], dim=1), dim=1)[:, 0]  # pam weight
+g = g.view(B, 1, 1, 1)
+fused = self.fusion(g * pam_out + (1 - g) * cam_out)
+```
+
+**Experiments (Synapse only, ~12h):**
+
+| Run | Config | Expected outcome |
+|-----|--------|-----------------|
+| F8-1 | gate=entropy, M=7, r=32 | Does entropy gate avoid g≈0.5 collapse? |
+| Compare vs | gate=learn M=7: 77.78%, gate=pam M=7: 78.64% | Should g stabilize to meaningful value |
+
+**Journal section:** §5 "Alternative Gate Designs" — 1 paragraph + 1 DSC number. Frame as: "symmetry-breaking gates avoid collapse; entropy weighting is one principled approach."
+
+**Note:** Not a new paper contribution — no additional architecture ablation needed. Just demonstrates the collapse is fixable, reinforcing H3's "gradient symmetry is the root cause" claim.
+
+---
+
+### Fig 3 — Additional Baselines for Bar Chart ⏳
+
+**Current Fig 3 scope (journal):** Synapse, Kvasir-SEG, ISIC, CVC, Kvasir-Instrument, Chest X-ray × {DA-TransUNet, ApproxDA-best}.
+
+**Additional baselines needed:**
+- **UNet++ (Synapse/Kvasir):** Cite from DA-TransUNet Table 1 (Synapse: 74.68%; Kvasir: reported). Mark ‡ "results from original paper under Adam optimizer; training conditions differ."
+- **TransUNet (Synapse):** 77.48% from DA-TransUNet Table 1. Same ‡ footnote.
+- **DA-TransUNet CVC baseline:** Need 1 training run (~4h) under our conditions (SGD 300ep 80/20 224×224) since our ApproxDA CVC runs are under our conditions. DA-TransUNet paper uses different conditions.
+
+**Decision: Re-run DA-TransUNet CVC baseline; cite UNet++/TransUNet from paper with footnote.**
+
+| Run | Config | Status |
+|-----|--------|--------|
+| DA-TransUNet CVC | 300ep SGD, our conditions | ⏳ ~4h |
 
 ---
 
@@ -399,6 +488,8 @@ python analyze_gcs_causal.py \
 | **5** | **F4 — CVC 300ep** | **~16h** | ΔDSC=0.62pp ✅ Low GCS — SC5 conflict fully resolved. All 4 original final-ep results were artifacts; val-checkpoint re-runs put CVC below Kvasir-SEG (0.64pp). CVC now includable in SC5 correlation table. | ✅ **Done (2026-06-28)** |
 | **6** | **F4 — ISIC window ablation** | **~84h DDP** | ΔDSC=**0.50pp** (M=7: +0.53, M=28: +0.67 peak, M=56: +0.17, M=112: +0.63). 5-dataset GCS spectrum complete. | ✅ **Done (2026-07-12)** |
 | 7 | F2 — Dataset size study | ~40h | Validates regularization hypothesis quantitatively | ⏳ |
-| 8 | **F7 — Chest X-ray / Kvasir-Instrument** | **~20h/dataset** | 待确认数据集具体名称和格式；需新建 loader | ⏳ |
+| **8** | **F7 — Kvasir-Instrument only** | **~15h** | Loader ✅ created. Chest X-ray 不补跑（测试集仅 28 张；引用原文数字）。 | ⏳ |
+| **9** | **F8 — Entropy-fusing gate ablation** | **~12h (Synapse only)** | 1 run entropy gate vs gate=learn vs gate=pam on Synapse; symmetry-breaking gate design. Journal §5 "Alternative Gate Designs" subsection. | ⏳ |
+| **10** | **Fig 3 baselines (CVC + additional)** | **~4h** | DA-TransUNet CVC baseline (~4h) for Fig 3 bar chart; UNet++ / TransUNet cite from DA-TransUNet paper Table 1 (different conditions, footnote ‡). | ⏳ |
 
 > **⚠️ Conference paper unaffected by any of the above:** All conference ablations (Synapse, Kvasir) confirmed 300ep via epo300 in snapshot paths. ISIC used as supporting evidence (+0.70% framed as "consistent with low-sensitivity pattern") — no ΔDSC claimed. The epoch/ISIC-mislabeling issues are **journal-only**.
