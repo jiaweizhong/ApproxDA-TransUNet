@@ -2,6 +2,14 @@
 
 https://www.kaggle.com/datasets/dogcdt/synapse
 
+# kvasir-seg
+
+https://www.kaggle.com/datasets/debeshjha1/kvasirseg
+
+# ISIC 2018
+
+https://www.kaggle.com/datasets/tschandl/isic2018-challenge-task1-data-segmentation
+
 # cvc-clinb
 https://www.kaggle.com/datasets/balraj98/cvcclinicdb
 
