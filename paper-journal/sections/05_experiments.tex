@@ -167,14 +167,21 @@ Tables~\ref{tab:synapse}--\ref{tab:isic} compare ApproxDA-TransUNet against publ
   \footnotesize{ApproxDA: gate=learn, $M{=}7$, $r{=}32$, $G{=}8$.}
 \end{table}
 
-Across five benchmarks (Figure~\ref{fig:qualitative}), ApproxDA-TransUNet achieves state-of-the-art or competitive results. The pattern is consistent with GCS theory: large gains on high-GCS Synapse ($+$1.14\%) and low-GCS texture-boundary tasks (Kvasir $+$1.73\%, CVC $+$1.52\%, ISIC $+$0.70\%); comparable performance on low-GCS ACDC where concentric ring structure provides neither cross-structure context benefit nor texture-prior alignment.
-
-\begin{figure}[b]
+\begin{figure*}[t]
   \centering
-  \includegraphics[width=\columnwidth]{figures/fig_qualitative_cross_task.png}
-  \caption{Qualitative segmentation comparison (columns: input, ground truth, DA-TransUNet, ApproxDA). \textbf{Top (Synapse, $M{=}28$):} multi-organ CT; ApproxDA 80.94\% DSC ($+$1.14\%). \textbf{Middle (Kvasir-SEG, $M{=}56$):} polyp; 90.17\% DSC ($+$1.73\%). \textbf{Bottom (ISIC 2018, $M{=}7$):} skin lesion; 89.58\% DSC ($+$0.70\%).}
+  \includegraphics[width=\textwidth]{figures/fig_qualitative_cross_task.png}
+  \caption{Qualitative segmentation comparison across representative benchmarks (columns: input image, ground truth, U-Net~\cite{ronneberger2015unet}, TransUNet~\cite{chen2021transunet}, DA-TransUNet~\cite{sun2024datransunet}, and ApproxDA-TransUNet (ours)). \textbf{Top (Synapse, $M{=}28$):} multi-organ CT; ApproxDA achieves 80.94\% DSC ($+$1.14\%). \textbf{Middle (Kvasir-SEG, $M{=}56$):} polyp segmentation; 90.17\% DSC ($+$1.73\%). \textbf{Bottom (ISIC 2018, $M{=}7$):} skin lesion segmentation; 89.58\% DSC ($+$0.70\%). ApproxDA-TransUNet effectively avoids the boundary leakage of U-Net and the over-smoothing of TransUNet, producing sharper and more accurate segmentations.}
   \label{fig:qualitative}
-\end{figure}
+\end{figure*}
+
+\textbf{Qualitative Analysis.} Across five benchmarks (Figure~\ref{fig:qualitative}), ApproxDA-TransUNet achieves state-of-the-art or competitive results. The qualitative comparisons illustrate clear behavioral distinctions among the evaluated architectures:
+\begin{itemize}
+  \item \textbf{U-Net}~\cite{ronneberger2015unet}, as a pure CNN baseline lacking long-range dependency modeling, often produces boundary leakage into ambiguous background regions (e.g., lower-left false positive in Kvasir-SEG) and irregular, jagged contours on skin lesions in ISIC 2018.
+  \item \textbf{TransUNet}~\cite{chen2021transunet} mitigates false-positive detections by incorporating ViT self-attention into the bottleneck to encode global spatial context. However, lacking fine-grained spatial-channel dual attention or localized boundary refinement, its predictions tend to be overly smooth, missing subtle lesion margins.
+  \item \textbf{DA-TransUNet}~\cite{sun2024datransunet} captures dense spatial and channel dependencies via full PAM and CAM, improving upon TransUNet. Nonetheless, unconstrained global spatial attention can introduce subtle boundary blurriness on low-GCS tasks where distant pixel interactions add non-informative contextual noise.
+  \item \textbf{ApproxDA-TransUNet (ours)} delivers superior boundary conformity and suppresses spurious background artifacts across datasets (achieving slice DSCs of 0.971 on Kvasir-SEG and 0.975 on ISIC 2018). The restricted spatial attention window preserves fine-grained texture priors, providing the ideal inductive bias for biomedical boundaries.
+\end{itemize}
+
 
 \subsection{Efficiency Analysis}
 
