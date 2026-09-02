@@ -19,9 +19,9 @@ We compute the following metrics from 200 randomly sampled training masks per da
 For SC1--SC4 (rule-out checks), a successful elimination requires Spearman $\rho \approx 0$ or wrong-direction correlation against the known GCS ordering (Synapse 2.30~pp $>$ ACDC 0.73~pp $>$ Kvasir 0.64~pp $\approx$ CVC 0.62~pp $>$ ISIC 0.50~pp, five datasets). An additional proxy search identifies $n_\text{classes}$---the mean number of foreground semantic classes per image---as a training-free GCS predictor. Table~\ref{tab:causal} summarizes all results.
 
 \begin{table*}[tb]
-  \caption{Causal Elimination Results ($M{=}28$, $n{=}200$ masks/dataset, five datasets including ACDC discriminating test). $\rho$ = Spearman rank correlation vs.\ known $\Delta$DSC ordering. A successful rule-out requires $|\rho| \approx 0$ or wrong-direction (negative) correlation.}
+  \caption{Causal Elimination Results ($M{=}28$, five datasets).}
   \label{tab:causal}
-  \begin{center}
+  \centering
   \setlength{\tabcolsep}{6pt}
   \begin{tabular}{llccccccc}
     \toprule
@@ -36,10 +36,9 @@ For SC1--SC4 (rule-out checks), a successful elimination requires Spearman $\rho
     Proxy & $n_\text{classes}$ & 3.99   & ${\approx}3.00$ & 1.00  & 1.00  & 1.00  & $+$0.87$^\ddagger$ & Best proxy (3-dataset) \\
     \bottomrule
   \end{tabular}
-  \end{center}
-  \vspace{-0.5em}
-  \footnotesize{$^\dagger$SC2 $\rho{=}0.00$ with five datasets; CT boundary irregularity (imaging physics) inflated the 3-dataset result to $\rho{=}+0.50$ but collapses to zero with five datasets.
-  $^\ddagger$$n_\text{classes}$ $\rho$ computed on original three datasets; ACDC ($n_\text{classes}{\approx}3$, GCS${=}0.73$\,pp) would further suppress this correlation, confirming class count is a proxy, not a cause.}
+  \par\vspace{5pt}
+  \parbox{\textwidth}{\footnotesize $^\dagger$Spurious partial correlation on 3 datasets ($\rho{=}+0.50$) collapsed to $\rho{=}0.00$ with 5 datasets.
+  $^\ddagger$ACDC ($n_\text{classes}{\approx}3$, GCS${=}0.73$\,pp) falsifies class count as a causal mechanism.}
 \end{table*}
 
 \subsection{Ruling Out Alternative Explanations}
@@ -53,14 +52,14 @@ For SC1--SC4 (rule-out checks), a successful elimination requires Spearman $\rho
 \begin{figure*}[tbp]
   \centering
   \includegraphics[width=\textwidth]{figures/gcs_causal_sanity.png}
-  \caption{Causal elimination results ($M{=}28$, 200 masks/dataset, five datasets). Top row: per-dataset metric values. Bottom row: scatter vs.\ known $\Delta$DSC (GCS). SC1 ($\rho{=}-0.80$) and SC3 ($\rho{=}-0.50$) show wrong-direction correlations; SC4 saturates near 1.0 across all datasets ($\rho{=}-0.37$); SC2's confound ($\rho{=}+0.50$ on three datasets) collapses to $\rho{=}0.00$ with five datasets. All four alternative explanations are eliminated; SC5 ($\rho{=}+0.89$) is the strongest predictor of GCS.}
+  \caption{Causal elimination results across five benchmarks ($M{=}28$). Top row: per-dataset metric distributions. Bottom row: scatter vs.\ empirical $\Delta$DSC (GCS). SC5 ($\rho{=}+0.89$) stands as the sole surviving predictor of GCS.}
   \label{fig:causal}
 \end{figure*}
 
 \begin{figure}[ht]
   \centering
   \includegraphics[width=\columnwidth]{figures/gcs_mask_sanity.png}
-  \caption{Mask-based proxy metrics vs.\ known $\Delta$DSC. $n_\text{classes}$ (leftmost) shows the strongest Spearman correlation ($\rho{=}+0.87$). Spatial metrics (centroid spread, bbox coverage) show wrong-direction correlations, consistent with the SC1/SC3 elimination.}
+  \caption{Mask-based proxy metrics vs.\ empirical $\Delta$DSC on initial three benchmarks. While class count $n_\text{classes}$ shows 3-dataset correlation ($\rho{=}+0.87$), spatial metrics fail to predict GCS.}
   \label{fig:proxy}
 \end{figure}
 
@@ -86,7 +85,7 @@ The empirical proxy $n_\text{classes}$ correlates with SSD because more classes 
 \begin{table}[tb]
   \caption{Empirical GCS ($\Delta$DSC) across five datasets. ACDC and CVC-ClinicDB both fall in the low-GCS tier despite having 4 classes and a different dataset scale respectively, confirming that task structure (SC5), not class count or dataset size, determines GCS tier.}
   \label{tab:gcs_spectrum}
-  \begin{center}
+  \centering
   \setlength{\tabcolsep}{6pt}
   \begin{tabular}{llcc}
     \toprule
@@ -99,7 +98,6 @@ The empirical proxy $n_\text{classes}$ correlates with SSD because more classes 
     ISIC 2018    & Skin lesion         & 2 & 0.50 \\
     \bottomrule
   \end{tabular}
-  \end{center}
 \end{table}
 
 SC5 quantifies this directly. ACDC's inter-class window separation is 0.547 at $M{=}28$---cardiac structures (RV, Myo, LV) occupy adjacent but overlapping windows due to their concentric anatomy---compared to Synapse's near-complete separation (SC5${=}0.9996$) and binary tasks' structural zero. Crucially, GCS exhibits a strongly non-linear response: the drop from SC5${=}0.9996$ to $0.547$ (Synapse $\to$ ACDC) produces a 1.57\,pp fall in GCS (2.30 $\to$ 0.73\,pp), while the further drop from $0.547$ to $0$ (ACDC $\to$ binary tasks: Kvasir 0.64\,pp, CVC 0.62\,pp, ISIC 0.50\,pp) yields only minor additional variation (${\approx}0.09$--$0.23$\,pp), far smaller than the 1.57\,pp Synapse--ACDC gap. Near-complete inter-class separation---not merely multi-class structure---is what triggers high GCS.
@@ -115,7 +113,7 @@ The pancreas is a special case: it achieves only 60--63\% DSC across \emph{all} 
 \begin{table}[tb]
   \caption{Per-organ DSC (\%) and window sensitivity ($\Delta$DSC) on Synapse (gate=pam, $r{=}32$, $n{=}4$ window sizes). Sorted by $\Delta$DSC descending. Pancreas exception noted in text.}
   \label{tab:per_organ}
-  \begin{center}
+  \centering
   \setlength{\tabcolsep}{5pt}
   \begin{tabular}{lccccr}
     \toprule
@@ -133,5 +131,4 @@ The pancreas is a special case: it achieves only 60--63\% DSC across \emph{all} 
     Mean        & 78.6 & 80.9 & 78.9 & 79.4 & 2.30\,pp \\
     \bottomrule
   \end{tabular}
-  \end{center}
 \end{table}

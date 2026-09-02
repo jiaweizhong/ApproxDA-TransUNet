@@ -19,38 +19,40 @@ class StdConv2d(nn.Conv2d):
         w = self.weight
         v, m = torch.var_mean(w, dim=[1, 2, 3], keepdim=True, unbiased=False)
         w = (w - m) / torch.sqrt(v + 1e-5)
-        return F.conv2d(x, w, self.bias, self.stride, self.padding,
-                        self.dilation, self.groups)
+        return F.conv2d(
+            x, w, self.bias, self.stride, self.padding, self.dilation, self.groups
+        )
 
 
 def conv3x3(cin, cout, stride=1, groups=1, bias=False):
-    return StdConv2d(cin, cout, kernel_size=3, stride=stride,
-                     padding=1, bias=bias, groups=groups)
+    return StdConv2d(
+        cin, cout, kernel_size=3, stride=stride, padding=1, bias=bias, groups=groups
+    )
 
 
 def conv1x1(cin, cout, stride=1, bias=False):
-    return StdConv2d(cin, cout, kernel_size=1, stride=stride,
-                     padding=0, bias=bias)
+    return StdConv2d(cin, cout, kernel_size=1, stride=stride, padding=0, bias=bias)
 
 
 class PreActBottleneck(nn.Module):
-    """Pre-activation (v2) bottleneck block.
-    """
+    """Pre-activation (v2) bottleneck block."""
 
     def __init__(self, cin, cout=None, cmid=None, stride=1):
         super().__init__()
         cout = cout or cin
-        cmid = cmid or cout//4
+        cmid = cmid or cout // 4
 
         self.gn1 = nn.GroupNorm(32, cmid, eps=1e-6)
         self.conv1 = conv1x1(cin, cmid, bias=False)
         self.gn2 = nn.GroupNorm(32, cmid, eps=1e-6)
-        self.conv2 = conv3x3(cmid, cmid, stride, bias=False)  # Original code has it on conv1!!
+        self.conv2 = conv3x3(
+            cmid, cmid, stride, bias=False
+        )  # Original code has it on conv1!!
         self.gn3 = nn.GroupNorm(32, cout, eps=1e-6)
         self.conv3 = conv1x1(cmid, cout, bias=False)
         self.relu = nn.ReLU(inplace=True)
 
-        if (stride != 1 or cin != cout):
+        if stride != 1 or cin != cout:
             # Projection also with pre-activation according to paper.
             self.downsample = conv1x1(cin, cout, stride, bias=False)
             self.gn_proj = nn.GroupNorm(cout, cout)
@@ -59,7 +61,7 @@ class PreActBottleneck(nn.Module):
 
         # Residual branch
         residual = x
-        if hasattr(self, 'downsample'):
+        if hasattr(self, "downsample"):
             residual = self.downsample(x)
             residual = self.gn_proj(residual)
 
@@ -98,14 +100,17 @@ class PreActBottleneck(nn.Module):
         self.gn3.weight.copy_(gn3_weight.view(-1))
         self.gn3.bias.copy_(gn3_bias.view(-1))
 
-        if hasattr(self, 'downsample'):
-            proj_conv_weight = np2th(weights[pjoin(n_block, n_unit, "conv_proj/kernel")], conv=True)
+        if hasattr(self, "downsample"):
+            proj_conv_weight = np2th(
+                weights[pjoin(n_block, n_unit, "conv_proj/kernel")], conv=True
+            )
             proj_gn_weight = np2th(weights[pjoin(n_block, n_unit, "gn_proj/scale")])
             proj_gn_bias = np2th(weights[pjoin(n_block, n_unit, "gn_proj/bias")])
 
             self.downsample.weight.copy_(proj_conv_weight)
             self.gn_proj.weight.copy_(proj_gn_weight.view(-1))
             self.gn_proj.bias.copy_(proj_gn_bias.view(-1))
+
 
 class ResNetV2(nn.Module):
     """Implementation of Pre-activation (v2) ResNet mode."""
@@ -115,27 +120,110 @@ class ResNetV2(nn.Module):
         width = int(64 * width_factor)
         self.width = width
 
-        self.root = nn.Sequential(OrderedDict([
-            ('conv', StdConv2d(3, width, kernel_size=7, stride=2, bias=False, padding=3)),
-            ('gn', nn.GroupNorm(32, width, eps=1e-6)),
-            ('relu', nn.ReLU(inplace=True)),
-            # ('pool', nn.MaxPool2d(kernel_size=3, stride=2, padding=0))
-        ]))
+        self.root = nn.Sequential(
+            OrderedDict(
+                [
+                    (
+                        "conv",
+                        StdConv2d(
+                            3, width, kernel_size=7, stride=2, bias=False, padding=3
+                        ),
+                    ),
+                    ("gn", nn.GroupNorm(32, width, eps=1e-6)),
+                    ("relu", nn.ReLU(inplace=True)),
+                    # ('pool', nn.MaxPool2d(kernel_size=3, stride=2, padding=0))
+                ]
+            )
+        )
 
-        self.body = nn.Sequential(OrderedDict([
-            ('block1', nn.Sequential(OrderedDict(
-                [('unit1', PreActBottleneck(cin=width, cout=width*4, cmid=width))] +
-                [(f'unit{i:d}', PreActBottleneck(cin=width*4, cout=width*4, cmid=width)) for i in range(2, block_units[0] + 1)],
-                ))),
-            ('block2', nn.Sequential(OrderedDict(
-                [('unit1', PreActBottleneck(cin=width*4, cout=width*8, cmid=width*2, stride=2))] +
-                [(f'unit{i:d}', PreActBottleneck(cin=width*8, cout=width*8, cmid=width*2)) for i in range(2, block_units[1] + 1)],
-                ))),
-            ('block3', nn.Sequential(OrderedDict(
-                [('unit1', PreActBottleneck(cin=width*8, cout=width*16, cmid=width*4, stride=2))] +
-                [(f'unit{i:d}', PreActBottleneck(cin=width*16, cout=width*16, cmid=width*4)) for i in range(2, block_units[2] + 1)],
-                ))),
-        ]))
+        self.body = nn.Sequential(
+            OrderedDict(
+                [
+                    (
+                        "block1",
+                        nn.Sequential(
+                            OrderedDict(
+                                [
+                                    (
+                                        "unit1",
+                                        PreActBottleneck(
+                                            cin=width, cout=width * 4, cmid=width
+                                        ),
+                                    )
+                                ]
+                                + [
+                                    (
+                                        f"unit{i:d}",
+                                        PreActBottleneck(
+                                            cin=width * 4, cout=width * 4, cmid=width
+                                        ),
+                                    )
+                                    for i in range(2, block_units[0] + 1)
+                                ],
+                            )
+                        ),
+                    ),
+                    (
+                        "block2",
+                        nn.Sequential(
+                            OrderedDict(
+                                [
+                                    (
+                                        "unit1",
+                                        PreActBottleneck(
+                                            cin=width * 4,
+                                            cout=width * 8,
+                                            cmid=width * 2,
+                                            stride=2,
+                                        ),
+                                    )
+                                ]
+                                + [
+                                    (
+                                        f"unit{i:d}",
+                                        PreActBottleneck(
+                                            cin=width * 8,
+                                            cout=width * 8,
+                                            cmid=width * 2,
+                                        ),
+                                    )
+                                    for i in range(2, block_units[1] + 1)
+                                ],
+                            )
+                        ),
+                    ),
+                    (
+                        "block3",
+                        nn.Sequential(
+                            OrderedDict(
+                                [
+                                    (
+                                        "unit1",
+                                        PreActBottleneck(
+                                            cin=width * 8,
+                                            cout=width * 16,
+                                            cmid=width * 4,
+                                            stride=2,
+                                        ),
+                                    )
+                                ]
+                                + [
+                                    (
+                                        f"unit{i:d}",
+                                        PreActBottleneck(
+                                            cin=width * 16,
+                                            cout=width * 16,
+                                            cmid=width * 4,
+                                        ),
+                                    )
+                                    for i in range(2, block_units[2] + 1)
+                                ],
+                            )
+                        ),
+                    ),
+                ]
+            )
+        )
 
     def forward(self, x):
         features = []
@@ -143,14 +231,18 @@ class ResNetV2(nn.Module):
         x = self.root(x)
         features.append(x)
         x = nn.MaxPool2d(kernel_size=3, stride=2, padding=0)(x)
-        for i in range(len(self.body)-1):
+        for i in range(len(self.body) - 1):
             x = self.body[i](x)
-            right_size = int(in_size / 4 / (i+1))
+            right_size = int(in_size / 4 / (i + 1))
             if x.size()[2] != right_size:
                 pad = right_size - x.size()[2]
-                assert pad < 3 and pad > 0, "x {} should {}".format(x.size(), right_size)
-                feat = torch.zeros((b, x.size()[1], right_size, right_size), device=x.device)
-                feat[:, :, 0:x.size()[2], 0:x.size()[3]] = x[:]
+                assert pad < 3 and pad > 0, "x {} should {}".format(
+                    x.size(), right_size
+                )
+                feat = torch.zeros(
+                    (b, x.size()[1], right_size, right_size), device=x.device
+                )
+                feat[:, :, 0 : x.size()[2], 0 : x.size()[3]] = x[:]
             else:
                 feat = x
             features.append(feat)
@@ -158,12 +250,10 @@ class ResNetV2(nn.Module):
         return x, features[::-1]
 
 
-
-
-
 # ---------------------------------------------------------------------------
 # ApproxDA-TransUNet: windowed low-rank PAM, grouped CAM, adaptive DA block
 # ---------------------------------------------------------------------------
+
 
 def window_partition(x, window_size):
     """(B, C, H, W) -> (B*nW, C, M, M)"""
@@ -188,40 +278,41 @@ class LowRankWindowedPAM(nn.Module):
     Windowed PAM: O(N^2 C) -> O(N*r*C) via Swin-style windows + low-rank projection.
     Keys and values are projected from window_size^2 -> rank via self.proj_r.
     """
+
     def __init__(self, channels, window_size=7, rank=32):
         super().__init__()
-        self.M      = window_size
-        N           = window_size ** 2
+        self.M = window_size
+        N = window_size**2
         self.conv_B = nn.Conv1d(channels, channels, 1)
         self.conv_C = nn.Conv1d(channels, channels, 1)
         self.conv_D = nn.Conv1d(channels, channels, 1)
         self.proj_r = nn.Linear(N, rank, bias=False)
-        self.alpha  = nn.Parameter(torch.zeros(1))
+        self.alpha = nn.Parameter(torch.zeros(1))
 
     def forward(self, x):
         B, C, H, W = x.shape
         # Clamp window to feature-map size so window_size=112 gives global attention
         # at every scale without requiring H to be a multiple of self.M.
         M = min(self.M, H, W)
-        x_w  = window_partition(x, M)               # (B*nW, C, M, M)
-        nBW  = x_w.shape[0]
-        x_n  = x_w.view(nBW, C, M * M)              # (B*nW, C, N_actual)
+        x_w = window_partition(x, M)  # (B*nW, C, M, M)
+        nBW = x_w.shape[0]
+        x_n = x_w.view(nBW, C, M * M)  # (B*nW, C, N_actual)
         feat_B = self.conv_B(x_n)
         feat_C = self.conv_C(x_n)
         feat_D = self.conv_D(x_n)
         # proj_r was registered with N=self.M**2; slice weights when clamped
         N_actual = M * M
-        if N_actual == self.M ** 2:
-            C_r = self.proj_r(feat_C)               # (B*nW, C, r)
+        if N_actual == self.M**2:
+            C_r = self.proj_r(feat_C)  # (B*nW, C, r)
             D_r = self.proj_r(feat_D)
         else:
-            w = self.proj_r.weight[:, :N_actual]    # (r, N_actual)
+            w = self.proj_r.weight[:, :N_actual]  # (r, N_actual)
             C_r = F.linear(feat_C, w)
             D_r = F.linear(feat_D, w)
-        scores = torch.bmm(feat_B.transpose(1, 2), C_r)   # (B*nW, N, r)
+        scores = torch.bmm(feat_B.transpose(1, 2), C_r)  # (B*nW, N, r)
         scores = F.softmax(scores, dim=-1)
-        E_out  = torch.bmm(scores, D_r.transpose(1, 2))   # (B*nW, N, C)
-        E_n = self.alpha * E_out.transpose(1, 2) + x_n    # (B*nW, C, N)
+        E_out = torch.bmm(scores, D_r.transpose(1, 2))  # (B*nW, N, C)
+        E_n = self.alpha * E_out.transpose(1, 2) + x_n  # (B*nW, C, N)
         return window_reverse(E_n.view(nBW, C, M, M), M, H, W)
 
 
@@ -230,19 +321,20 @@ class GroupedCAM(nn.Module):
     Channel attention split into G independent groups: O(C^2) -> O(C^2/G).
     Each group computes its own (C/G x C/G) attention matrix.
     """
+
     def __init__(self, channels, groups=8):
         super().__init__()
-        self.G    = groups
+        self.G = groups
         self.beta = nn.Parameter(torch.zeros(1))
 
     def forward(self, x):
         B, C, H, W = x.shape
         G, Cg = self.G, C // self.G
         x_g = x.contiguous().view(B * G, Cg, H * W)  # (B*G, Cg, N)
-        X   = torch.bmm(x_g, x_g.transpose(1, 2))    # (B*G, Cg, Cg)
-        X   = F.softmax(X, dim=-1)
-        E_g = torch.bmm(X.transpose(1, 2), x_g)      # (B*G, Cg, N)
-        E   = self.beta * E_g + x_g
+        X = torch.bmm(x_g, x_g.transpose(1, 2))  # (B*G, Cg, Cg)
+        X = F.softmax(X, dim=-1)
+        E_g = torch.bmm(X.transpose(1, 2), x_g)  # (B*G, Cg, N)
+        E = self.beta * E_g + x_g
         return E.contiguous().view(B, C, H, W)
 
 
@@ -255,29 +347,30 @@ class ApproxDABlock(nn.Module):
       'pam'   — PAM only (g=1)
       'cam'   — CAM only (g=0)
     """
-    def __init__(self, channels, window_size=7, rank=32, groups=8, gate_mode='learn'):
+
+    def __init__(self, channels, window_size=7, rank=32, groups=8, gate_mode="learn"):
         super().__init__()
         self.gate_mode = gate_mode
-        self.pam     = LowRankWindowedPAM(channels, window_size, rank)
-        self.cam     = GroupedCAM(channels, groups)
-        self.pool    = nn.AdaptiveAvgPool2d(1)
-        if gate_mode == 'learn':
+        self.pam = LowRankWindowedPAM(channels, window_size, rank)
+        self.cam = GroupedCAM(channels, groups)
+        self.pool = nn.AdaptiveAvgPool2d(1)
+        if gate_mode == "learn":
             self.gate_fc = nn.Linear(channels, channels)
-        self.fusion  = nn.Conv2d(channels, channels, kernel_size=1)
+        self.fusion = nn.Conv2d(channels, channels, kernel_size=1)
 
     def forward(self, x):
         pam_out = self.pam(x)
         cam_out = self.cam(x)
-        if self.gate_mode == 'pam':
+        if self.gate_mode == "pam":
             g = 1.0
-        elif self.gate_mode == 'cam':
+        elif self.gate_mode == "cam":
             g = 0.0
-        elif self.gate_mode == 'fixed':
+        elif self.gate_mode == "fixed":
             g = 0.5
         else:  # 'learn'
-            g = torch.sigmoid(
-                self.gate_fc(self.pool(x).view(x.shape[0], -1))
-            ).view(x.shape[0], -1, 1, 1)           # (B, C, 1, 1)
+            g = torch.sigmoid(self.gate_fc(self.pool(x).view(x.shape[0], -1))).view(
+                x.shape[0], -1, 1, 1
+            )  # (B, C, 1, 1)
         fused = self.fusion(g * pam_out + (1.0 - g) * cam_out)
         return fused + x
 
@@ -287,6 +380,6 @@ def hardware_config(free_mem_gb):
     if free_mem_gb > 8:
         return {"rank": 64, "window_size": 14, "groups": 4}
     elif free_mem_gb > 4:
-        return {"rank": 32, "window_size": 7,  "groups": 8}
+        return {"rank": 32, "window_size": 7, "groups": 8}
     else:
-        return {"rank": 16, "window_size": 7,  "groups": 16}
+        return {"rank": 16, "window_size": 7, "groups": 16}

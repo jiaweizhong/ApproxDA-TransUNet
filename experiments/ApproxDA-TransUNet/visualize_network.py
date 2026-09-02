@@ -16,6 +16,7 @@ Presets
   block     depth=4, expand_nested=False  — shows inside ApproxDABlock
   full      depth=6, expand_nested=True   — full graph (large; use for debugging)
 """
+
 import sys
 import os
 import argparse
@@ -28,11 +29,10 @@ sys.path.insert(0, _HERE)
 
 from Architecture.ApproxDATransUNet import ApproxDATransUNet, CONFIGS
 
-
 PRESETS = {
     "overview": dict(depth=2, expand_nested=False),
-    "block":    dict(depth=4, expand_nested=False),
-    "full":     dict(depth=6, expand_nested=True),
+    "block": dict(depth=4, expand_nested=False),
+    "full": dict(depth=6, expand_nested=True),
 }
 
 
@@ -64,8 +64,12 @@ def render_graph(model, dummy_input, preset_name, preset_cfg, out_dir, fmt):
     graph_name = f"ApproxDA-TransUNet ({preset_name})"
     filename = f"approxda_{preset_name}"
 
-    print(f"  [{preset_name}] depth={preset_cfg['depth']}, "
-          f"expand_nested={preset_cfg['expand_nested']} ... ", end="", flush=True)
+    print(
+        f"  [{preset_name}] depth={preset_cfg['depth']}, "
+        f"expand_nested={preset_cfg['expand_nested']} ... ",
+        end="",
+        flush=True,
+    )
 
     model_graph = draw_graph(
         model,
@@ -86,28 +90,50 @@ def render_graph(model, dummy_input, preset_name, preset_cfg, out_dir, fmt):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Render ApproxDA-TransUNet architecture graph")
-    parser.add_argument("--preset", choices=list(PRESETS) + ["all"], default="all",
-                        help="Rendering preset (default: all)")
-    parser.add_argument("--gate_mode", default="pam",
-                        choices=["learn", "fixed", "pam", "cam"],
-                        help="Gate mode to visualize (default: pam)")
-    parser.add_argument("--n_classes", type=int, default=9,
-                        help="Number of output classes (default: 9 for Synapse)")
+    parser = argparse.ArgumentParser(
+        description="Render ApproxDA-TransUNet architecture graph"
+    )
+    parser.add_argument(
+        "--preset",
+        choices=list(PRESETS) + ["all"],
+        default="all",
+        help="Rendering preset (default: all)",
+    )
+    parser.add_argument(
+        "--gate_mode",
+        default="pam",
+        choices=["learn", "fixed", "pam", "cam"],
+        help="Gate mode to visualize (default: pam)",
+    )
+    parser.add_argument(
+        "--n_classes",
+        type=int,
+        default=9,
+        help="Number of output classes (default: 9 for Synapse)",
+    )
     parser.add_argument("--window_size", type=int, default=7)
     parser.add_argument("--rank", type=int, default=32)
     parser.add_argument("--groups", type=int, default=8)
-    parser.add_argument("--format", dest="fmt", default="pdf",
-                        choices=["pdf", "png", "svg"],
-                        help="Output format (default: pdf)")
-    parser.add_argument("--out_dir", default="./network_graphs",
-                        help="Output directory (default: ./network_graphs)")
+    parser.add_argument(
+        "--format",
+        dest="fmt",
+        default="pdf",
+        choices=["pdf", "png", "svg"],
+        help="Output format (default: pdf)",
+    )
+    parser.add_argument(
+        "--out_dir",
+        default="./network_graphs",
+        help="Output directory (default: ./network_graphs)",
+    )
     args = parser.parse_args()
 
     os.makedirs(args.out_dir, exist_ok=True)
 
-    print(f"Building model: gate_mode={args.gate_mode}, n_classes={args.n_classes}, "
-          f"window_size={args.window_size}, rank={args.rank}")
+    print(
+        f"Building model: gate_mode={args.gate_mode}, n_classes={args.n_classes}, "
+        f"window_size={args.window_size}, rank={args.rank}"
+    )
     model = build_model(
         gate_mode=args.gate_mode,
         n_classes=args.n_classes,
@@ -120,7 +146,9 @@ def main():
     # Single-channel grayscale input (CT / medical imaging)
     dummy_input = torch.randn(1, 1, 224, 224)
 
-    presets_to_run = PRESETS if args.preset == "all" else {args.preset: PRESETS[args.preset]}
+    presets_to_run = (
+        PRESETS if args.preset == "all" else {args.preset: PRESETS[args.preset]}
+    )
 
     print(f"Rendering {len(presets_to_run)} graph(s) → {args.out_dir}/ [{args.fmt}]")
     for name, cfg in presets_to_run.items():

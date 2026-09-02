@@ -30,18 +30,22 @@ class RandomGenerator(object):
         self.output_size = output_size
 
     def __call__(self, sample):
-        image, label = sample['image'], sample['label']
+        image, label = sample["image"], sample["label"]
         if random.random() > 0.5:
             image, label = random_rot_flip(image, label)
         elif random.random() > 0.5:
             image, label = random_rotate(image, label)
         x, y = image.shape
         if x != self.output_size[0] or y != self.output_size[1]:
-            image = zoom(image, (self.output_size[0] / x, self.output_size[1] / y), order=3)
-            label = zoom(label, (self.output_size[0] / x, self.output_size[1] / y), order=0)
+            image = zoom(
+                image, (self.output_size[0] / x, self.output_size[1] / y), order=3
+            )
+            label = zoom(
+                label, (self.output_size[0] / x, self.output_size[1] / y), order=0
+            )
         image = torch.from_numpy(image.astype(np.float32)).unsqueeze(0)
         label = torch.from_numpy(label.astype(np.float32))
-        sample = {'image': image, 'label': label.long()}
+        sample = {"image": image, "label": label.long()}
         return sample
 
 
@@ -61,10 +65,11 @@ class BTCV_dataset(Dataset):
       {list_dir}/train.txt  — one NPZ slice stem per line
       {list_dir}/test_vol.txt — one H5 volume stem per line
     """
+
     def __init__(self, base_dir, list_dir, split, transform=None):
         self.transform = transform
         self.split = split
-        self.sample_list = open(os.path.join(list_dir, self.split + '.txt')).readlines()
+        self.sample_list = open(os.path.join(list_dir, self.split + ".txt")).readlines()
         self.data_dir = base_dir
 
     def __len__(self):
@@ -72,18 +77,18 @@ class BTCV_dataset(Dataset):
 
     def __getitem__(self, idx):
         if self.split == "train":
-            slice_name = self.sample_list[idx].strip('\n')
-            data_path = os.path.join(self.data_dir, slice_name + '.npz')
+            slice_name = self.sample_list[idx].strip("\n")
+            data_path = os.path.join(self.data_dir, slice_name + ".npz")
             data = np.load(data_path)
-            image, label = data['image'], data['label']
+            image, label = data["image"], data["label"]
         else:
-            vol_name = self.sample_list[idx].strip('\n')
+            vol_name = self.sample_list[idx].strip("\n")
             filepath = self.data_dir + "/{}.npy.h5".format(vol_name)
             data = h5py.File(filepath)
-            image, label = data['image'][:], data['label'][:]
+            image, label = data["image"][:], data["label"][:]
 
-        sample = {'image': image, 'label': label}
+        sample = {"image": image, "label": label}
         if self.transform:
             sample = self.transform(sample)
-        sample['case_name'] = self.sample_list[idx].strip('\n')
+        sample["case_name"] = self.sample_list[idx].strip("\n")
         return sample

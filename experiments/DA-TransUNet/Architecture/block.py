@@ -3,8 +3,25 @@ from torch import nn
 import numpy as np
 import torch
 import math
-from torch.nn import Module, Sequential, Conv2d, ReLU,AdaptiveMaxPool2d, AdaptiveAvgPool2d, \
-    NLLLoss, BCELoss, CrossEntropyLoss, AvgPool2d, MaxPool2d, Parameter, Linear, Sigmoid, Softmax, Dropout, Embedding
+from torch.nn import (
+    Module,
+    Sequential,
+    Conv2d,
+    ReLU,
+    AdaptiveMaxPool2d,
+    AdaptiveAvgPool2d,
+    NLLLoss,
+    BCELoss,
+    CrossEntropyLoss,
+    AvgPool2d,
+    MaxPool2d,
+    Parameter,
+    Linear,
+    Sigmoid,
+    Softmax,
+    Dropout,
+    Embedding,
+)
 from torch.nn import functional as F
 from torch.autograd import Variable
 
@@ -13,8 +30,25 @@ from torch import nn
 import numpy as np
 import torch
 import math
-from torch.nn import Module, Sequential, Conv2d, ReLU,AdaptiveMaxPool2d, AdaptiveAvgPool2d, \
-    NLLLoss, BCELoss, CrossEntropyLoss, AvgPool2d, MaxPool2d, Parameter, Linear, Sigmoid, Softmax, Dropout, Embedding
+from torch.nn import (
+    Module,
+    Sequential,
+    Conv2d,
+    ReLU,
+    AdaptiveMaxPool2d,
+    AdaptiveAvgPool2d,
+    NLLLoss,
+    BCELoss,
+    CrossEntropyLoss,
+    AvgPool2d,
+    MaxPool2d,
+    Parameter,
+    Linear,
+    Sigmoid,
+    Softmax,
+    Dropout,
+    Embedding,
+)
 from torch.nn import functional as F
 from torch.autograd import Variable
 
@@ -37,38 +71,40 @@ class StdConv2d(nn.Conv2d):
         w = self.weight
         v, m = torch.var_mean(w, dim=[1, 2, 3], keepdim=True, unbiased=False)
         w = (w - m) / torch.sqrt(v + 1e-5)
-        return F.conv2d(x, w, self.bias, self.stride, self.padding,
-                        self.dilation, self.groups)
+        return F.conv2d(
+            x, w, self.bias, self.stride, self.padding, self.dilation, self.groups
+        )
 
 
 def conv3x3(cin, cout, stride=1, groups=1, bias=False):
-    return StdConv2d(cin, cout, kernel_size=3, stride=stride,
-                     padding=1, bias=bias, groups=groups)
+    return StdConv2d(
+        cin, cout, kernel_size=3, stride=stride, padding=1, bias=bias, groups=groups
+    )
 
 
 def conv1x1(cin, cout, stride=1, bias=False):
-    return StdConv2d(cin, cout, kernel_size=1, stride=stride,
-                     padding=0, bias=bias)
+    return StdConv2d(cin, cout, kernel_size=1, stride=stride, padding=0, bias=bias)
 
 
 class PreActBottleneck(nn.Module):
-    """Pre-activation (v2) bottleneck block.
-    """
+    """Pre-activation (v2) bottleneck block."""
 
     def __init__(self, cin, cout=None, cmid=None, stride=1):
         super().__init__()
         cout = cout or cin
-        cmid = cmid or cout//4
+        cmid = cmid or cout // 4
 
         self.gn1 = nn.GroupNorm(32, cmid, eps=1e-6)
         self.conv1 = conv1x1(cin, cmid, bias=False)
         self.gn2 = nn.GroupNorm(32, cmid, eps=1e-6)
-        self.conv2 = conv3x3(cmid, cmid, stride, bias=False)  # Original code has it on conv1!!
+        self.conv2 = conv3x3(
+            cmid, cmid, stride, bias=False
+        )  # Original code has it on conv1!!
         self.gn3 = nn.GroupNorm(32, cout, eps=1e-6)
         self.conv3 = conv1x1(cmid, cout, bias=False)
         self.relu = nn.ReLU(inplace=True)
 
-        if (stride != 1 or cin != cout):
+        if stride != 1 or cin != cout:
             # Projection also with pre-activation according to paper.
             self.downsample = conv1x1(cin, cout, stride, bias=False)
             self.gn_proj = nn.GroupNorm(cout, cout)
@@ -77,7 +113,7 @@ class PreActBottleneck(nn.Module):
 
         # Residual branch
         residual = x
-        if hasattr(self, 'downsample'):
+        if hasattr(self, "downsample"):
             residual = self.downsample(x)
             residual = self.gn_proj(residual)
 
@@ -116,14 +152,17 @@ class PreActBottleneck(nn.Module):
         self.gn3.weight.copy_(gn3_weight.view(-1))
         self.gn3.bias.copy_(gn3_bias.view(-1))
 
-        if hasattr(self, 'downsample'):
-            proj_conv_weight = np2th(weights[pjoin(n_block, n_unit, "conv_proj/kernel")], conv=True)
+        if hasattr(self, "downsample"):
+            proj_conv_weight = np2th(
+                weights[pjoin(n_block, n_unit, "conv_proj/kernel")], conv=True
+            )
             proj_gn_weight = np2th(weights[pjoin(n_block, n_unit, "gn_proj/scale")])
             proj_gn_bias = np2th(weights[pjoin(n_block, n_unit, "gn_proj/bias")])
 
             self.downsample.weight.copy_(proj_conv_weight)
             self.gn_proj.weight.copy_(proj_gn_weight.view(-1))
             self.gn_proj.bias.copy_(proj_gn_bias.view(-1))
+
 
 class ResNetV2(nn.Module):
     """Implementation of Pre-activation (v2) ResNet mode."""
@@ -133,27 +172,110 @@ class ResNetV2(nn.Module):
         width = int(64 * width_factor)
         self.width = width
 
-        self.root = nn.Sequential(OrderedDict([
-            ('conv', StdConv2d(3, width, kernel_size=7, stride=2, bias=False, padding=3)),
-            ('gn', nn.GroupNorm(32, width, eps=1e-6)),
-            ('relu', nn.ReLU(inplace=True)),
-            # ('pool', nn.MaxPool2d(kernel_size=3, stride=2, padding=0))
-        ]))
+        self.root = nn.Sequential(
+            OrderedDict(
+                [
+                    (
+                        "conv",
+                        StdConv2d(
+                            3, width, kernel_size=7, stride=2, bias=False, padding=3
+                        ),
+                    ),
+                    ("gn", nn.GroupNorm(32, width, eps=1e-6)),
+                    ("relu", nn.ReLU(inplace=True)),
+                    # ('pool', nn.MaxPool2d(kernel_size=3, stride=2, padding=0))
+                ]
+            )
+        )
 
-        self.body = nn.Sequential(OrderedDict([
-            ('block1', nn.Sequential(OrderedDict(
-                [('unit1', PreActBottleneck(cin=width, cout=width*4, cmid=width))] +
-                [(f'unit{i:d}', PreActBottleneck(cin=width*4, cout=width*4, cmid=width)) for i in range(2, block_units[0] + 1)],
-                ))),
-            ('block2', nn.Sequential(OrderedDict(
-                [('unit1', PreActBottleneck(cin=width*4, cout=width*8, cmid=width*2, stride=2))] +
-                [(f'unit{i:d}', PreActBottleneck(cin=width*8, cout=width*8, cmid=width*2)) for i in range(2, block_units[1] + 1)],
-                ))),
-            ('block3', nn.Sequential(OrderedDict(
-                [('unit1', PreActBottleneck(cin=width*8, cout=width*16, cmid=width*4, stride=2))] +
-                [(f'unit{i:d}', PreActBottleneck(cin=width*16, cout=width*16, cmid=width*4)) for i in range(2, block_units[2] + 1)],
-                ))),
-        ]))
+        self.body = nn.Sequential(
+            OrderedDict(
+                [
+                    (
+                        "block1",
+                        nn.Sequential(
+                            OrderedDict(
+                                [
+                                    (
+                                        "unit1",
+                                        PreActBottleneck(
+                                            cin=width, cout=width * 4, cmid=width
+                                        ),
+                                    )
+                                ]
+                                + [
+                                    (
+                                        f"unit{i:d}",
+                                        PreActBottleneck(
+                                            cin=width * 4, cout=width * 4, cmid=width
+                                        ),
+                                    )
+                                    for i in range(2, block_units[0] + 1)
+                                ],
+                            )
+                        ),
+                    ),
+                    (
+                        "block2",
+                        nn.Sequential(
+                            OrderedDict(
+                                [
+                                    (
+                                        "unit1",
+                                        PreActBottleneck(
+                                            cin=width * 4,
+                                            cout=width * 8,
+                                            cmid=width * 2,
+                                            stride=2,
+                                        ),
+                                    )
+                                ]
+                                + [
+                                    (
+                                        f"unit{i:d}",
+                                        PreActBottleneck(
+                                            cin=width * 8,
+                                            cout=width * 8,
+                                            cmid=width * 2,
+                                        ),
+                                    )
+                                    for i in range(2, block_units[1] + 1)
+                                ],
+                            )
+                        ),
+                    ),
+                    (
+                        "block3",
+                        nn.Sequential(
+                            OrderedDict(
+                                [
+                                    (
+                                        "unit1",
+                                        PreActBottleneck(
+                                            cin=width * 8,
+                                            cout=width * 16,
+                                            cmid=width * 4,
+                                            stride=2,
+                                        ),
+                                    )
+                                ]
+                                + [
+                                    (
+                                        f"unit{i:d}",
+                                        PreActBottleneck(
+                                            cin=width * 16,
+                                            cout=width * 16,
+                                            cmid=width * 4,
+                                        ),
+                                    )
+                                    for i in range(2, block_units[2] + 1)
+                                ],
+                            )
+                        ),
+                    ),
+                ]
+            )
+        )
 
     def forward(self, x):
         features = []
@@ -161,14 +283,18 @@ class ResNetV2(nn.Module):
         x = self.root(x)
         features.append(x)
         x = nn.MaxPool2d(kernel_size=3, stride=2, padding=0)(x)
-        for i in range(len(self.body)-1):
+        for i in range(len(self.body) - 1):
             x = self.body[i](x)
-            right_size = int(in_size / 4 / (i+1))
+            right_size = int(in_size / 4 / (i + 1))
             if x.size()[2] != right_size:
                 pad = right_size - x.size()[2]
-                assert pad < 3 and pad > 0, "x {} should {}".format(x.size(), right_size)
-                feat = torch.zeros((b, x.size()[1], right_size, right_size), device=x.device)
-                feat[:, :, 0:x.size()[2], 0:x.size()[3]] = x[:]
+                assert pad < 3 and pad > 0, "x {} should {}".format(
+                    x.size(), right_size
+                )
+                feat = torch.zeros(
+                    (b, x.size()[1], right_size, right_size), device=x.device
+                )
+                feat[:, :, 0 : x.size()[2], 0 : x.size()[3]] = x[:]
             else:
                 feat = x
             features.append(feat)
@@ -176,124 +302,142 @@ class ResNetV2(nn.Module):
         return x, features[::-1]
 
 
-
 class PAM_Module(Module):
-    """ Position attention module"""
-    #Ref from SAGAN
+    """Position attention module"""
+
+    # Ref from SAGAN
     def __init__(self, in_dim):
         super(PAM_Module, self).__init__()
         self.chanel_in = in_dim
 
-        self.query_conv = Conv2d(in_channels=in_dim, out_channels=in_dim//8, kernel_size=1)
-        self.key_conv = Conv2d(in_channels=in_dim, out_channels=in_dim//8, kernel_size=1)
+        self.query_conv = Conv2d(
+            in_channels=in_dim, out_channels=in_dim // 8, kernel_size=1
+        )
+        self.key_conv = Conv2d(
+            in_channels=in_dim, out_channels=in_dim // 8, kernel_size=1
+        )
         self.value_conv = Conv2d(in_channels=in_dim, out_channels=in_dim, kernel_size=1)
         self.gamma = Parameter(torch.zeros(1))
 
         self.softmax = Softmax(dim=-1)
+
     def forward(self, x):
         """
-            inputs :
-                x : input feature maps( B X C X H X W)
-            returns :
-                out : attention value + input feature
-                attention: B X (HxW) X (HxW)
+        inputs :
+            x : input feature maps( B X C X H X W)
+        returns :
+            out : attention value + input feature
+            attention: B X (HxW) X (HxW)
         """
-        m_batchsize, C,height, width = x.size()
-        proj_query = self.query_conv(x).view(m_batchsize, -1, width*height).permute(0, 2, 1)
-        proj_key = self.key_conv(x).view(m_batchsize, -1, width*height)
+        m_batchsize, C, height, width = x.size()
+        proj_query = (
+            self.query_conv(x).view(m_batchsize, -1, width * height).permute(0, 2, 1)
+        )
+        proj_key = self.key_conv(x).view(m_batchsize, -1, width * height)
         energy = torch.bmm(proj_query, proj_key)
         attention = self.softmax(energy)
-        proj_value = self.value_conv(x).view(m_batchsize, -1, width*height)
+        proj_value = self.value_conv(x).view(m_batchsize, -1, width * height)
 
         out = torch.bmm(proj_value, attention.permute(0, 2, 1))
         out = out.view(m_batchsize, C, height, width)
 
-        out = self.gamma*out + x
+        out = self.gamma * out + x
         return out
 
 
 class CAM_Module(Module):
-    """ Channel attention module"""
+    """Channel attention module"""
+
     def __init__(self, in_dim):
         super(CAM_Module, self).__init__()
         self.chanel_in = in_dim
 
-
         self.gamma = Parameter(torch.zeros(1))
-        self.softmax  = Softmax(dim=-1)
-    def forward(self,x):
+        self.softmax = Softmax(dim=-1)
+
+    def forward(self, x):
         """
-            inputs :
-                x : input feature maps( B X C X H X W)
-            returns :
-                out : attention value + input feature
-                attention: B X C X C
+        inputs :
+            x : input feature maps( B X C X H X W)
+        returns :
+            out : attention value + input feature
+            attention: B X C X C
         """
         m_batchsize, C, height, width = x.size()
         proj_query = x.view(m_batchsize, C, -1)
         proj_key = x.view(m_batchsize, C, -1).permute(0, 2, 1)
         energy = torch.bmm(proj_query, proj_key)
-        energy_new = torch.max(energy, -1, keepdim=True)[0].expand_as(energy)-energy
+        energy_new = torch.max(energy, -1, keepdim=True)[0].expand_as(energy) - energy
         attention = self.softmax(energy_new)
         proj_value = x.view(m_batchsize, C, -1)
 
         out = torch.bmm(attention, proj_value)
         out = out.view(m_batchsize, C, height, width)
 
-        out = self.gamma*out + x
+        out = self.gamma * out + x
         return out
 
 
-
-
-
-def norm(planes, mode='bn', groups=16):
-    if mode == 'bn':
+def norm(planes, mode="bn", groups=16):
+    if mode == "bn":
         return nn.BatchNorm2d(planes, momentum=0.95, eps=1e-03)
-    elif mode == 'gn':
+    elif mode == "gn":
         return nn.GroupNorm(groups, planes)
     else:
         return nn.Sequential()
 
 
-
-    
-
 class DANetHead(nn.Module):
     def __init__(self, in_channels, out_channels):
         super(DANetHead, self).__init__()
         inter_channels = in_channels // 16
-#         inter_channels = in_channels  # test
+        #         inter_channels = in_channels  # test
 
-        self.conv5a = nn.Sequential(nn.Conv2d(in_channels, inter_channels, 3, padding=1, bias=False),
-                                    norm(inter_channels),
-                                    nn.ReLU())
+        self.conv5a = nn.Sequential(
+            nn.Conv2d(in_channels, inter_channels, 3, padding=1, bias=False),
+            norm(inter_channels),
+            nn.ReLU(),
+        )
 
-        self.conv5c = nn.Sequential(nn.Conv2d(in_channels, inter_channels, 3, padding=1, bias=False),
-                                    norm(inter_channels),
-                                    nn.ReLU())
+        self.conv5c = nn.Sequential(
+            nn.Conv2d(in_channels, inter_channels, 3, padding=1, bias=False),
+            norm(inter_channels),
+            nn.ReLU(),
+        )
 
         self.sa = PAM_Module(inter_channels)
         self.sc = CAM_Module(inter_channels)
-        self.conv51 = nn.Sequential(nn.Conv2d(inter_channels, inter_channels, 3, padding=1, bias=False),
-                                    norm(inter_channels),
-                                    nn.ReLU())
-        self.conv52 = nn.Sequential(nn.Conv2d(inter_channels, inter_channels, 3, padding=1, bias=False),
-                                    norm(inter_channels),
-                                    nn.ReLU())
+        self.conv51 = nn.Sequential(
+            nn.Conv2d(inter_channels, inter_channels, 3, padding=1, bias=False),
+            norm(inter_channels),
+            nn.ReLU(),
+        )
+        self.conv52 = nn.Sequential(
+            nn.Conv2d(inter_channels, inter_channels, 3, padding=1, bias=False),
+            norm(inter_channels),
+            nn.ReLU(),
+        )
 
-        self.conv6 = nn.Sequential(nn.Dropout2d(0.05, False), nn.Conv2d(inter_channels, out_channels, 1),
-                                   nn.ReLU())
-        self.conv7 = nn.Sequential(nn.Dropout2d(0.05, False), nn.Conv2d(inter_channels, out_channels, 1),
-                                   nn.ReLU())
+        self.conv6 = nn.Sequential(
+            nn.Dropout2d(0.05, False),
+            nn.Conv2d(inter_channels, out_channels, 1),
+            nn.ReLU(),
+        )
+        self.conv7 = nn.Sequential(
+            nn.Dropout2d(0.05, False),
+            nn.Conv2d(inter_channels, out_channels, 1),
+            nn.ReLU(),
+        )
 
-        self.conv8 = nn.Sequential(nn.Dropout2d(0.05, False), nn.Conv2d(inter_channels, out_channels, 1),
-                                   nn.ReLU())
-        
+        self.conv8 = nn.Sequential(
+            nn.Dropout2d(0.05, False),
+            nn.Conv2d(inter_channels, out_channels, 1),
+            nn.ReLU(),
+        )
 
     def forward(self, x):
-#         x = x.unsqueeze(0) 
-        
+        #         x = x.unsqueeze(0)
+
         feat1 = self.conv5a(x)
         sa_feat = self.sa(feat1)
         sa_conv = self.conv51(sa_feat)
@@ -307,6 +451,5 @@ class DANetHead(nn.Module):
         feat_sum = sa_conv + sc_conv
 
         sasc_output = self.conv8(feat_sum)
-        
 
         return sasc_output

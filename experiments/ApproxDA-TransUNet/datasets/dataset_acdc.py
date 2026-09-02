@@ -30,18 +30,22 @@ class RandomGenerator(object):
         self.output_size = output_size
 
     def __call__(self, sample):
-        image, label = sample['image'], sample['label']
+        image, label = sample["image"], sample["label"]
         if random.random() > 0.5:
             image, label = random_rot_flip(image, label)
         elif random.random() > 0.5:
             image, label = random_rotate(image, label)
         x, y = image.shape
         if x != self.output_size[0] or y != self.output_size[1]:
-            image = zoom(image, (self.output_size[0] / x, self.output_size[1] / y), order=3)
-            label = zoom(label, (self.output_size[0] / x, self.output_size[1] / y), order=0)
+            image = zoom(
+                image, (self.output_size[0] / x, self.output_size[1] / y), order=3
+            )
+            label = zoom(
+                label, (self.output_size[0] / x, self.output_size[1] / y), order=0
+            )
         image = torch.from_numpy(image.astype(np.float32)).unsqueeze(0)
         label = torch.from_numpy(label.astype(np.float32))
-        return {'image': image, 'label': label.long()}
+        return {"image": image, "label": label.long()}
 
 
 def _normalize(image):
@@ -65,28 +69,29 @@ class ACDC_dataset(Dataset):
 
     Labels: 0=background, 1=RV, 2=Myo, 3=LV  →  num_classes=4
     """
+
     def __init__(self, base_dir, list_dir, split, transform=None):
         self.transform = transform
         self.split = split
-        self.sample_list = open(os.path.join(list_dir, self.split + '.txt')).readlines()
+        self.sample_list = open(os.path.join(list_dir, self.split + ".txt")).readlines()
         self.data_dir = base_dir
 
     def __len__(self):
         return len(self.sample_list)
 
     def __getitem__(self, idx):
-        name = self.sample_list[idx].strip('\n')
-        filepath = os.path.join(self.data_dir, name + '.h5')
+        name = self.sample_list[idx].strip("\n")
+        filepath = os.path.join(self.data_dir, name + ".h5")
 
-        with h5py.File(filepath, 'r') as f:
-            image = f['image'][:]
-            label = f['label'][:]
+        with h5py.File(filepath, "r") as f:
+            image = f["image"][:]
+            label = f["label"][:]
 
         image = _normalize(image.astype(np.float32))
         label = label.astype(np.uint8)
 
-        sample = {'image': image, 'label': label}
+        sample = {"image": image, "label": label}
         if self.transform:
             sample = self.transform(sample)
-        sample['case_name'] = name
+        sample["case_name"] = name
         return sample

@@ -11,14 +11,14 @@ Figure~\ref{fig:framework} illustrates the overall architecture: ApproxDA-TransU
 \begin{figure*}[tbp]
   \centering
   \includegraphics[width=\textwidth]{figures/approxda_overview}
-  \caption{ApproxDA-TransUNet architecture. ApproxDABlocks (Low-Rank Windowed PAM + Grouped CAM + gate routing) replace dual-attention modules at all skip connections and the bottleneck. \texttt{gate\_mode} controls the routing during ablation.}
+  \caption{ApproxDA-TransUNet overall architecture. ApproxDABlocks replace standard dual-attention modules across all skip connections and the bottleneck.}
   \label{fig:framework}
 \end{figure*}
 
 \begin{figure*}[tbp]
   \centering
   \includegraphics[width=\textwidth]{figures/approxda_block}
-  \caption{ApproxDABlock internals with three independently controllable approximation axes: spatial scope ($M$, window size), representation fidelity ($r$, projection rank), and channel interaction ($G$, group count). Input $\mathbf{x}$ splits into a Low-Rank Windowed PAM branch (lavender, upper) and a Grouped CAM branch (green, lower); gate $g$ fuses the outputs and $\mathbf{x}$ is added as a residual.}
+  \caption{ApproxDABlock internal structure with three independent approximation axes: spatial scope ($M$), projection rank ($r$), and channel grouping ($G$). Input $\mathbf{x}$ splits into a Low-Rank Windowed PAM branch and a Grouped CAM branch fused by gate $g$.}
   \label{fig:approxda_block}
 \end{figure*}
 
@@ -77,7 +77,7 @@ where $\hat{\mathbf{P}}$ and $\hat{\mathbf{C}}$ are the normalized PAM and CAM o
 \end{tabular}
 \end{center}
 
-In gate=learn, $g \in (0,1)^C$ is a per-channel routing coefficient broadcast over all spatial positions; it collapses to a channel-wise blend rather than a spatially-adaptive or input-dependent scalar. This single-parameter design enables systematic ablation of routing strategy without any other architectural change. ApproxDA-TransUNet does not treat this routing module as a primary architectural contribution; rather, it serves as an analyzable component whose optimization dynamics---including an unexpected convergence to $g{\approx}0.5$ regardless of window size---are investigated in Section~\ref{sec:understanding}.
+In gate=learn, $g \in (0,1)^C$ is a per-channel routing coefficient broadcast over all spatial positions; it collapses to a channel-wise blend rather than a spatially-adaptive or input-dependent scalar. This single-parameter design enables systematic ablation of routing strategy without any other architectural change. ApproxDA-TransUNet does not treat this routing module as a primary architectural contribution; rather, it serves as an analyzable component whose optimization dynamics---including an unexpected convergence to $g{\approx}0.5$ regardless of window size---are investigated in Section~\ref{sec:collapse}.
 
 The network is trained with a combined Dice and cross-entropy objective with equal weights:
 \begin{equation}

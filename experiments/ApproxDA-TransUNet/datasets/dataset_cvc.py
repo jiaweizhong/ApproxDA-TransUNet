@@ -30,18 +30,22 @@ class RandomGenerator(object):
         self.output_size = output_size
 
     def __call__(self, sample):
-        image, label = sample['image'], sample['label']
+        image, label = sample["image"], sample["label"]
         if random.random() > 0.5:
             image, label = random_rot_flip(image, label)
         elif random.random() > 0.5:
             image, label = random_rotate(image, label)
         x, y = image.shape
         if x != self.output_size[0] or y != self.output_size[1]:
-            image = zoom(image, (self.output_size[0] / x, self.output_size[1] / y), order=3)
-            label = zoom(label, (self.output_size[0] / x, self.output_size[1] / y), order=0)
+            image = zoom(
+                image, (self.output_size[0] / x, self.output_size[1] / y), order=3
+            )
+            label = zoom(
+                label, (self.output_size[0] / x, self.output_size[1] / y), order=0
+            )
         image = torch.from_numpy(image.astype(np.float32)).unsqueeze(0)
         label = torch.from_numpy(label.astype(np.float32))
-        return {'image': image, 'label': label.long()}
+        return {"image": image, "label": label.long()}
 
 
 def _find_dirs(base_dir):
@@ -51,15 +55,15 @@ def _find_dirs(base_dir):
       A) Kaggle default:  PNG/Original/  +  PNG/Ground Truth/
       B) Flat standard:   images/        +  masks/
     """
-    kaggle_img  = os.path.join(base_dir, 'PNG', 'Original')
-    kaggle_mask = os.path.join(base_dir, 'PNG', 'Ground Truth')
+    kaggle_img = os.path.join(base_dir, "PNG", "Original")
+    kaggle_mask = os.path.join(base_dir, "PNG", "Ground Truth")
     if os.path.isdir(kaggle_img):
         return kaggle_img, kaggle_mask
-    return os.path.join(base_dir, 'images'), os.path.join(base_dir, 'masks')
+    return os.path.join(base_dir, "images"), os.path.join(base_dir, "masks")
 
 
 def _open_img(directory, stem):
-    for ext in ('.png', '.jpg', '.jpeg', '.tif'):
+    for ext in (".png", ".jpg", ".jpeg", ".tif"):
         p = os.path.join(directory, stem + ext)
         if os.path.exists(p):
             return Image.open(p)
@@ -81,12 +85,14 @@ class CVC_dataset(Dataset):
 
     test.py calls with split='test_vol'; remapped to 'test' transparently.
     """
+
     def __init__(self, base_dir, list_dir, split, transform=None):
         self.transform = transform
-        list_split = 'test' if split == 'test_vol' else split
+        list_split = "test" if split == "test_vol" else split
         self.sample_list = [
-            l for l in open(os.path.join(list_dir, list_split + '.txt')).readlines()
-            if l.strip() and not l.strip().startswith('#')
+            l
+            for l in open(os.path.join(list_dir, list_split + ".txt")).readlines()
+            if l.strip() and not l.strip().startswith("#")
         ]
         self.img_dir, self.mask_dir = _find_dirs(base_dir)
 
@@ -94,11 +100,16 @@ class CVC_dataset(Dataset):
         return len(self.sample_list)
 
     def __getitem__(self, idx):
-        name  = self.sample_list[idx].strip('\n')
-        image = np.array(_open_img(self.img_dir,  name).convert('L'), dtype=np.float32) / 255.0
-        label = (np.array(_open_img(self.mask_dir, name).convert('L')) > 127).astype(np.uint8)
-        sample = {'image': image, 'label': label}
+        name = self.sample_list[idx].strip("\n")
+        image = (
+            np.array(_open_img(self.img_dir, name).convert("L"), dtype=np.float32)
+            / 255.0
+        )
+        label = (np.array(_open_img(self.mask_dir, name).convert("L")) > 127).astype(
+            np.uint8
+        )
+        sample = {"image": image, "label": label}
         if self.transform:
             sample = self.transform(sample)
-        sample['case_name'] = name
+        sample["case_name"] = name
         return sample

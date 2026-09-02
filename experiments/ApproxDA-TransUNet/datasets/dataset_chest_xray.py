@@ -30,26 +30,30 @@ class RandomGenerator(object):
         self.output_size = output_size
 
     def __call__(self, sample):
-        image, label = sample['image'], sample['label']
+        image, label = sample["image"], sample["label"]
         if random.random() > 0.5:
             image, label = random_rot_flip(image, label)
         elif random.random() > 0.5:
             image, label = random_rotate(image, label)
         x, y = image.shape
         if x != self.output_size[0] or y != self.output_size[1]:
-            image = zoom(image, (self.output_size[0] / x, self.output_size[1] / y), order=3)
-            label = zoom(label, (self.output_size[0] / x, self.output_size[1] / y), order=0)
+            image = zoom(
+                image, (self.output_size[0] / x, self.output_size[1] / y), order=3
+            )
+            label = zoom(
+                label, (self.output_size[0] / x, self.output_size[1] / y), order=0
+            )
         image = torch.from_numpy(image.astype(np.float32)).unsqueeze(0)
         label = torch.from_numpy(label.astype(np.float32))
-        return {'image': image, 'label': label.long()}
+        return {"image": image, "label": label.long()}
 
 
 def _load_image(img_dir, stem):
-    for ext in ('.png', '.jpg', '.jpeg', '.PNG', '.JPG'):
+    for ext in (".png", ".jpg", ".jpeg", ".PNG", ".JPG"):
         p = os.path.join(img_dir, stem + ext)
         if os.path.exists(p):
-            return np.array(Image.open(p).convert('L'), dtype=np.float32) / 255.0
-    raise FileNotFoundError(f'ChestXray: no image for stem {stem!r} in {img_dir}')
+            return np.array(Image.open(p).convert("L"), dtype=np.float32) / 255.0
+    raise FileNotFoundError(f"ChestXray: no image for stem {stem!r} in {img_dir}")
 
 
 def _load_mask(base_dir, stem):
@@ -67,27 +71,29 @@ def _load_mask(base_dir, stem):
     Falls back A→B in order.
     """
     # Layout A: flat masks/ directory
-    mask_dir = os.path.join(base_dir, 'masks')
-    for ext in ('.png', '.jpg', '.PNG'):
+    mask_dir = os.path.join(base_dir, "masks")
+    for ext in (".png", ".jpg", ".PNG"):
         p = os.path.join(mask_dir, stem + ext)
         if os.path.exists(p):
-            return (np.array(Image.open(p).convert('L')) > 127).astype(np.uint8)
+            return (np.array(Image.open(p).convert("L")) > 127).astype(np.uint8)
 
     # Layout B: ManualMask/leftMask + rightMask
-    left_dir  = os.path.join(base_dir, 'ManualMask', 'leftMask')
-    right_dir = os.path.join(base_dir, 'ManualMask', 'rightMask')
+    left_dir = os.path.join(base_dir, "ManualMask", "leftMask")
+    right_dir = os.path.join(base_dir, "ManualMask", "rightMask")
     left_mask = right_mask = None
-    for ext in ('.png', '.PNG', '.jpg'):
-        lp = os.path.join(left_dir,  stem + '_mask' + ext)
-        rp = os.path.join(right_dir, stem + '_mask' + ext)
+    for ext in (".png", ".PNG", ".jpg"):
+        lp = os.path.join(left_dir, stem + "_mask" + ext)
+        rp = os.path.join(right_dir, stem + "_mask" + ext)
         if os.path.exists(lp):
-            left_mask = (np.array(Image.open(lp).convert('L')) > 127)
+            left_mask = np.array(Image.open(lp).convert("L")) > 127
         if os.path.exists(rp):
-            right_mask = (np.array(Image.open(rp).convert('L')) > 127)
+            right_mask = np.array(Image.open(rp).convert("L")) > 127
         if left_mask is not None or right_mask is not None:
             break
     if left_mask is None and right_mask is None:
-        raise FileNotFoundError(f'ChestXray: no mask found for stem {stem!r} under {base_dir}')
+        raise FileNotFoundError(
+            f"ChestXray: no mask found for stem {stem!r} under {base_dir}"
+        )
     if left_mask is None:
         return right_mask.astype(np.uint8)
     if right_mask is None:
@@ -116,29 +122,31 @@ class ChestXray_dataset(Dataset):
     138 images total; default 80/20 split via generate_lists.py.
     test.py calls with split='test_vol'; remapped to 'test' transparently.
     """
+
     def __init__(self, base_dir, list_dir, split, transform=None):
         self.transform = transform
-        self.base_dir  = base_dir
-        list_split = 'test' if split == 'test_vol' else split
+        self.base_dir = base_dir
+        list_split = "test" if split == "test_vol" else split
         self.sample_list = [
-            l for l in open(os.path.join(list_dir, list_split + '.txt')).readlines()
-            if l.strip() and not l.strip().startswith('#')
+            l
+            for l in open(os.path.join(list_dir, list_split + ".txt")).readlines()
+            if l.strip() and not l.strip().startswith("#")
         ]
         # Support both Layout A (images/) and Layout B (CXR_png/)
-        img_dir_a = os.path.join(base_dir, 'images')
-        img_dir_b = os.path.join(base_dir, 'CXR_png')
+        img_dir_a = os.path.join(base_dir, "images")
+        img_dir_b = os.path.join(base_dir, "CXR_png")
         self.img_dir = img_dir_a if os.path.isdir(img_dir_a) else img_dir_b
 
     def __len__(self):
         return len(self.sample_list)
 
     def __getitem__(self, idx):
-        name  = self.sample_list[idx].strip('\n')
+        name = self.sample_list[idx].strip("\n")
         image = _load_image(self.img_dir, name)
         label = _load_mask(self.base_dir, name)
 
-        sample = {'image': image, 'label': label}
+        sample = {"image": image, "label": label}
         if self.transform:
             sample = self.transform(sample)
-        sample['case_name'] = name
+        sample["case_name"] = name
         return sample

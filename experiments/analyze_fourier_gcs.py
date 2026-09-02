@@ -30,15 +30,17 @@ import matplotlib.pyplot as plt
 # ── known GCS values from conference paper ────────────────────────────────────
 # ΔDSC = max(DSC) − min(DSC) across M ∈ {7,28,56,112}, gate=pam, r=32
 KNOWN_GCS = {
-    "Synapse":    2.30,   # M=7→28→56→112: −1.16, +1.14, −0.90, −0.36 vs DA-TransUNet
-    "Kvasir":     0.64,
-    "ISIC":       0.70,   # approximate: only M=7 tested; gain similar to Kvasir
+    "Synapse": 2.30,  # M=7→28→56→112: −1.16, +1.14, −0.90, −0.36 vs DA-TransUNet
+    "Kvasir": 0.64,
+    "ISIC": 0.70,  # approximate: only M=7 tested; gain similar to Kvasir
 }
 
-THRESHOLD_RATIO = 0.15   # frequencies above 15% of Nyquist counted as "high"
+THRESHOLD_RATIO = 0.15  # frequencies above 15% of Nyquist counted as "high"
 
 
-def high_freq_ratio(image_gray: np.ndarray, threshold_ratio: float = THRESHOLD_RATIO) -> float:
+def high_freq_ratio(
+    image_gray: np.ndarray, threshold_ratio: float = THRESHOLD_RATIO
+) -> float:
     """
     Compute fraction of 2D FFT power in frequencies above threshold_ratio × Nyquist.
 
@@ -73,11 +75,11 @@ def load_synapse_images(root: str, n: int) -> list[np.ndarray]:
         try:
             if f.endswith(".npz"):
                 data = np.load(f)
-                img = data["image"]   # (H, W) float32, already grayscale
+                img = data["image"]  # (H, W) float32, already grayscale
             else:
                 with h5py.File(f, "r") as hf:
                     img = hf["image"][()]
-                    if img.ndim == 3:   # (C, H, W) or (H, W, C)
+                    if img.ndim == 3:  # (C, H, W) or (H, W, C)
                         img = img[0] if img.shape[0] < img.shape[-1] else img[..., 0]
             imgs.append(img.astype(np.float32))
         except Exception as e:
@@ -102,7 +104,9 @@ def load_rgb_images(root: str, n: int) -> list[np.ndarray]:
     return imgs
 
 
-def compute_dataset_hfr(images: list[np.ndarray], threshold: float = THRESHOLD_RATIO) -> tuple[float, float]:
+def compute_dataset_hfr(
+    images: list[np.ndarray], threshold: float = THRESHOLD_RATIO
+) -> tuple[float, float]:
     """Return (mean HFR, std HFR) across all images."""
     hfrs = [high_freq_ratio(img, threshold) for img in images]
     return float(np.mean(hfrs)), float(np.std(hfrs))
@@ -118,32 +122,56 @@ def plot_results(results: dict, out_path: str):
     ax = axes[0]
     names = list(results.keys())
     means = [results[n]["hfr_mean"] for n in names]
-    stds  = [results[n]["hfr_std"]  for n in names]
+    stds = [results[n]["hfr_std"] for n in names]
     colors = ["#D97C6B", "#6BAD8F", "#6B8FAD"]
-    bars = ax.bar(names, means, yerr=stds, capsize=5,
-                  color=colors, edgecolor="#444", linewidth=0.8)
+    bars = ax.bar(
+        names,
+        means,
+        yerr=stds,
+        capsize=5,
+        color=colors,
+        edgecolor="#444",
+        linewidth=0.8,
+    )
     ax.set_ylabel("High-Frequency Ratio (HFR)", fontsize=12)
     ax.set_title("Spatial Frequency Profile per Dataset", fontsize=12)
     ax.set_ylim(0, 1)
     for bar, m in zip(bars, means):
-        ax.text(bar.get_x() + bar.get_width() / 2, m + 0.02,
-                f"{m:.3f}", ha="center", fontsize=10, fontweight="bold")
+        ax.text(
+            bar.get_x() + bar.get_width() / 2,
+            m + 0.02,
+            f"{m:.3f}",
+            ha="center",
+            fontsize=10,
+            fontweight="bold",
+        )
 
     # ── right: HFR vs ΔDSC scatter ────────────────────────────────────────────
     ax = axes[1]
-    hfrs   = [results[n]["hfr_mean"] for n in names]
+    hfrs = [results[n]["hfr_mean"] for n in names]
     deltas = [results[n]["delta_dsc"] for n in names]
     rho, pval = spearmanr(hfrs, deltas)
 
     for hfr, delta, name, color in zip(hfrs, deltas, names, colors):
-        ax.scatter(hfr, delta, s=120, color=color, edgecolors="#444",
-                   linewidth=0.8, zorder=3, label=name)
-        ax.annotate(name, (hfr, delta),
-                    textcoords="offset points", xytext=(6, 4), fontsize=10)
+        ax.scatter(
+            hfr,
+            delta,
+            s=120,
+            color=color,
+            edgecolors="#444",
+            linewidth=0.8,
+            zorder=3,
+            label=name,
+        )
+        ax.annotate(
+            name, (hfr, delta), textcoords="offset points", xytext=(6, 4), fontsize=10
+        )
 
     ax.set_xlabel("High-Frequency Ratio (HFR)", fontsize=12)
     ax.set_ylabel("ΔDSC (pp) — GCS proxy", fontsize=12)
-    ax.set_title(f"HFR vs GCS  |  Spearman ρ = {rho:.3f}  (p = {pval:.3f})", fontsize=12)
+    ax.set_title(
+        f"HFR vs GCS  |  Spearman ρ = {rho:.3f}  (p = {pval:.3f})", fontsize=12
+    )
     ax.legend(fontsize=10)
     ax.grid(True, alpha=0.3)
 
@@ -155,15 +183,23 @@ def plot_results(results: dict, out_path: str):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--synapse_dir",  default="../data/Synapse/train_npz")
-    parser.add_argument("--kvasir_dir",   default="../data/Kvasir/images")
-    parser.add_argument("--isic_dir",     default="../data/ISIC2018/images")
-    parser.add_argument("--n_images",     type=int, default=200,
-                        help="Images to sample per dataset (for speed)")
-    parser.add_argument("--threshold",    type=float, default=THRESHOLD_RATIO,
-                        help="HFR threshold: fraction of Nyquist")
-    parser.add_argument("--seed",         type=int, default=42)
-    parser.add_argument("--out",          default="fourier_gcs_sanity.png")
+    parser.add_argument("--synapse_dir", default="../data/Synapse/train_npz")
+    parser.add_argument("--kvasir_dir", default="../data/Kvasir/images")
+    parser.add_argument("--isic_dir", default="../data/ISIC2018/images")
+    parser.add_argument(
+        "--n_images",
+        type=int,
+        default=200,
+        help="Images to sample per dataset (for speed)",
+    )
+    parser.add_argument(
+        "--threshold",
+        type=float,
+        default=THRESHOLD_RATIO,
+        help="HFR threshold: fraction of Nyquist",
+    )
+    parser.add_argument("--seed", type=int, default=42)
+    parser.add_argument("--out", default="fourier_gcs_sanity.png")
     args = parser.parse_args()
 
     random.seed(args.seed)
@@ -171,8 +207,8 @@ def main():
 
     datasets = {
         "Synapse": (args.synapse_dir, "synapse"),
-        "Kvasir":  (args.kvasir_dir,  "rgb"),
-        "ISIC":    (args.isic_dir,    "rgb"),
+        "Kvasir": (args.kvasir_dir, "rgb"),
+        "ISIC": (args.isic_dir, "rgb"),
     }
 
     results = {}
@@ -196,14 +232,18 @@ def main():
         delta_dsc = KNOWN_GCS.get(name, None)
 
         print(f"  HFR: {mean_hfr:.4f} ± {std_hfr:.4f}  |  ΔDSC (known): {delta_dsc} pp")
-        results[name] = {"hfr_mean": mean_hfr, "hfr_std": std_hfr, "delta_dsc": delta_dsc}
+        results[name] = {
+            "hfr_mean": mean_hfr,
+            "hfr_std": std_hfr,
+            "delta_dsc": delta_dsc,
+        }
 
     if len(results) < 2:
         print("\nNeed at least 2 datasets for correlation. Check paths.")
         return
 
     # Spearman correlation
-    hfrs   = [results[n]["hfr_mean"] for n in results]
+    hfrs = [results[n]["hfr_mean"] for n in results]
     deltas = [results[n]["delta_dsc"] for n in results]
     rho, pval = spearmanr(hfrs, deltas)
 
@@ -215,11 +255,19 @@ def main():
         print("✅ Strong negative correlation: HFR predicts GCS (high HFR → low ΔDSC)")
         print("   Predictive GCS claim is SUPPORTED. Safe to build Contribution 2.")
     elif rho < -0.3:
-        print("⚠  Moderate correlation. GCS characterization claim OK; 'prediction' framing risky.")
-        print("   Recommend expanding to 5-6 datasets before committing to Contribution 2.")
+        print(
+            "⚠  Moderate correlation. GCS characterization claim OK; 'prediction' framing risky."
+        )
+        print(
+            "   Recommend expanding to 5-6 datasets before committing to Contribution 2."
+        )
     else:
-        print("❌ Weak or positive correlation. Fourier Energy may not be the right proxy.")
-        print("   Try alternative metrics: spatial entropy, object-size ratio, boundary fractal dim.")
+        print(
+            "❌ Weak or positive correlation. Fourier Energy may not be the right proxy."
+        )
+        print(
+            "   Try alternative metrics: spatial entropy, object-size ratio, boundary fractal dim."
+        )
 
     plot_results(results, args.out)
 
