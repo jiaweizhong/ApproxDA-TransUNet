@@ -42,7 +42,7 @@ Instead of computing global position attention, ApproxDA-TransUNet partitions th
 
 \textbf{Low-rank projection.} Following~\cite{wang2020linformer}, query and key features inside each window are projected from $N_w {=} M^2$ to rank $r \ll M^2$ via a learned matrix $\mathbf{W}_r \in \mathbb{R}^{r \times N_w}$, where $\mathbf{C}, \mathbf{D} \in \mathbb{R}^{N_w \times C}$ denote the query and key feature matrices within each window:
 \begin{equation}
-  \tilde{\mathbf{C}} = \mathbf{W}_r \mathbf{C}^\top, \quad \tilde{\mathbf{D}} = \mathbf{W}_r \mathbf{D}^\top \in \mathbb{R}^{r \times C}.
+  \tilde{\mathbf{C}} = \mathbf{W}_r \mathbf{C}, \quad \tilde{\mathbf{D}} = \mathbf{W}_r \mathbf{D} \in \mathbb{R}^{r \times C}.
   \label{eq:lowrank}
 \end{equation}
 The full attention matrix $\mathbf{C}\mathbf{D}^\top \in \mathbb{R}^{N_w \times N_w}$ is approximated by $\mathbf{C}\tilde{\mathbf{D}}^\top \in \mathbb{R}^{N_w \times r}$ (original queries $\times$ projected keys), reducing total complexity to $\mathcal{O}(NrC)$. Combined, windowing and low-rank projection reduce the theoretical attention-matrix size from $\mathcal{O}(N^2)$ to $\mathcal{O}(Nr)$, a factor of $N/r$ (${\sim}390{\times}$ at $112{\times}112$ with $r{=}32$). These two hyperparameters---window size $M$ and rank $r$---form the primary experimental axes investigated on Synapse.
