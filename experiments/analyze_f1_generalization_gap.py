@@ -20,15 +20,15 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
 LOGS = {
-    "Synapse (high CS)": {
+    "Synapse": {
         "DA-TransUNet": "results/DA-TransUNet/Synapse/training-06162026.txt",
         "ApproxDA (gate=pam, M=28)": "results/ApproxDA-TransUNet/M28R32-PAM-06182026/training_SynapseM28R32PAM.txt",
     },
-    "Kvasir-SEG (low CS)": {
+    "Kvasir-SEG": {
         "DA-TransUNet": "results/DA-TransUNet/Kvasir/training_kvasir-06162026.txt",
         "ApproxDA (gate=learn, M=7)": "results/ApproxDA-TransUNet/Kvasir/training_kvasir-06162026.txt",
     },
-    "ISIC 2018 (low CS)": {
+    "ISIC 2018": {
         "DA-TransUNet": "results/DA-TransUNet/ISIC2018/training_da_isic.txt",
         "ApproxDA (gate=learn, M=7)": "results/ApproxDA-TransUNet/ISIC18/training_learn_M7.txt",
     },
@@ -36,9 +36,9 @@ LOGS = {
 
 # Test DSC from test.py runs (%)
 TEST_DSC = {
-    "Synapse (high CS)": {"DA-TransUNet": 79.80, "ApproxDA (gate=pam, M=28)": 80.94},
-    "Kvasir-SEG (low CS)": {"DA-TransUNet": 88.44, "ApproxDA (gate=learn, M=7)": 89.24},
-    "ISIC 2018 (low CS)": {"DA-TransUNet": 88.43, "ApproxDA (gate=learn, M=7)": 89.58},
+    "Synapse": {"DA-TransUNet": 79.80, "ApproxDA (gate=pam, M=28)": 80.94},
+    "Kvasir-SEG": {"DA-TransUNet": 88.44, "ApproxDA (gate=learn, M=7)": 89.24},
+    "ISIC 2018": {"DA-TransUNet": 88.43, "ApproxDA (gate=learn, M=7)": 89.58},
 }
 
 COLORS = {
@@ -98,13 +98,13 @@ def main():
     fig, axes = plt.subplots(
         2,
         3,
-        figsize=(13.6, 5.8),
+        figsize=(14.2, 6.2),
         gridspec_kw={
-            "hspace": 0.34,
-            "wspace": 0.19,
-            "left": 0.055,
-            "right": 0.985,
-            "top": 0.91,
+            "hspace": 0.35,
+            "wspace": 0.18,
+            "left": 0.05,
+            "right": 0.99,
+            "top": 0.92,
             "bottom": 0.09,
         },
     )
@@ -114,6 +114,19 @@ def main():
         f"{'Dataset':<14} {'Model':<30} {'BestVal':>8} {'TestDSC':>8} {'Gap':>7} {'Volatility':>10}"
     )
     print("-" * 70)
+
+    # Dataset display labels with GCS tier
+    GCS_TAG = {
+        "Synapse": "Synapse (High-GCS)",
+        "Kvasir-SEG": "Kvasir-SEG (Low-GCS)",
+        "ISIC 2018": "ISIC 2018 (Low-GCS)",
+    }
+
+    YLIMS_DSC = {
+        "Synapse": (66.0, 82.5),
+        "Kvasir-SEG": (79.5, 90.2),
+        "ISIC 2018": (83.8, 90.2),
+    }
 
     for col_idx, dataset in enumerate(datasets):
         ax_dsc = axes[0, col_idx]
@@ -136,23 +149,23 @@ def main():
                 d["val_epochs"],
                 d["val_dsc"],
                 color=col,
-                lw=1.8,
+                lw=2.0,
                 marker="o",
-                markersize=3.2,
+                markersize=3.6,
                 label=lbl,
             )
             # Test DSC horizontal dashed line
-            ax_dsc.axhline(test_val, color=col, lw=1.1, linestyle="--", alpha=0.65)
+            ax_dsc.axhline(test_val, color=col, lw=1.2, linestyle="--", alpha=0.70)
 
             # Train loss curve (smoothed with rolling mean)
             loss = d["loss"]
             if len(loss) > 10:
                 smoothed = np.convolve(loss, np.ones(10) / 10, mode="valid")
                 ax_loss.plot(
-                    d["epochs"][9:], smoothed, color=col, lw=1.6, label=lbl_loss
+                    d["epochs"][9:], smoothed, color=col, lw=1.8, label=lbl_loss
                 )
             else:
-                ax_loss.plot(d["epochs"], loss, color=col, lw=1.6, label=lbl_loss)
+                ax_loss.plot(d["epochs"], loss, color=col, lw=1.8, label=lbl_loss)
 
             # Stats
             best_val, test_dsc, vol, gap = gap_stats(d, model, dataset)
@@ -160,27 +173,33 @@ def main():
                 f"{dataset:<14} {lbl:<30} {best_val:>8.2f} {test_dsc:>8.2f} {gap:>+7.2f} {vol:>10.4f}"
             )
 
+        tag = GCS_TAG.get(dataset, dataset)
+
         # Val DSC subplot styling
-        ax_dsc.set_title(f"{dataset} — Val DSC (%)", fontsize=10.5, fontweight="bold")
-        ax_dsc.set_xlabel("Epoch", fontsize=9.2)
-        ax_dsc.set_ylabel("Validation DSC (%)", fontsize=9.2)
+        ax_dsc.set_title(f"{tag} — Val DSC (%)", fontsize=12.0, fontweight="bold")
+        ax_dsc.set_xlabel("Epoch", fontsize=10.5)
+        ax_dsc.set_ylabel("Validation DSC (%)", fontsize=10.5)
+        ax_dsc.tick_params(axis="both", labelsize=9.5)
         ax_dsc.set_xlim(0, 305)
+        if dataset in YLIMS_DSC:
+            ax_dsc.set_ylim(YLIMS_DSC[dataset])
         ax_dsc.yaxis.set_minor_locator(ticker.AutoMinorLocator(2))
         ax_dsc.grid(True, which="major", alpha=0.30)
         ax_dsc.grid(True, which="minor", alpha=0.10)
-        ax_dsc.legend(fontsize=7.8, loc="lower right", framealpha=0.9)
+        ax_dsc.legend(fontsize=9.2, loc="lower right", framealpha=0.92)
 
         # Train loss subplot styling
         ax_loss.set_title(
-            f"{dataset} — Train Loss",
-            fontsize=10.5,
+            f"{tag} — Train Loss",
+            fontsize=12.0,
             fontweight="bold",
         )
-        ax_loss.set_xlabel("Epoch", fontsize=9.2)
-        ax_loss.set_ylabel("Loss (10-ep avg)", fontsize=9.2)
+        ax_loss.set_xlabel("Epoch", fontsize=10.5)
+        ax_loss.set_ylabel("Loss (10-ep avg)", fontsize=10.5)
+        ax_loss.tick_params(axis="both", labelsize=9.5)
         ax_loss.set_xlim(0, 305)
         ax_loss.grid(True, alpha=0.30)
-        ax_loss.legend(fontsize=7.8, loc="upper right", framealpha=0.9)
+        ax_loss.legend(fontsize=9.2, loc="upper right", framealpha=0.92)
 
     print("=" * 70)
     print("\nInterpretation guide:")

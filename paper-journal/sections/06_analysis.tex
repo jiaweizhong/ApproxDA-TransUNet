@@ -126,7 +126,7 @@ What intrinsic property of a medical segmentation task drives its GCS tier? We c
   \item \textbf{SC5 --- Inter-Class Window Separation:} Fraction of semantic class-centroid pairs falling in distinct $M{\times}M$ windows (structural zero for binary datasets). Measures whether multi-class reasoning requires cross-window communication.
 \end{itemize}
 
-A valid causal factor must achieve strong positive rank correlation ($\rho > 0.8$) with the empirical GCS ranking across all five datasets (Synapse $>$ ACDC $>$ Kvasir $\approx$ CVC $>$ ISIC). Table~\ref{tab:causal} and Figures~\ref{fig:causal}--\ref{fig:proxy} present the elimination results.
+A valid causal factor must achieve strong positive rank correlation ($\rho > 0.8$) with the empirical GCS ranking across all five datasets (Synapse $>$ ACDC $>$ Kvasir $\approx$ CVC $>$ ISIC). Table~\ref{tab:causal} and Figures~\ref{fig:gcs_causal} and~\ref{fig:gcs_mask} present the elimination results.
 
 \begin{table*}[tb]
   \caption{Empirical verification of causal hypotheses ($M{=}28$, five benchmarks).}
@@ -152,18 +152,18 @@ A valid causal factor must achieve strong positive rank correlation ($\rho > 0.8
   $^\ddagger$$n_\text{classes}$ is falsified as a true cause because ACDC has multi-class anatomy yet low GCS.}
 \end{table*}
 
-\begin{figure*}[tbp]
+\begin{figure*}[t]
   \centering
-  \includegraphics[width=\textwidth]{figures/gcs_causal_sanity.png}
-  \caption{Causal elimination results across five benchmarks ($M{=}28$). Top row: per-dataset metric distributions. Bottom row: metric values vs.\ empirical $\Delta$DSC (GCS). SC5 (inter-class window separation, $\rho{=}+0.89$) stands as the sole surviving predictor.}
-  \label{fig:causal}
+  \includegraphics[width=\textwidth]{figures/gcs_causal_sanity.pdf}
+  \caption{Ablation of causal candidate features across five medical segmentation benchmarks. (a) Context Sensitivity $\Delta\text{DSC}$ across the five evaluated tasks. (b)--(f) Candidates SC1--SC5 plotted against $\Delta\text{DSC}$; Spearman $\rho$ and Pearson $r$ annotated. ACDC (triangle) serves as a critical discriminating benchmark: it shares the multi-class nature of Synapse but exhibits minimal context sensitivity ($\Delta\text{DSC}=0.73$\,pp), falsifying SC1--SC4 and isolating SC5 (inter-class window separation) as the sole consistent causal predictor ($\rho = +0.89$, $r = +0.93$).}
+  \label{fig:gcs_causal}
 \end{figure*}
 
-\begin{figure*}[tbp]
+\begin{figure*}[t]
   \centering
-  \includegraphics[width=\textwidth]{figures/gcs_mask_sanity.png}
-  \caption{Mask-based heuristic proxy metrics vs.\ empirical $\Delta$DSC on initial three benchmarks. While class count correlates on 3 datasets ($\rho{=}+0.87$), subsequent causal testing with ACDC (Table~\ref{tab:causal}) disproves class count as a causal mechanism.}
-  \label{fig:proxy}
+  \includegraphics[width=\textwidth]{figures/gcs_mask_sanity.pdf}
+  \caption{Training-free spatial metrics (SC1--SC4) across five benchmarks. ACDC (coral) closely tracks binary low-GCS tasks across all four spatial-dispersion metrics, falsifying the hypothesis that context sensitivity is driven by target scale, boundary complexity, or multi-component crossing alone.}
+  \label{fig:gcs_mask}
 \end{figure*}
 
 \textbf{Elimination rationale:}
