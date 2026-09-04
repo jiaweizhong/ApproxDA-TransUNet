@@ -51,7 +51,7 @@ Tables~\ref{tab:synapse}--\ref{tab:isic} compare ApproxDA-TransUNet against publ
   \parbox{\columnwidth}{\footnotesize ApproxDA: gate=pam, $M{=}28$, $r{=}32$, $G{=}8$.}
 \end{table}
 
-\textbf{ACDC.} On cardiac MRI segmentation (Table~\ref{tab:acdc}), ApproxDA-TransUNet with gate=pam, $M{=}7$ achieves a mean DSC of 88.97\%---below TransUNet (89.71\%) and Swin-Unet (90.00\%), but with the \textbf{highest} per-class DSC on both RV (\textbf{89.61\%}) and Myo (\textbf{85.91\%}). The class-level pattern is consistent with the inductive-bias interpretation: local windowed attention benefits locally-resolvable structures whose boundaries are determined by fine-grained intensity gradients (crescent-shaped RV; thin-ring Myo), while the LV cavity (91.40\%) degrades 3--4\,pp below all baselines. LV delineation requires estimating global cavity extent---a property that spans multiple M=7 windows and cannot be recovered from within-window context alone. Within a nominally low-GCS dataset ($\Delta\text{DSC}{=}0.73$\,pp overall), the locality prior therefore produces opposing sub-class effects: improving locally-bounded structures while hurting globally-defined ones. We discuss this further in Section~\ref{sec:conclusion}.
+\textbf{ACDC.} On cardiac MRI segmentation (Table~\ref{tab:acdc}), DA-TransUNet achieves a mean DSC of 88.50\% (RV 88.84\%, Myo \textbf{85.98\%}, LV 90.67\%). ApproxDA-TransUNet with gate=pam, $M{=}7$ achieves a mean DSC of 88.97\% ($+$0.47\% over DA-TransUNet), attaining the \textbf{highest} per-class DSC on RV (\textbf{89.61\%}) and competitive performance on Myo (\underline{85.91\%}). While both dual-attention architectures exhibit lower LV cavity DSC than pure global Transformer models (e.g., TransUNet 95.73\%, Swin-Unet 95.83\%), ApproxDA outperforms DA-TransUNet across both RV ($+$0.77\%) and LV ($+$0.73\%). The class-level pattern is consistent with the inductive-bias interpretation: local windowed attention benefits locally-resolvable structures whose boundaries are determined by fine-grained intensity gradients (crescent-shaped RV; thin-ring Myo), while LV cavity delineation requires estimating global cavity extent spanning multiple $M{=}7$ windows. Within a nominally low-GCS dataset ($\Delta\text{DSC}{=}0.73$\,pp overall), ApproxDA maintains a consistent advantage over full-attention DA-TransUNet.
 
 \begin{table}[ht]
   \caption{Segmentation Results on ACDC Cardiac MRI}
@@ -67,14 +67,14 @@ Tables~\ref{tab:synapse}--\ref{tab:isic} compare ApproxDA-TransUNet against publ
     U-Net~\cite{ronneberger2015unet}$^\dag$          & 87.10 & 80.63 & 94.92 & 87.55 \\
     Att-UNet~\cite{oktay2018attention}$^\dag$         & 87.58 & 79.20 & 93.47 & 86.75 \\
     TransUNet~\cite{chen2021transunet}                & \underline{88.86} & 84.53 & \underline{95.73} & \underline{89.71} \\
-    Swin-Unet~\cite{cao2022swinunet}                  & 88.55 & \underline{85.62} & \textbf{95.83} & \textbf{90.00} \\
-    DA-TransUNet~\cite{sun2024datransunet}$^\ddag$   & \multicolumn{4}{c}{\textit{pending re-run}} \\
+    Swin-Unet~\cite{cao2022swinunet}                  & 88.55 & 85.62 & \textbf{95.83} & \textbf{90.00} \\
+    DA-TransUNet~\cite{sun2024datransunet}$^\ddag$    & 88.84 & \textbf{85.98} & 90.67 & 88.50 \\
     \midrule
-    \textbf{ApproxDA-TransUNet (ours)} & \textbf{89.61} & \textbf{85.91} & 91.40 & 88.97 \\
+    \textbf{ApproxDA-TransUNet (ours)} & \textbf{89.61} & \underline{85.91} & 91.40 & 88.97 \\
     \bottomrule
   \end{tabular}
   \par\vspace{5pt}
-  \parbox{\columnwidth}{\footnotesize $^\dag$R50-backbone variant reported in~\cite{chen2021transunet}. $^\ddag$Pending re-run. ApproxDA: gate=pam, $M{=}7$, $r{=}32$, $G{=}8$.}
+  \parbox{\columnwidth}{\footnotesize $^\dag$R50-backbone variant reported in~\cite{chen2021transunet}. $^\ddag$Re-run under our protocol. ApproxDA: gate=pam, $M{=}7$, $r{=}32$, $G{=}8$.}
 \end{table}
 
 \textbf{Kvasir-SEG.} On polyp segmentation (Table~\ref{tab:kvasir}), U-Net leads the CNN-based group (88.22\% DSC) while TransUNet (87.91\%) and DA-TransUNet$^\dag$ (88.44\%) are the strongest Transformer-based entries. ApproxDA-TransUNet with gate=pam, $M{=}56$ achieves \textbf{90.17\%} DSC, \textbf{84.27\%} mIoU, and \textbf{44.35\,mm} HD95---state-of-the-art across all three metrics, with a $+$1.73\% DSC gain and $-$8.69\,mm HD95 improvement over the nearest baseline.
@@ -102,7 +102,7 @@ Tables~\ref{tab:synapse}--\ref{tab:isic} compare ApproxDA-TransUNet against publ
   \parbox{\columnwidth}{\footnotesize $^\dag$Re-run under our protocol (88.47\% reported). ApproxDA: gate=pam, $M{=}56$, $r{=}32$.}
 \end{table}
 
-\textbf{CVC-ClinicDB.} On colonoscopy polyp segmentation (Table~\ref{tab:cvc}), DA-TransUNet$^\ddag$ achieves 89.47\% DSC and 82.51\% mIoU---the strongest published baseline on this dataset. ApproxDA-TransUNet with gate=pam, $M{=}112$ achieves \textbf{90.99\%} DSC, \textbf{85.09\%} mIoU, and \textbf{14.77\,mm} HD95---surpassing the nearest baseline by $+$1.52\% DSC and $+$2.58\% mIoU. The DSC span across $M{\in}\{7,28,56,112\}$ is 0.62\,pp, confirming CVC-ClinicDB is window-robust---consistent with its binary task structure and low GCS, as analyzed in Section~\ref{sec:understanding}.
+\textbf{CVC-ClinicDB.} On colonoscopy polyp segmentation (Table~\ref{tab:cvc}), DA-TransUNet achieves 89.47\% DSC and 82.51\% mIoU---the strongest published baseline on this dataset. ApproxDA-TransUNet with gate=pam, $M{=}112$ achieves \textbf{90.99\%} DSC, \textbf{85.09\%} mIoU, and \textbf{14.77\,mm} HD95---surpassing the nearest baseline by $+$1.52\% DSC and $+$2.58\% mIoU. The DSC span across $M{\in}\{7,28,56,112\}$ is 0.62\,pp, confirming CVC-ClinicDB is window-robust---consistent with its binary task structure and low GCS, as analyzed in Section~\ref{sec:understanding}.
 
 \begin{table}[ht]
   \caption{Segmentation Results on CVC-ClinicDB Polyp}
@@ -196,8 +196,8 @@ Although the proposed approximation substantially reduces the theoretical comple
 
 The quantitative and qualitative evaluations across five heterogeneous benchmarks highlight two core empirical observations:
 \begin{enumerate}
-  \item \textbf{Approximation surpasses full attention on texture-boundary tasks:} On Kvasir-SEG ($+$1.73\% DSC), CVC-ClinicDB ($+$1.52\% DSC), and ISIC 2018 ($+$0.70\% DSC), windowed attention consistently outperforms dense full-map attention, indicating that unconstrained global interactions can introduce non-informative contextual noise.
-  \item \textbf{Spatial context sensitivity is intrinsically task-dependent:} While multi-organ CT (Synapse) demands careful window tuning to balance local detail and cross-organ context, polyp and skin lesion tasks exhibit broad performance plateaus.
+  \item \textbf{Approximation consistently outperforms full dual attention across benchmarks:} Across all five benchmarks, ApproxDA-TransUNet surpasses DA-TransUNet ($+$1.14\% on Synapse, $+$0.47\% on ACDC, $+$1.73\% on Kvasir-SEG, $+$1.52\% on CVC-ClinicDB, and $+$0.70\% on ISIC 2018), demonstrating that unconstrained global spatial interactions are not necessary and can introduce non-informative contextual noise.
+  \item \textbf{Spatial context sensitivity is intrinsically task-dependent:} While multi-organ CT (Synapse) demands careful window tuning to balance local detail and cross-organ context, cardiac, polyp, and skin lesion tasks exhibit broad performance plateaus.
 \end{enumerate}
 These findings challenge the conventional view of attention approximation as a mere efficiency compromise and motivate two fundamental questions: \emph{What intrinsic task properties dictate this context sensitivity (investigated in Section~\ref{sec:gcs_mechanism})?} and \emph{How does spatial approximation alter training dynamics and architectural routing (investigated in Section~\ref{sec:optimization_routing})?}
 
