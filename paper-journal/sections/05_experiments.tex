@@ -182,15 +182,39 @@ Although the proposed approximation substantially reduces the theoretical comple
     \toprule
     Method & Params (M) & GFLOPs & Train VRAM & Train Time & Infer (s/vol) & Multi-GPU \\
     \midrule
-    DA-TransUNet~\cite{sun2024datransunet} & 107.95 & 30.2 & 11.5\,G (1 GPU) & 11.4h & 120.0 & No$^\dagger$ \\
+    DA-TransUNet~\cite{sun2024datransunet} & 107.95 & 30.2 & 11.5\,G & 11.4h & 120.0 & No$^\dagger$ \\
     \midrule
-    ApproxDA-TransUNet (gate=pam, $M$=7)  & 112.98 & 32.1 & 6.4\,G/GPU ($\times$2 GPU, total 12.8\,G)$^\ddagger$ & 8.3h ($\times$2 GPU) & 121.3 & Yes (DDP) \\
-    ApproxDA-TransUNet (gate=learn, $M$=7) & 114.90 & 32.1 & 10.6\,G (1 GPU) & 11.5h & 114.2 & Yes (DDP) \\
+    ApproxDA (gate=pam, $M$=7)  & 112.98 & 32.1 & 6.4\,G$^\ddagger$ & 8.3h$^\ddagger$ & 121.3 & Yes (DDP) \\
+    ApproxDA (gate=learn, $M$=7) & 114.90 & 32.1 & 10.6\,G & 11.5h & 114.2 & Yes (DDP) \\
     \bottomrule
   \end{tabular}
   \par\vspace{5pt}
-  \parbox{\textwidth}{\footnotesize $^\dagger$In our test environment, the reproduced DA-TransUNet implementation encountered an implementation-specific PyTorch autograd/DDP incompatibility that prevented multi-GPU training; memory is reported on a single GPU. $^\ddagger$Per-GPU memory with DDP batch splitting across 2 GPUs; total memory footprint is 12.8\,G. Memory comparison between single-GPU and multi-GPU configurations should be interpreted with this difference in mind.}
+  \parbox{\textwidth}{\footnotesize $^\dagger$In our test environment, the reproduced DA-TransUNet implementation encountered an implementation-specific PyTorch autograd/DDP incompatibility that prevented multi-GPU training; memory reported on 1 GPU. $^\ddagger$Per-GPU value with DDP batch splitting across 2 GPUs (total VRAM 12.8\,G); training time is wall-clock under 2-GPU DDP, not a reduction in total GPU-hours. Memory and time are not directly comparable across the single-GPU and 2-GPU rows.}
 \end{table*}
+
+\subsection{Statistical Validation}
+\label{sec:stat_validation}
+
+To assess whether the DSC improvements over DA-TransUNet reflect systematic effects rather than test-set noise, we perform paired significance testing wherever per-case (per-volume or per-image) predictions from both methods are available in our result logs. For each dataset we compute: (i) the paired mean difference with a 10{,}000-resample bootstrap 95\% confidence interval (resampling test cases with replacement), (ii) a paired Wilcoxon signed-rank test, and (iii) a paired $t$-test.
+
+\begin{table*}[ht]
+  \caption{Paired Case-Level Significance: ApproxDA-TransUNet vs.\ DA-TransUNet}
+  \label{tab:paired_significance}
+  \centering
+  \setlength{\tabcolsep}{6pt}
+  \begin{tabular}{lcccc}
+    \toprule
+    Dataset & $n$ & Mean $\Delta$ (95\% CI), pp & Wilcoxon $p$ & Paired $t$-test $p$ \\
+    \midrule
+    Kvasir-SEG & 200 & $+$1.73 ($+$0.56, $+$2.92) & 0.0011 & 0.0046 \\
+    ISIC 2018  & 519 & $+$1.15 ($+$0.45, $+$1.85) & $<$0.0001 & 0.0017 \\
+    \bottomrule
+  \end{tabular}
+  \par\vspace{5pt}
+  \parbox{\textwidth}{\footnotesize $n$: number of paired test cases with logged per-case DSC for both methods. ISIC 2018 compares against our controlled re-run baseline (88.43\%, Table~\ref{tab:volatility}), consistent with the case-level pairing requirement. Synapse, ACDC, and CVC-ClinicDB are not included: Synapse's committed DA-TransUNet inference log does not reproduce the reported 79.80\% test DSC (likely a stale or mismatched checkpoint) and requires re-verification before case-level pairing is trustworthy; ACDC and CVC-ClinicDB were evaluated against published baselines without a locally re-run per-case log. \textbf{[PLACEHOLDER: pending re-verified Synapse DA-TransUNet baseline log; see Limitations.]}}
+\end{table*}
+
+Both Kvasir-SEG and ISIC 2018 improvements are statistically significant at $\alpha{=}0.05$ under both tests, with bootstrap confidence intervals that exclude zero. As a supplementary check on Synapse, we additionally compare per-organ DSC ($n{=}8$ organs, aggregated over the fixed 12-volume test set) between ApproxDA-TransUNet ($M{=}28$) and the DA-TransUNet numbers reported in its original publication: mean difference $+$1.12\,pp (6/8 organs favor ApproxDA-TransUNet; Liver $-$1.27\,pp and Stomach $-$1.03\,pp favor DA-TransUNet), Wilcoxon $p{=}0.109$, paired $t$-test $p{=}0.092$ --- not significant at $\alpha{=}0.05$, though directionally consistent with the case-level Kvasir-SEG and ISIC 2018 results. This organ-level test is likely underpowered at $n{=}8$ and is a distinct comparison from case-level pairing (organs are fixed anatomical categories aggregated over all volumes, not independently resampled patients); we report it for transparency rather than as confirmatory evidence.
 
 \subsection{Summary and Transition to Mechanistic Analysis}
 

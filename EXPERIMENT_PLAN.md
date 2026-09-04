@@ -150,8 +150,18 @@ Comparing gate=pam M=7 (windowed) vs M=112 (global) on 10 Kvasir images:
 
 ## Journal Extension — Phase F
 
-**Target:** IEEE JBHI or *Frontiers in Bioengineering and Biotechnology*
 **Goal:** Elevate conference hypotheses to validated findings, expand GCS spectrum to 5+ datasets.
+
+### Target Journals (投稿期刊推荐与策略)
+
+| 期刊简称 | 刊物全称 | 中科院分区 | 投稿难度（相对 Frontiers） | 建议投递策略 / 适用场景 | 状态 / 匹配度 |
+|---|---|---|---|---|---|
+| **CBM** | *Computers in Biology and Medicine* (Elsevier) | **1区 (Top)** | 基本持平 | **首选冲刺**：如果算法有一定创新性，且在公开医学数据集上表现很好（如多数据集验证、指标显著提升），首选冲刺。 | 🎯 冲刺首选 (Top 1区) |
+| **BSPC** | *Biomedical Signal Processing and Control* (Elsevier) | **2区** | 基本持平 | **侧重视觉/临床**：如果工作偏向医疗图像、视频或临床多模态视觉分析。 | 🎯 优质2区 |
+| **CMPB** | *Computer Methods and Programs in Biomedicine* (Elsevier) | **2区** | 基本持平 | **侧重复现/效率**：如果论文除了算法，还强调了代码复现、计算效率或系统方案（如 ApproxDA 可控实验框架、显存优化与 DDP）。 | 🎯 优质2区 (高度契合) |
+| **CMIG** | *Computerized Medical Imaging and Graphics* (Elsevier) | **2区** | 稍低（更容易） | **稳妥兜底**：如果实验数据量较小，或者创新点属于稳扎稳打型，用它来兜底。 | 🛡️ 稳健兜底 |
+| **JBHI** | *IEEE Journal of Biomedical and Health Informatics* | **1区 (Top)** | 略高 | **IEEE旗舰**：生物医学与健康信息学顶级期刊，强调方法完整性、理论深入度与广泛实验。 | 🎯 冲刺备选 |
+| **Frontiers** | *Frontiers in Bioengineering and Biotechnology* | **2区/3区** | 基准 (Baseline) | **基线同源**：DA-TransUNet 原文发刊期刊，同源对照与方法扩展接收度高。 | 🔄 基线备选 |
 
 ---
 

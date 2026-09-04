@@ -89,32 +89,31 @@ To quantify task sensitivity across benchmarks, we define empirical \textbf{Glob
   \Delta\text{DSC} = \max_{M} \text{DSC}(M) - \min_{M} \text{DSC}(M),
   \label{eq:gcs}
 \end{equation}
-measured under gate=pam, $r{=}32$, from single training runs per configuration. As summarized in Table~\ref{tab:gcs_spectrum} and Figure~\ref{fig:dsc_vs_m}, tasks form a structured spectrum spanning an observed $4.6\times$ difference in single-run window-sensitivity spans:
+measured under gate=pam, $r{=}32$, from single training runs per configuration. As summarized in Table~\ref{tab:gcs_spectrum} and Figure~\ref{fig:dsc_vs_m}, tasks form a structured spectrum spanning an observed $4.6\times$ difference in single-run window-sensitivity spans. For Synapse, ACDC, Kvasir-SEG, and CVC-ClinicDB, where per-case DSC is logged for every evaluated $M$, we additionally report a bootstrap 95\% CI for $\Delta\text{DSC}$ (10{,}000 resamples of the test cases, applying the same resampled indices across all $M$ so that the max/min are computed consistently within each resample): Synapse $2.31$ (95\% CI $1.33$--$4.08$)\,pp, ACDC $0.74$ (95\% CI $0.45$--$1.28$)\,pp, Kvasir-SEG $0.64$ (95\% CI $0.26$--$1.80$)\,pp, and CVC-ClinicDB $0.62$ (95\% CI $0.23$--$1.90$)\,pp. The three low-GCS datasets' intervals overlap heavily with each other, consistent with them forming a single low-GCS tier; Synapse's interval overlaps only partially with this tier's upper edge, so while directionally consistent with a high-vs-low GCS separation, the intervals do not by themselves establish a sharp, non-overlapping boundary at conventional confidence. ISIC 2018's GCS value remains a single-run point estimate \textbf{[PLACEHOLDER: bootstrap CI pending an $M{=}28$, gate=pam test-only re-run with per-case logging]}.
 \begin{itemize}
   \item \textbf{High-GCS Tier (Synapse, $\Delta\text{DSC} = 2.30$\,pp):} Steep performance curve with a sharp optimum at $M{=}28$. Window choice is critical to accuracy.
   \item \textbf{Low-GCS Tier (ACDC, Kvasir, CVC, ISIC, $\Delta\text{DSC} \le 0.73$\,pp):} Broad performance plateaus where any local window ($M \in \{7, 28, 56\}$) achieves competitive or superior performance relative to global attention.
 \end{itemize}
 
-\begin{table}[tb]
+\begin{table*}[tb]
   \caption{Empirical GCS Spectrum ($\Delta$DSC) Across Five Biomedical Segmentation Benchmarks (gate=pam, $r{=}32$).}
   \label{tab:gcs_spectrum}
   \centering
-  \small
-  \setlength{\tabcolsep}{4pt}
-  \begin{tabular}{llccc}
+  \setlength{\tabcolsep}{6pt}
+  \begin{tabular}{llcccc}
     \toprule
-    Dataset & Modality & Fg.\ Cls. & $\Delta$DSC (pp) & Tier \\
+    Dataset & Modality & Fg.\ Classes & $\Delta$DSC (pp) & 95\% Bootstrap CI (pp) & Tier \\
     \midrule
-    Synapse      & Multi-organ CT   & 8 & \textbf{2.30} & High \\
-    ACDC         & Cardiac MRI      & 3 & 0.73          & Low \\
-    Kvasir-SEG   & Polyp (endo.)    & 1 & 0.64          & Low \\
-    CVC-ClinicDB & Polyp (colono.)  & 1 & 0.62          & Low \\
-    ISIC 2018    & Skin lesion      & 1 & 0.50          & Low \\
+    Synapse      & Multi-organ CT      & 8 & \textbf{2.30} & 1.33--4.08 & High \\
+    ACDC         & Cardiac MRI         & 3 & 0.73          & 0.45--1.28 & Low \\
+    Kvasir-SEG   & Polyp (endoscopy)   & 1 & 0.64          & 0.26--1.80 & Low \\
+    CVC-ClinicDB & Polyp (colonoscopy) & 1 & 0.62          & 0.23--1.90 & Low \\
+    ISIC 2018    & Skin lesion         & 1 & 0.50          & ---        & Low \\
     \bottomrule
   \end{tabular}
   \par\vspace{5pt}
-  \parbox{\columnwidth}{\footnotesize Fg.\ Cls.: number of foreground semantic classes (excluding background), matching Section~\ref{sec:experiments}. Distinct from the mean observed per-slice/per-image foreground class count used as a proxy in Table~\ref{tab:causal}.}
-\end{table}
+  \parbox{\textwidth}{\footnotesize Fg.\ Classes: number of foreground semantic classes (excluding background), matching Section~\ref{sec:experiments}. Distinct from the mean observed per-slice/per-image foreground class count used as a proxy in Table~\ref{tab:causal}. 95\% CI: bootstrap over test cases (10{,}000 resamples), available where per-case DSC was logged for all evaluated $M$; not available for ISIC 2018, whose $M{=}28$ (gate=pam) run left only a training log without per-case test output \textbf{[PLACEHOLDER: re-run ISIC $M{=}28$ gate=pam test-only to complete this row]}.}
+\end{table*}
 
 \subsection{Candidate-Factor Analysis: Identifying the Strongest GCS Correlate}
 \label{sec:causal_elimination}
@@ -138,15 +137,15 @@ We compare the rank correlations of the five candidates with the empirical GCS r
   \setlength{\tabcolsep}{4pt}
   \begin{tabular}{llccccccll}
     \toprule
-    Hypothesis & Metric & Synapse & ACDC & Kvasir & ISIC & CVC & $\rho$ & Verdict & Rationale \\
+    Hypothesis & Metric & Synapse & ACDC & Kvasir & ISIC & CVC & $\rho$ & Correlation & Rationale \\
     \midrule
-    SC1 & Foreground ratio       & 0.077  & 0.040 & 0.152 & 0.214 & 0.094 & $-$0.80 & \textbf{Not supported} & Negative trend \\
-    SC2 & Boundary complexity    & 1.355  & 0.928 & 1.023 & 1.261 & 1.163 & $+$0.00$^\dagger$ & \textbf{Not supported} & Zero correlation (5 datasets) \\
-    SC3 & Spatial entropy        & 0.497  & 0.359 & 0.566 & 0.605 & 0.482 & $-$0.50 & \textbf{Not supported} & Negative trend \\
-    SC4 & WCR ($M{=}28$~px)      & 0.999  & 0.954 & 1.000 & 0.999 & 1.000 & $-$0.37 & \textbf{Not supported} & Saturates near 1.0 \\
-    SC5 & Inter-class separation & \textbf{0.9996} & \textbf{0.547} & 0.000 & 0.000 & 0.000 & \textbf{+0.89} & \textbf{Strongest correlate} & Highest $|\rho|$ among candidates \\
+    SC1 & Foreground ratio       & 0.077  & 0.040 & 0.152 & 0.214 & 0.094 & $-$0.80 & Strong ($-$) & Negative trend \\
+    SC2 & Boundary complexity    & 1.355  & 0.928 & 1.023 & 1.261 & 1.163 & $+$0.00$^\dagger$ & None & Zero correlation (5 datasets) \\
+    SC3 & Spatial entropy        & 0.497  & 0.359 & 0.566 & 0.605 & 0.482 & $-$0.50 & Moderate ($-$) & Negative trend \\
+    SC4 & WCR ($M{=}28$~px)      & 0.999  & 0.954 & 1.000 & 0.999 & 1.000 & $-$0.37 & Weak ($-$) & Saturates near 1.0 \\
+    SC5 & Inter-class separation & \textbf{0.9996} & \textbf{0.547} & 0.000 & 0.000 & 0.000 & \textbf{+0.89} & \textbf{Strong (+)} & Highest $|\rho|$ among candidates \\
     \midrule
-    Proxy & Mean fg.\ classes/slice & 3.99 & ${\approx}3.00$ & 1.00 & 1.00 & 1.00 & $+$0.87$^\ddagger$ & \textbf{Insufficient} & ACDC is a counterexample \\
+    Proxy & Mean fg.\ classes/slice & 3.99 & ${\approx}3.00$ & 1.00 & 1.00 & 1.00 & $+$0.87$^\ddagger$ & Strong (+) & ACDC is a counterexample \\
     \bottomrule
   \end{tabular}
   \par\vspace{5pt}

@@ -350,6 +350,13 @@ $$\mathcal{L} = \frac{1}{2} \mathcal{L}_{\text{Dice}} + \frac{1}{2} \mathcal{L}_
 
 **Journal scope:** Design non-collapsing routing; formally quantify CS; expand dataset range across the CS spectrum; validate inductive bias mechanism systematically (attention-distance analysis across M sweep; see `EXPERIMENT_PLAN.md` § *Phase D* and § *Phase E* for targeted experiments).
 
+**Target Journals (投稿期刊推荐):** 
+- **CBM** (1区 Top): 冲刺首选，算法创新与多数据集验证。
+- **BSPC** (2区): 偏向医学图像/多模态视觉分析。
+- **CMPB** (2区): 偏向代码复现、显存优化(6.4G vs 11.5G)与系统方案。
+- **CMIG** (2区): 稳健兜底。
+- 详见 [TARGET_JOURNALS.md](file:///c:/Users/jiawe/Repos/AdaDA-TransUNet/TARGET_JOURNALS.md) 与 [EXPERIMENT_PLAN.md](file:///c:/Users/jiawe/Repos/AdaDA-TransUNet/EXPERIMENT_PLAN.md).
+
 ---
 
 ## 11. Figure Plan (V4.0)

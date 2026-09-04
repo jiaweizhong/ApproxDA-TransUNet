@@ -96,6 +96,26 @@ python train.py --dataset Synapse --vit_name R50-ViT-B_16 \
 
 ---
 
+## E3 — Statistical Validation (Paired Significance + Bootstrap CI) ✅ Mostly Done from Existing Logs (2026-09-04)
+
+**Why:** BSPC-targeted reviewer advice: paired significance test for performance + bootstrap CI for GCS is a cheap, high-value addition — more systematic than DA-TransUNet's own paper, which only did paired stats on Synapse (n=12).
+
+**Done, zero new training (parsed existing per-case logs):**
+- [x] Paired bootstrap 95% CI + Wilcoxon + paired $t$-test, ApproxDA vs.\ DA-TransUNet: **Kvasir-SEG** (n=200, $p$=0.0011) and **ISIC 2018** (n=519, $p$<0.0001) — both significant at α=0.05. Written into `tab:paired_significance` in `05_experiments.tex`.
+- [x] Bootstrap 95% CI for GCS: **Synapse** (2.31, CI [1.33, 4.08]pp) and **Kvasir-SEG** (0.64, CI [0.26, 1.80]pp). Written into `tab:gcs_spectrum` in `06_analysis.tex`. Note: CIs overlap partially — honestly disclosed, not oversold.
+- [x] Synapse organ-level supplementary check (n=8, using DA-TransUNet's *published* per-organ numbers from `Reference/DA-TransUNet.md` paired with our own M=28 per-organ log): mean +1.12pp, **not significant** (Wilcoxon p=0.109, t-test p=0.092), 6/8 organs favor ApproxDA. Reported transparently as underpowered, not as confirmatory evidence.
+
+**Found a data-integrity issue while doing this:** `results/DA-TransUNet/Synapse/inference-06162026.txt` does NOT reproduce the paper's reported 79.80% test DSC — its own summary line says 72.03%. The training log's val curve (best 79.52%) matches the paper, so this looks like a stale/wrong checkpoint was loaded at test time, not a training failure. `experiments/synapse_volatility_sweep.py` has 79.80 hardcoded as a constant, confirming the correct number was recorded by hand at some point but the matching per-case log is not the one currently committed.
+
+**Still pending (blocked on data, not analysis):**
+- [ ] **Synapse case-level paired significance** — needs a fresh, verified DA-TransUNet Synapse checkpoint + test-only inference re-run to regenerate a trustworthy per-case log (no retraining needed *if* the original checkpoint can be recovered; otherwise a full ~11.4h retrain per `training-06162026.txt`, since no weights are currently available). **Decision (2026-09-04): not pursuing before submission** — cost (~11-12h retrain) outweighs benefit given Kvasir/ISIC already carry the significance burden and the organ-level check is disclosed honestly instead.
+- [ ] **ACDC GCS bootstrap CI + paired significance** — no per-case DA-TransUNet ACDC log was ever committed (only summary numbers). Would need a per-case-logging re-run of DA-TransUNet ACDC (~7h, already have the checkpoint config, see 1a above) and, for GCS CI, per-case ApproxDA logs across ACDC's tested $M$ values (already exist if a matching per-case-logging test script is used — check `results/ApproxDA-TransUNet/ACDC/test_acdc_M*.txt` format).
+- [ ] **CVC-ClinicDB GCS bootstrap CI + paired significance** — DA-TransUNet CVC was never re-run locally (published baseline used); would need a full re-run (~4h, per 1b above) to get a per-case log.
+
+**Placeholders left in the manuscript** (search for `[PLACEHOLDER` in `05_experiments.tex`, `06_analysis.tex`, `07_conclusion.tex`) mark exactly where these three items would slot in if run before submission.
+
+---
+
 ## Summary & Audit Status
 
 | # | Experiment | Est. | Priority | Current Status |
@@ -107,6 +127,10 @@ python train.py --dataset Synapse --vit_name R50-ViT-B_16 \
 | 5 | Re-run causal analysis (5 datasets) | 0.5h | 🟡 After #0 | ✅ **Completed** (Metrics & Table VI updated) |
 | E1 | Minimal seed robustness check (8 runs) | 8h | 🟢 Optional | ⏳ Text fallback ✅ applied; experiment optional (reviewer #2) |
 | E2 | Clean M=14 ablation / Table VII | 0h | — | ✅ **Completed** (row removed, kept only in Table XII gate ablation) |
+| E3 | Paired significance (Kvasir/ISIC) + GCS bootstrap CI (Synapse/Kvasir) | 0h | 🔴 High | ✅ **Completed from existing logs** (Table `tab:paired_significance`, `tab:gcs_spectrum`) |
+| E3a | Synapse case-level significance (fix/re-verify baseline log) | 0-11.4h | 🟢 Not pursuing | ⏳ **Deferred** — organ-level check (n=8, honestly non-significant) used instead |
+| E3b | ACDC per-case DA-TransUNet log (for GCS CI + paired sig.) | ~7h | 🟡 Optional | ⏳ **Pending / Placeholder in text** |
+| E3c | CVC per-case DA-TransUNet log (for GCS CI + paired sig.) | ~4h | 🟡 Optional | ⏳ **Pending / Placeholder in text** |
 
 > **已取消/移除项**：
 > - **F2 (Dataset Size Study)**：已移除（无实际用途，5 数据集 GCS 与 SSD 理论已完备）。
