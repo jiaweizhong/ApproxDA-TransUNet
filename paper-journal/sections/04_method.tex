@@ -32,7 +32,7 @@ The original DA module performs dense spatial and channel attention over the ful
 
 \textbf{Channel interaction} (groups $G$) controls \emph{which channels} may interact in CAM. Partitioning $C$ channels into $G$ independent groups limits cross-channel dependency to within-group interactions, reducing the interaction scope.
 
-The axes are fully independent: any two of $\{M,\,r,\,G\}$ can be held fixed while the third varies, enabling clean ablations that isolate individual approximation effects.
+The axes are architecturally independent: any two of $\{M,\,r,\,G\}$ can be held fixed while the third varies. In this paper, $M$ is the axis we systematically ablate (Section~\ref{sec:approx_scale}); gate routing is studied as a separate mechanism (Section~\ref{sec:collapse}); rank $r$ and groups $G$ are exposed as configurable capabilities of the framework, with their held-fixed default values ($r{=}32$, $G{=}8$) used throughout the main results.
 
 \subsection{Spatial Approximation}
 
@@ -40,12 +40,17 @@ Instead of computing global position attention, ApproxDA-TransUNet partitions th
 
 \textbf{Window partitioning.} Following~\cite{liu2021swin}, we partition the feature map into $n_W$ non-overlapping $M{\times}M$ windows. Window clamping $M \leftarrow \min(M, H, W)$ allows $M{=}112$ to yield global attention at all scales, enabling a clean ablation that isolates windowing from low-rank as the performance bottleneck.
 
-\textbf{Low-rank projection.} Following~\cite{wang2020linformer}, query and key features inside each window are projected from $N_w {=} M^2$ to rank $r \ll M^2$ via a learned matrix $\mathbf{W}_r \in \mathbb{R}^{r \times N_w}$, where $\mathbf{C}, \mathbf{D} \in \mathbb{R}^{N_w \times C}$ denote the query and key feature matrices within each window:
+\textbf{Low-rank projection.} Following~\cite{wang2020linformer}, we compute query, key, and value feature matrices within each window via $1{\times}1$ convolutions, $\mathbf{Q}, \mathbf{K}, \mathbf{V} \in \mathbb{R}^{N_w \times C}$ where $N_w{=}M^2$. A shared learned projection $\mathbf{E} \in \mathbb{R}^{r \times N_w}$ ($r \ll N_w$) reduces the sequence length of the key and value:
 \begin{equation}
-  \tilde{\mathbf{C}} = \mathbf{W}_r \mathbf{C}, \quad \tilde{\mathbf{D}} = \mathbf{W}_r \mathbf{D} \in \mathbb{R}^{r \times C}.
+  \mathbf{K}' = \mathbf{E}\mathbf{K}, \quad \mathbf{V}' = \mathbf{E}\mathbf{V} \in \mathbb{R}^{r \times C}.
   \label{eq:lowrank}
 \end{equation}
-The full attention matrix $\mathbf{C}\mathbf{D}^\top \in \mathbb{R}^{N_w \times N_w}$ is approximated by $\mathbf{C}\tilde{\mathbf{D}}^\top \in \mathbb{R}^{N_w \times r}$ (original queries $\times$ projected keys), reducing total complexity to $\mathcal{O}(NrC)$. Combined, windowing and low-rank projection reduce the theoretical attention-matrix size from $\mathcal{O}(N^2)$ to $\mathcal{O}(Nr)$, a factor of $N/r$ (${\sim}390{\times}$ at $112{\times}112$ with $r{=}32$). These two hyperparameters---window size $M$ and rank $r$---form the primary experimental axes investigated on Synapse.
+Attention logits are computed between the full-length query and the rank-$r$ projected key, normalized, and applied to the projected value:
+\begin{equation}
+  \mathrm{Attn}(\mathbf{Q},\mathbf{K},\mathbf{V}) = \mathrm{softmax}\!\left(\mathbf{Q}\mathbf{K}'^\top\right)\mathbf{V}' \in \mathbb{R}^{N_w \times C},
+  \label{eq:lowrank_attn}
+\end{equation}
+followed by a learnable residual scale, $\mathbf{y} = \alpha \cdot \mathrm{Attn}(\mathbf{Q},\mathbf{K},\mathbf{V}) + \mathbf{x}$, with scalar $\alpha$ initialized to zero (matching our implementation, no $1/\sqrt{C}$ temperature scaling is applied to the logits). Projecting $\mathbf{K}$ and $\mathbf{V}$ costs $\mathcal{O}(N_w r C)$; computing $\mathbf{Q}\mathbf{K}'^\top$ and its product with $\mathbf{V}'$ each cost $\mathcal{O}(N_w r C)$, avoiding the $\mathcal{O}(N_w^2 C)$ cost of full in-window attention. Summed over $N/N_w$ windows, total attention complexity is $\mathcal{O}(NrC)$. Combined, windowing and low-rank projection reduce the theoretical attention-matrix size from $\mathcal{O}(N^2)$ to $\mathcal{O}(Nr)$, a factor of $N/r$ (${\sim}390{\times}$ at $112{\times}112$ with $r{=}32$); note this is a memory/FLOP-count reduction in the attention operation specifically; end-to-end model GFLOPs also include the projection cost $\mathcal{O}(N_wrC)$ and the surrounding convolutional layers, which do not shrink at the same rate (Table~\ref{tab:efficiency}). Window size $M$ forms the primary experimental axis investigated in this study, while rank $r{=}32$ is held fixed in the clean window ablations (Section~\ref{sec:approx_scale}).
 
 \subsection{Channel Approximation}
 

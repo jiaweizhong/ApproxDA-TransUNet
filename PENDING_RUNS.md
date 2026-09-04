@@ -63,6 +63,39 @@ Compare vs: gate=learn M=7: **77.78%** / gate=pam M=7: **78.64%**
 
 ---
 
+---
+
+## E1 — Minimal Seed Robustness Check (~8h) ⏳ Strongly Recommended, Not a Blocker
+
+**Why:** Reviewer comment #2 (revised framing): with the paper's claims already downgraded from "proof/causal" to "observed correlation/candidate," this is no longer a submission blocker. It remains the single most reviewer-defensible addition: low-GCS spans (ISIC 0.50pp, CVC 0.62pp, Kvasir 0.64pp, ACDC 0.73pp) are small enough that a reviewer may ask whether they're distinguishable from single-run training noise relative to the high-GCS Synapse span (2.30pp).
+
+**Text fallback: ✅ Already applied (2026-09-04)** — "$4.6\times$ spectrum" softened to "an observed $4.6\times$ difference in single-run window-sensitivity spans" in `01_abstract.tex` and `06_analysis.tex`; single-run limitation disclosed in `07_conclusion.tex` Limitations. The experiment below remains optional — only needed if reviewers push back on the fallback wording.
+
+**Minimal plan (not the full 18-run sweep):** Only 8 runs — 2 seeds each for the 4 configs that anchor the high-vs-low contrast:
+- Synapse $M{=}7$ (worst) and $M{=}28$ (best) — 2 seeds each = 4 runs
+- Kvasir or CVC: $M$ at curve max and curve min — 2 seeds each = 4 runs
+
+```bash
+# Example for Synapse M=28 seed 2
+python train.py --dataset Synapse --vit_name R50-ViT-B_16 \
+    --max_epochs 300 --batch_size 24 --seed 2 \
+    --gate_mode pam --window_size 28 --rank 32 --groups 8 \
+    --val_interval 15 \
+    2>&1 | tee ../../logs/synapse_M28_pam_seed2.log
+```
+
+**Output:** Would confirm whether the high-GCS span (2.30pp) is significantly larger than low-GCS spans (~0.6pp) under training-seed variance.
+
+---
+
+## E2 — Clean M=14 Ablation ✅ Resolved via Alternative (2026-09-04)
+
+**Why:** Reviewer comment #3: Table VII's M=14 row had r=64, gate=learn — three axes changed simultaneously alongside the window-size sweep.
+
+**Resolution:** Took the no-training alternative — removed the M=14 row from `tab:window_ablation` (Table VII, now clean $M\in\{7,28,56,112\}$, gate=pam, $r{=}32$ throughout). The M=14/r=64/gate=learn data point is kept only in `tab:gate_ablation` (Table XII, "Gate Configurations and Gate-Collapse Robustness Check"), where its role — confirming gate collapse persists outside the default $M{=}7,r{=}32$ setting — is unambiguous. No training run needed.
+
+---
+
 ## Summary & Audit Status
 
 | # | Experiment | Est. | Priority | Current Status |
@@ -72,6 +105,8 @@ Compare vs: gate=learn M=7: **77.78%** / gate=pam M=7: **78.64%**
 | 1b | DA-TransUNet CVC baseline | 4h | 🔴 High | ⏸️ **Optional** (Published baseline in Table IV) |
 | 4 | F8 Entropy gate Synapse | 12h | 🟡 Medium | ⏳ **Pending / Optional** |
 | 5 | Re-run causal analysis (5 datasets) | 0.5h | 🟡 After #0 | ✅ **Completed** (Metrics & Table VI updated) |
+| E1 | Minimal seed robustness check (8 runs) | 8h | 🟢 Optional | ⏳ Text fallback ✅ applied; experiment optional (reviewer #2) |
+| E2 | Clean M=14 ablation / Table VII | 0h | — | ✅ **Completed** (row removed, kept only in Table XII gate ablation) |
 
 > **已取消/移除项**：
 > - **F2 (Dataset Size Study)**：已移除（无实际用途，5 数据集 GCS 与 SSD 理论已完备）。

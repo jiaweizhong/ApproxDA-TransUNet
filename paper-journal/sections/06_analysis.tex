@@ -1,18 +1,18 @@
 % !TEX root = ../ApproxDA-TransUNet.tex
-\section{Global Context Sensitivity and the Semantic Spatial Dependency Mechanism}
+\section{Global Context Sensitivity and Candidate Mechanisms}
 \label{sec:gcs_mechanism}
 \label{sec:understanding}
 
-Section~\ref{sec:experiments} demonstrated that the impact of attention approximation is deeply task-dependent. This section investigates the theoretical and empirical underpinnings of this phenomenon. We establish the empirical spectrum of Global Context Sensitivity (GCS), systematically eliminate alternative geometric and modality-based explanations through causal analysis, and identify Semantic Spatial Dependency (SSD) as the unifying mechanism governing attention approximation in medical segmentation.
+Section~\ref{sec:experiments} demonstrated that the impact of attention approximation is deeply task-dependent. This section investigates the theoretical and empirical underpinnings of this phenomenon. We establish the empirical spectrum of Global Context Sensitivity (GCS), systematically evaluate alternative geometric and modality-based candidate explanations, and identify Semantic Spatial Dependency (SSD) as the candidate most consistently associated with GCS across the evaluated benchmarks.
 
 \subsection{Empirical Window Sensitivity and the GCS Spectrum}
 \label{sec:approx_scale}
 \label{sec:obs2}
 
-We first examine how spatial approximation scale (window size $M$) impacts segmentation accuracy across different biomedical imaging tasks. Table~\ref{tab:window_ablation} isolates this effect on Synapse multi-organ CT by varying $M \in \{7, 14, 28, 56, 112\}$ under fixed gate=pam, $r{=}32$.
+We first examine how spatial approximation scale (window size $M$) impacts segmentation accuracy across different biomedical imaging tasks. Table~\ref{tab:window_ablation} isolates this effect on Synapse multi-organ CT by varying $M \in \{7, 28, 56, 112\}$ under fixed gate=pam, $r{=}32$. A separate gate-collapse robustness check at $M{=}14$, $r{=}64$, gate=learn is reported in Table~\ref{tab:gate_ablation} (Section~\ref{sec:collapse}), not here, since it varies rank and gate simultaneously with window size and cannot isolate the window-size effect.
 
 \begin{table}[ht]
-  \caption{Spatial Approximation Ablation on Synapse ($G$=8)}
+  \caption{Spatial Approximation Ablation on Synapse (gate=pam, $r$=32, $G$=8)}
   \label{tab:window_ablation}
   \centering
   \setlength{\tabcolsep}{2pt}
@@ -22,14 +22,13 @@ We first examine how spatial approximation scale (window size $M$) impacts segme
     Config & $M$ & $r$ & Gate & DSC (\%) $\uparrow$ & HD95 (mm) $\downarrow$ \\
     \midrule
     Windowed + low-rank & 7   & 32 & pam          & 78.64          & 31.09 \\
-    Windowed + low-rank & 14  & 64 & learn$^\dag$ & 78.04          & 29.09 \\
     Windowed + low-rank & 28  & 32 & pam          & \textbf{80.94} & \underline{27.49} \\
     Windowed + low-rank & 56  & 32 & pam          & 78.90          & 35.23 \\
     Global + low-rank   & 112 & 32 & pam          & \underline{79.44} & \textbf{27.26} \\
     \bottomrule
   \end{tabular}
   \par\vspace{5pt}
-  \parbox{\columnwidth}{\footnotesize $^\dag$Gate collapsed to $g{\approx}0.5$. $M{=}112$ via window clamping yields full-map attention at all scales.}
+  \parbox{\columnwidth}{\footnotesize $M{=}112$ via window clamping yields full-map attention at all scales.}
 \end{table}
 
 The Synapse DSC-vs-$M$ curve exhibits a clear non-monotonic profile: performance peaks at $M{=}28$ (80.94\% DSC, $+$1.14\% over DA-TransUNet), while overly local ($M{=}7$: 78.64\%) and overly global ($M{=}112$: 79.44\%) scopes underperform. This behavior mirrors a bias-variance tradeoff: insufficient receptive fields miss critical cross-organ context, whereas unrestricted global attention admits non-informative long-range correlations from irrelevant background tissue.
@@ -90,7 +89,7 @@ To quantify task sensitivity across benchmarks, we define empirical \textbf{Glob
   \Delta\text{DSC} = \max_{M} \text{DSC}(M) - \min_{M} \text{DSC}(M),
   \label{eq:gcs}
 \end{equation}
-measured under gate=pam, $r{=}32$. As summarized in Table~\ref{tab:gcs_spectrum} and Figure~\ref{fig:dsc_vs_m}, tasks form a structured spectrum spanning a $4.6\times$ sensitivity difference:
+measured under gate=pam, $r{=}32$, from single training runs per configuration. As summarized in Table~\ref{tab:gcs_spectrum} and Figure~\ref{fig:dsc_vs_m}, tasks form a structured spectrum spanning an observed $4.6\times$ difference in single-run window-sensitivity spans:
 \begin{itemize}
   \item \textbf{High-GCS Tier (Synapse, $\Delta\text{DSC} = 2.30$\,pp):} Steep performance curve with a sharp optimum at $M{=}28$. Window choice is critical to accuracy.
   \item \textbf{Low-GCS Tier (ACDC, Kvasir, CVC, ISIC, $\Delta\text{DSC} \le 0.73$\,pp):} Broad performance plateaus where any local window ($M \in \{7, 28, 56\}$) achieves competitive or superior performance relative to global attention.
@@ -100,83 +99,79 @@ measured under gate=pam, $r{=}32$. As summarized in Table~\ref{tab:gcs_spectrum}
   \caption{Empirical GCS Spectrum ($\Delta$DSC) Across Five Biomedical Segmentation Benchmarks (gate=pam, $r{=}32$).}
   \label{tab:gcs_spectrum}
   \centering
-  \setlength{\tabcolsep}{6pt}
-  \begin{tabular}{llcc}
+  \small
+  \setlength{\tabcolsep}{4pt}
+  \begin{tabular}{llccc}
     \toprule
-    Dataset & Modality / Anatomy & Classes & $\Delta$DSC (pp) \\
+    Dataset & Modality & Fg.\ Cls. & $\Delta$DSC (pp) & Tier \\
     \midrule
-    Synapse      & Multi-organ CT      & 9 & \textbf{2.30} (High GCS) \\
-    ACDC         & Cardiac MRI         & 4 & 0.73 (Low GCS) \\
-    Kvasir-SEG   & Polyp (endoscopy)   & 2 & 0.64 (Low GCS) \\
-    CVC-ClinicDB & Polyp (colonoscopy) & 2 & 0.62 (Low GCS) \\
-    ISIC 2018    & Skin lesion         & 2 & 0.50 (Low GCS) \\
+    Synapse      & Multi-organ CT   & 8 & \textbf{2.30} & High \\
+    ACDC         & Cardiac MRI      & 3 & 0.73          & Low \\
+    Kvasir-SEG   & Polyp (endo.)    & 1 & 0.64          & Low \\
+    CVC-ClinicDB & Polyp (colono.)  & 1 & 0.62          & Low \\
+    ISIC 2018    & Skin lesion      & 1 & 0.50          & Low \\
     \bottomrule
   \end{tabular}
+  \par\vspace{5pt}
+  \parbox{\columnwidth}{\footnotesize Fg.\ Cls.: number of foreground semantic classes (excluding background), matching Section~\ref{sec:experiments}. Distinct from the mean observed per-slice/per-image foreground class count used as a proxy in Table~\ref{tab:causal}.}
 \end{table}
 
-\subsection{Causal Elimination of Competing Hypotheses}
+\subsection{Candidate-Factor Analysis: Identifying the Strongest GCS Correlate}
 \label{sec:causal_elimination}
 
-What intrinsic property of a medical segmentation task drives its GCS tier? We conduct a systematic causal elimination study using training-free annotation mask statistics computed across 200 randomly sampled masks per dataset. We formulate and test five candidate explanatory hypotheses:
+What intrinsic property of a medical segmentation task is most consistently associated with its GCS tier? We conduct a systematic candidate-factor analysis using training-free annotation mask statistics computed across 200 randomly sampled masks per dataset. We formulate and evaluate five candidate hypotheses:
 \begin{itemize}
   \item \textbf{SC1 --- Foreground Area Ratio:} Fraction of foreground pixels. Tests if target scale dictates window sensitivity.
   \item \textbf{SC2 --- Boundary Complexity:} Mean isoperimetric ratio ($P^2/4\pi A$) per component. Tests if boundary irregularity drives GCS.
   \item \textbf{SC3 --- Spatial Entropy:} Normalized foreground entropy over an $8{\times}8$ grid. Tests if target dispersion determines context requirements.
   \item \textbf{SC4 --- Window Crossing Ratio (WCR):} Fraction of foreground pixels belonging to connected components spanning more than one $M{\times}M$ window ($M{=}28$~px in pixel space). Tests if component-level window boundary crossing drives sensitivity.
-  \item \textbf{SC5 --- Inter-Class Window Separation:} Fraction of semantic class-centroid pairs falling in distinct $M{\times}M$ windows (structural zero for binary datasets). Measures whether multi-class reasoning requires cross-window communication.
+  \item \textbf{SC5 --- Inter-Class Window Separation:} Fraction of semantic class-centroid pairs falling in distinct $M{\times}M$ windows. Computed on annotation masks using $M{=}28$~px, which corresponds to the $M{=}7$ feature-space window at the highest-resolution skip stage under the standard $4\times$ encoder downsampling of Synapse images (224~px input); other skip stages and the bottleneck operate at coarser downsampling and are not directly represented by this pixel-space value. For single-foreground-class (binary) datasets, no inter-class pair exists, so SC5 is undefined in the literal sense; we set it to zero by convention to encode the absence of inter-class separation. This convention does not imply the absence of within-class long-range or topological dependencies, and SC5 is accordingly not diagnostic of within-class global structure in binary tasks. Measures whether multi-class reasoning requires cross-window communication.
 \end{itemize}
 
-A valid causal factor must achieve strong positive rank correlation ($\rho > 0.8$) with the empirical GCS ranking across all five datasets (Synapse $>$ ACDC $>$ Kvasir $\approx$ CVC $>$ ISIC). Table~\ref{tab:causal} and Figures~\ref{fig:gcs_causal} and~\ref{fig:gcs_mask} present the elimination results.
+A candidate consistent with GCS should achieve strong positive rank correlation ($\rho > 0.8$) with the empirical GCS ranking across all five datasets (Synapse $>$ ACDC $>$ Kvasir $\approx$ CVC $>$ ISIC). Table~\ref{tab:causal} and Figure~\ref{fig:gcs_causal} present the results.
 
 \begin{table*}[tb]
-  \caption{Empirical verification of causal hypotheses ($M{=}28$, five benchmarks).}
+  \caption{Association of Candidate Factors with Empirical GCS ($M{=}28$, five benchmarks).}
   \label{tab:causal}
   \centering
   \small
-  \setlength{\tabcolsep}{5pt}
-  \begin{tabular}{llcccccccl}
+  \setlength{\tabcolsep}{4pt}
+  \begin{tabular}{llccccccll}
     \toprule
-    Hypothesis & Metric & Synapse & ACDC & Kvasir & ISIC & CVC & Spearman $\rho$ & Outcome \\
+    Hypothesis & Metric & Synapse & ACDC & Kvasir & ISIC & CVC & $\rho$ & Verdict & Rationale \\
     \midrule
-    SC1 & Foreground ratio       & 0.077  & 0.040 & 0.152 & 0.214 & 0.094 & $-$0.80 & \textbf{Ruled out} (Negative trend) \\
-    SC2 & Boundary complexity    & 1.355  & 0.928 & 1.023 & 1.261 & 1.163 & $+$0.00$^\dagger$ & \textbf{Ruled out} (Zero correlation) \\
-    SC3 & Spatial entropy        & 0.497  & 0.359 & 0.566 & 0.605 & 0.482 & $-$0.50 & \textbf{Ruled out} (Negative trend) \\
-    SC4 & WCR ($M{=}28$~px)   & 0.999  & 0.954 & 1.000 & 0.999 & 1.000 & $-$0.37 & \textbf{Ruled out} (Saturates / Neg.) \\
-    SC5 & Inter-class separation & \textbf{0.9996} & \textbf{0.547} & 0.000 & 0.000 & 0.000 & \textbf{+0.89} & \textbf{Strongest Predictor} \\
+    SC1 & Foreground ratio       & 0.077  & 0.040 & 0.152 & 0.214 & 0.094 & $-$0.80 & \textbf{Not supported} & Negative trend \\
+    SC2 & Boundary complexity    & 1.355  & 0.928 & 1.023 & 1.261 & 1.163 & $+$0.00$^\dagger$ & \textbf{Not supported} & Zero correlation (5 datasets) \\
+    SC3 & Spatial entropy        & 0.497  & 0.359 & 0.566 & 0.605 & 0.482 & $-$0.50 & \textbf{Not supported} & Negative trend \\
+    SC4 & WCR ($M{=}28$~px)      & 0.999  & 0.954 & 1.000 & 0.999 & 1.000 & $-$0.37 & \textbf{Not supported} & Saturates near 1.0 \\
+    SC5 & Inter-class separation & \textbf{0.9996} & \textbf{0.547} & 0.000 & 0.000 & 0.000 & \textbf{+0.89} & \textbf{Strongest correlate} & Highest $|\rho|$ among candidates \\
     \midrule
-    Proxy & Class count ($n_\text{classes}$) & 3.99 & ${\approx}3.00$ & 1.00 & 1.00 & 1.00 & $+$0.87$^\ddagger$ & \textbf{Falsified by ACDC} (Proxy only) \\
+    Proxy & Mean fg.\ classes/slice & 3.99 & ${\approx}3.00$ & 1.00 & 1.00 & 1.00 & $+$0.87$^\ddagger$ & \textbf{Insufficient} & ACDC is a counterexample \\
     \bottomrule
   \end{tabular}
   \par\vspace{5pt}
   \parbox{\textwidth}{\footnotesize $^\dagger$Spurious partial correlation on 3 datasets ($\rho{=}+0.50$) collapsed to $\rho{=}0.00$ with 5 datasets.
-  $^\ddagger$$n_\text{classes}$ is falsified as a true cause because ACDC has multi-class anatomy yet low GCS.}
+  $^\ddagger$Mean observed foreground classes per slice/image; insufficient as a sole explanation because ACDC has multi-class anatomy yet low GCS.}
 \end{table*}
 
 \begin{figure*}[t]
   \centering
   \includegraphics[width=\textwidth]{figures/gcs_causal_sanity.pdf}
-  \caption{Ablation of causal candidate features across five medical segmentation benchmarks. (a) Context Sensitivity $\Delta\text{DSC}$ across the five evaluated tasks. (b)--(f) Candidates SC1--SC5 plotted against $\Delta\text{DSC}$; Spearman $\rho$ and Pearson $r$ annotated. ACDC (triangle) serves as a critical discriminating benchmark: it shares the multi-class nature of Synapse but exhibits minimal context sensitivity ($\Delta\text{DSC}=0.73$\,pp), falsifying SC1--SC4 and isolating SC5 (inter-class window separation) as the sole consistent causal predictor ($\rho = +0.89$, $r = +0.93$).}
+  \caption{Candidate-factor analysis across five medical segmentation benchmarks (SC1--SC4; SC5 is summarized separately in Table~\ref{tab:causal}). Top row: each metric per dataset. Bottom row: the same metric plotted against $\Delta\text{DSC}$, with Spearman $\rho$ and corresponding $p$-value annotated. ACDC (violet) serves as a key discriminating benchmark: it shares the multi-class nature of Synapse but exhibits low context sensitivity ($\Delta\text{DSC}=0.73$\,pp), inconsistent with SC1--SC4.}
   \label{fig:gcs_causal}
 \end{figure*}
 
-\begin{figure*}[t]
-  \centering
-  \includegraphics[width=\textwidth]{figures/gcs_mask_sanity.pdf}
-  \caption{Training-free spatial metrics (SC1--SC4) across five benchmarks. ACDC (coral) closely tracks binary low-GCS tasks across all four spatial-dispersion metrics, falsifying the hypothesis that context sensitivity is driven by target scale, boundary complexity, or multi-component crossing alone.}
-  \label{fig:gcs_mask}
-\end{figure*}
-
-\textbf{Elimination rationale:}
+\textbf{Rationale for ruling out SC1--SC4:}
 \begin{enumerate}
-  \item \textbf{SC1 \& SC3 are eliminated:} Synapse exhibits the lowest foreground coverage (7.7\%) and lowest spatial entropy, yet possesses the highest GCS. Large target size or uniform dispersion does not necessitate large attention windows.
-  \item \textbf{SC4 is eliminated by saturation:} In pixel space, even single polyps or skin lesions span across multiple $28{\times}28$ windows ($\text{WCR} \approx 1.0$), demonstrating that component-level crossing is ubiquitous and cannot differentiate GCS tiers.
-  \item \textbf{SC2 is eliminated on five datasets:} Boundary irregularity correlated with GCS on the initial 3 datasets ($\rho{=}+0.50$) due to CT image sharpness. Adding cardiac MRI (ACDC) and colonoscopy (CVC) drops this correlation to $\rho{=}0.00$, confirming it was a modality confound.
+  \item \textbf{SC1 \& SC3 are not supported:} Synapse exhibits the lowest foreground coverage (7.7\%) and lowest spatial entropy, yet possesses the highest GCS. Large target size or uniform dispersion does not necessitate large attention windows.
+  \item \textbf{SC4 is not supported (saturates):} In pixel space, even single polyps or skin lesions span across multiple $28{\times}28$ windows ($\text{WCR} \approx 1.0$), demonstrating that component-level crossing is ubiquitous and cannot differentiate GCS tiers.
+  \item \textbf{SC2 is not supported on five datasets:} Boundary irregularity correlated with GCS on the initial 3 datasets ($\rho{=}+0.50$) due to CT image sharpness. Adding cardiac MRI (ACDC) and colonoscopy (CVC) drops this correlation to $\rho{=}0.00$, consistent with a modality confound rather than a genuine effect.
 \end{enumerate}
 
-\subsection{Semantic Spatial Dependency (SSD) as the True Mechanism}
+\subsection{Semantic Spatial Dependency (SSD): The Most Consistent Candidate Mechanism}
 \label{sec:ssd}
 
-The sole surviving metric, \textbf{SC5 (Inter-class Window Separation)}, achieves $\rho = +0.89$ across all five datasets. This establishes that GCS is governed by \textbf{Semantic Spatial Dependency (SSD)}: \emph{the degree to which correctly segmenting a target structure requires identifying its spatial relationship relative to other distinct semantic classes}.
+Among all evaluated candidates, \textbf{SC5 (Inter-class Window Separation)} achieves the strongest rank correlation ($\rho = +0.89$) across all five datasets. This provides evidence that GCS is associated with \textbf{Semantic Spatial Dependency (SSD)}: \emph{the degree to which correctly segmenting a target structure may require identifying its spatial relationship relative to other distinct semantic classes}.
 
 \begin{align*}
   \underbrace{\text{Inter-class SSD}}_{\text{Intrinsic task property}}
@@ -186,9 +181,9 @@ The sole surviving metric, \textbf{SC5 (Inter-class Window Separation)}, achieve
   \underbrace{\text{High window sensitivity}}_{\text{Empirical GCS}}.
 \end{align*}
 
-\textbf{ACDC as the critical discriminating test.} To verify that SSD, rather than trivial class count ($n_\text{classes}$), governs GCS, the ACDC benchmark serves as a decisive test case. ACDC contains 4 semantic classes (background, RV, Myo, LV). If class count were the cause, ACDC would exhibit high GCS comparable to Synapse. Instead, ACDC exhibits $\Delta\text{DSC} = 0.73$\,pp, clustering tightly with binary tasks (0.50--0.64\,pp).
+\textbf{ACDC as a key discriminating case.} To distinguish SSD from trivial class count ($n_\text{classes}$) as an explanation, the ACDC benchmark serves as a useful discriminating case. ACDC contains 4 semantic classes (background, RV, Myo, LV). If class count alone were the driver, ACDC would be expected to exhibit high GCS comparable to Synapse. Instead, ACDC exhibits $\Delta\text{DSC} = 0.73$\,pp, clustering tightly with binary tasks (0.50--0.64\,pp), which is inconsistent with class count as a sole explanation.
 
-SC5 explains this precisely: cardiac structures are concentric and co-located within the cardiac silhouette ($\text{SC5} = 0.547$), so local windows capture sufficient multi-class context. In contrast, Synapse organs are dispersed across the entire abdominal cavity ($\text{SC5} = 0.9996$), where windowed attention at $M{=}7$ cannot attend to neighboring reference organs. Near-complete inter-class spatial separation is the prerequisite for high GCS.
+SC5 is consistent with this pattern: cardiac structures are concentric and co-located within the cardiac silhouette ($\text{SC5} = 0.547$), so local windows capture sufficient multi-class context. In contrast, Synapse organs are dispersed across the entire abdominal cavity ($\text{SC5} = 0.9996$), where windowed attention at $M{=}7$ cannot attend to neighboring reference organs. Near-complete inter-class spatial separation was observed only for the high-GCS dataset in our benchmark set.
 
 \begin{table}[tb]
   \caption{Per-organ DSC (\%) and window sensitivity ($\Delta$DSC) on Synapse (gate=pam, $r{=}32$, $n{=}4$ window sizes). Sorted by $\Delta$DSC descending.}
@@ -216,16 +211,16 @@ SC5 explains this precisely: cardiac structures are concentric and co-located wi
   \parbox{\columnwidth}{\footnotesize $^\dagger$Pancreas scores 60--63\% across all windows, reflecting a general segmentation ceiling rather than low SSD.}
 \end{table}
 
-\textbf{Within-dataset organ-level validation.} As shown in Table~\ref{tab:per_organ}, organ sensitivities within Synapse directly mirror their anatomical SSD:
+\textbf{Within-dataset organ-level observation.} As shown in Table~\ref{tab:per_organ}, organ-level sensitivities within Synapse are broadly consistent with an anatomical-SSD interpretation, though this per-organ breakdown is a supporting observation rather than an independently validated analysis (no separate per-organ SSD proxy was computed):
 \begin{itemize}
-  \item \textbf{High-SSD structures:} The gallbladder ($\Delta\text{DSC} = 6.45$\,pp) is small and variable, located at the liver fossa; its identification relies entirely on global liver-gallbladder context. The stomach ($\Delta\text{DSC} = 4.97$\,pp) varies drastically in fill state, requiring adjacent organ boundaries for localization.
-  \item \textbf{Low-SSD structures:} The liver ($\Delta\text{DSC} = 0.39$\,pp) is the dominant anatomical landmark recognizable from local parenchymal texture alone. The aorta ($\Delta\text{DSC} = 1.89$\,pp) follows a rigid vertical cylindrical trajectory, rendering it largely window-robust.
+  \item \textbf{Higher-sensitivity structures:} The gallbladder ($\Delta\text{DSC} = 6.45$\,pp) is small and variable, located at the liver fossa; its identification plausibly benefits from liver-gallbladder spatial context. The stomach ($\Delta\text{DSC} = 4.97$\,pp) varies drastically in fill state, which may require adjacent organ boundaries for localization.
+  \item \textbf{Lower-sensitivity structures:} The liver ($\Delta\text{DSC} = 0.39$\,pp) is the dominant anatomical landmark recognizable from local parenchymal texture alone. The aorta ($\Delta\text{DSC} = 1.89$\,pp) follows a rigid vertical cylindrical trajectory, rendering it largely window-robust.
 \end{itemize}
 
 \subsection{Spatial Attention Allocation and Locality Prior}
 \label{sec:attn_allocation}
 
-Why does windowed attention actively outperform global attention on low-SSD tasks? Figure~\ref{fig:attn_map} visualizes the spatial attention distribution ($\|\text{output} - \text{input}\|_2$) for windowed ($M{=}7$) vs.\ global ($M{=}112$) PAM on Kvasir-SEG polyp images.
+Why does windowed attention outperform global attention on Kvasir-SEG? Figure~\ref{fig:attn_map} visualizes the spatial attention distribution ($\|\text{output} - \text{input}\|_2$) for windowed ($M{=}7$) vs.\ global ($M{=}112$) PAM on Kvasir-SEG polyp images.
 
 \begin{figure}[ht]
   \centering

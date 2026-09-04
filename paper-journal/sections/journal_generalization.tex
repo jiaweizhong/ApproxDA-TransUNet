@@ -3,12 +3,12 @@
 \label{sec:optimization_routing}
 \label{sec:generalization}
 
-Having established how Semantic Spatial Dependency governs segmentation accuracy across tasks, we now examine the microscopic behavior of ApproxDA-TransUNet: how windowed approximation alters late-stage training dynamics (Section~\ref{sec:volatility}), and why learnable dual-branch attention gates collapse to uniform routing (Section~\ref{sec:collapse}).
+Having examined how Semantic Spatial Dependency is associated with segmentation accuracy across tasks, we now examine the microscopic behavior of ApproxDA-TransUNet: how windowed approximation alters late-stage training dynamics (Section~\ref{sec:volatility}), and why learnable dual-branch attention gates settle near uniform routing (Section~\ref{sec:collapse}).
 
-\subsection{Windowed Attention as a Task-Dependent Regularizer}
+\subsection{Windowed Attention and Late-Stage Training Variability}
 \label{sec:volatility}
 
-To investigate how spatial approximation affects the training landscape, we analyze optimization trajectories across representative datasets spanning the GCS spectrum (Synapse for high GCS; Kvasir-SEG and ISIC 2018 for low GCS). We define \emph{validation DSC volatility} as the standard deviation of validation DSC evaluated at 15-epoch intervals over the final 30\% of training (epochs~210--300, 7 evaluation checkpoints). Low volatility signifies smooth, stable convergence near the optimum, while high volatility indicates oscillatory optimization.
+To investigate how spatial approximation affects the training landscape, we analyze optimization trajectories across representative datasets spanning the GCS spectrum (Synapse for high GCS; Kvasir-SEG and ISIC 2018 for low GCS). We define \emph{validation DSC volatility} as the standard deviation of validation DSC evaluated at 15-epoch intervals over the final 30\% of training (epochs~210--300, 7 evaluation checkpoints). Lower volatility indicates less temporal variation in validation DSC during this measured late-training interval. Note that the ApproxDA configurations compared here use gate=pam for Synapse but gate=learn for Kvasir-SEG and ISIC 2018 (matching each dataset's best-performing configuration from Section~\ref{sec:experiments}); the reported cross-dataset differences may therefore reflect window size, gate mode (including gate collapse, Section~\ref{sec:collapse}), or both, rather than window size in isolation.
 
 Table~\ref{tab:volatility} summarizes best validation DSC, test DSC, generalization gap ($\text{Val} - \text{Test}$), and late-stage volatility for DA-TransUNet and ApproxDA-TransUNet.
 
@@ -40,25 +40,25 @@ Table~\ref{tab:volatility} summarizes best validation DSC, test DSC, generalizat
   \label{fig:generalization}
 \end{figure*}
 
-\textbf{GCS-dependent volatility crossover.} As illustrated in Figure~\ref{fig:generalization}, tracking validation DSC and training loss reveals a striking, task-dependent crossover:
+\textbf{Cross-task differences in late-stage validation variability.} As illustrated in Figure~\ref{fig:generalization}, tracking validation DSC and training loss reveals a task-dependent pattern:
 \begin{itemize}
-  \item \textbf{Low-GCS stabilization:} On low-GCS tasks, ApproxDA-TransUNet dramatically stabilizes late-stage training, reducing validation volatility by $18.2\times$ on Kvasir-SEG (0.042 vs.\ 0.769) and $9.0\times$ on ISIC 2018 (0.053 vs.\ 0.479).
-  \item \textbf{High-GCS inversion:} On high-GCS Synapse, this stability advantage reverses: ApproxDA-TransUNet exhibits $1.3\times$ higher volatility than DA-TransUNet (0.542 vs.\ 0.409).
+  \item \textbf{Low-GCS tasks:} The selected ApproxDA configurations exhibit substantially lower late-stage validation variability than DA-TransUNet on Kvasir-SEG ($18.2\times$ lower, 0.042 vs.\ 0.769) and ISIC 2018 ($9.0\times$ lower, 0.053 vs.\ 0.479).
+  \item \textbf{High-GCS Synapse:} The opposite pattern is observed: ApproxDA-TransUNet exhibits $1.3\times$ higher volatility than DA-TransUNet (0.542 vs.\ 0.409).
 \end{itemize}
 
-This crossover provides direct dynamic evidence for the locality inductive bias hypothesis: on low-GCS tasks where local boundary cues dominate, windowed attention suppresses noisy long-range gradient signals originating from irrelevant tissue, acting as an \emph{implicit regularizer} that smooths the late-stage optimization landscape. Conversely, on high-GCS Synapse where multi-organ co-localization is essential, windowing restricts cross-organ gradient flow, creating tension between local feature extraction and global organ balance that manifests as higher optimization volatility.
+This pattern is directionally consistent with a locality-related hypothesis, but we note that the compared configurations differ in gate mode as well as window size (see caveat above), so window size, gate mode, and their interaction cannot be disentangled from this comparison alone. Controlled experiments holding gate mode fixed across datasets, together with direct gradient measurements, would be needed to isolate the mechanism underlying these observations.
 
-Furthermore, across all evaluated settings, the generalization gap remains tight ($\le 0.72\%$), with test performance closely tracking validation scores. This confirms that the observed volatility reduction is a fundamental characteristic of the optimization dynamics rather than an artifact of overfitting.
+Furthermore, across all evaluated settings, the generalization gap remains tight ($\le 0.72\%$), with test performance closely tracking validation scores, suggesting the observed variability differences are not primarily an artifact of overfitting.
 
 \subsection{Gate Dynamics and Gradient Symmetry Collapse}
 \label{sec:collapse}
 
 We next investigate the routing dynamics between spatial (PAM) and channel (CAM) attention branches. While learnable scalar gates are widely utilized in dual-branch architectures to adaptively balance representations, empirical evaluations show that learned gating frequently underperforms fixed routing.
 
-Table~\ref{tab:gate_ablation} compares gate configurations on Synapse ($M{=}7$, $r{=}32$). Fixed spatial attention (gate=pam, 78.64\% DSC) consistently outperforms CAM-only (78.26\%) and both learnable gate configurations (77.78\% at $M{=}7$; 78.04\% at $M{=}14$, $r{=}64$).
+Table~\ref{tab:gate_ablation} compares gate configurations on Synapse, including a robustness check at $M{=}14$, $r{=}64$ to verify gate collapse is not specific to the default $M{=}7$, $r{=}32$ setting. Fixed spatial attention (gate=pam, 78.64\% DSC) consistently outperforms CAM-only (78.26\%) and both learnable gate configurations (77.78\% at $M{=}7$, $r{=}32$; 78.04\% at $M{=}14$, $r{=}64$).
 
 \begin{table}[ht]
-  \caption{Gate Mode Ablation on Synapse ($M$=7, $r$=32)}
+  \caption{Gate Configurations and Gate-Collapse Robustness Check on Synapse}
   \label{tab:gate_ablation}
   \centering
   \setlength{\tabcolsep}{5pt}
@@ -67,20 +67,20 @@ Table~\ref{tab:gate_ablation} compares gate configurations on Synapse ($M{=}7$, 
     \toprule
     Gate Mode & $g$ & DSC (\%) $\uparrow$ & HD95 (mm) $\downarrow$ \\
     \midrule
-    gate=pam                    & 1.0              & \textbf{78.64} & 31.09 \\
-    gate=cam                    & 0.0              & \underline{78.26}  & \underline{30.59} \\
+    gate=pam ($M$=7, $r$=32)    & 1.0              & \textbf{78.64} & 31.09 \\
+    gate=cam ($M$=7, $r$=32)    & 0.0              & \underline{78.26}  & \underline{30.59} \\
     gate=learn ($M$=14, $r$=64) & ${\approx}0.5^*$ & 78.04          & \textbf{29.09} \\
-    gate=learn                  & ${\approx}0.5^*$ & 77.78          & 34.29 \\
+    gate=learn ($M$=7, $r$=32)  & ${\approx}0.5^*$ & 77.78          & 34.29 \\
     \bottomrule
   \end{tabular}
   \par\vspace{5pt}
-  \parbox{\columnwidth}{\footnotesize $^*$Gate collapsed to $g{\approx}0.5$ throughout training.}
+  \parbox{\columnwidth}{\footnotesize $^*$Gate collapsed to $g{\approx}0.5$ throughout training. The $M{=}14$, $r{=}64$ row uses a different window/rank setting than the other rows, included specifically to check that gate collapse is not an artifact of the default $M{=}7$, $r{=}32$ configuration.}
 \end{table}
 
 \begin{figure}[tbp]
   \centering
   \includegraphics[width=\columnwidth]{figures/fig_entropy_scatter.png}
-  \caption{Learned gate value $g$ vs.\ input feature entropy $H(F)$ across all four network depths ($M{=}7$, gate=learn). Gate values cluster at $g \approx 0.5$ ($\Delta g \le 0.0002$) with zero correlation to entropy ($r_s \approx 0$).}
+  \caption{Learned gate value $g$ vs.\ input feature entropy $H(F)$ across four network stages ($M{=}7$, gate=learn). Gate values cluster tightly at $g \approx 0.5$ ($\Delta g \le 2{\times}10^{-4}$ at every stage). Spearman rank correlation between entropy and $g$ varies by stage ($r_s{=}0.049$, $0.234$, $0.155$, $0.787$), including one stage with a fairly strong correlation; nonetheless, the absolute magnitude of gate variation remains negligible ($\le 2{\times}10^{-4}$) at every stage.}
   \label{fig:gate_analysis}
 \end{figure}
 
@@ -93,8 +93,8 @@ At standard initialization ($g \approx 0.5$), the backpropagated gradients into 
 \begin{equation}
   \frac{\partial\mathcal{L}}{\partial\mathbf{F}_\text{P}} = g \frac{\partial\mathcal{L}}{\partial\mathbf{F}} \approx \frac{1}{2}\frac{\partial\mathcal{L}}{\partial\mathbf{F}}, \qquad \frac{\partial\mathcal{L}}{\partial\mathbf{F}_\text{C}} = (1-g)\frac{\partial\mathcal{L}}{\partial\mathbf{F}} \approx \frac{1}{2}\frac{\partial\mathcal{L}}{\partial\mathbf{F}}.
 \end{equation}
-Because both branches receive identical supervision without structural asymmetry or branch-specialization incentives, the learned representations rapidly converge toward mutual similarity ($\mathbf{F}_\text{P} \approx \mathbf{F}_\text{C}$). Consequently, the differential term $(\mathbf{F}_\text{P} - \mathbf{F}_\text{C})$ vanishes, forcing $\partial\mathcal{L}/\partial g \approx 0$. This establishes a self-reinforcing stable equilibrium that locks $g$ at $\approx 0.5$ throughout optimization.
+Under the assumption that branch representations become similar ($\mathbf{F}_\text{P} \approx \mathbf{F}_\text{C}$), the differential term $(\mathbf{F}_\text{P} - \mathbf{F}_\text{C})$ approaches zero, causing $\partial\mathcal{L}/\partial g \approx 0$. This analysis identifies a potential fixed-point tendency: once branches produce similar outputs, the gate gradient weakens, suggesting a tendency toward $g \approx 0.5$. Note that this reasoning concerns $\partial\mathcal{L}/\partial g$ and does not account for the full dynamics of the gate network parameters $W_g$, sigmoid nonlinearity, or branch parameter updates, which may interact in complex ways.
 
-\textbf{Empirical verification across stages.} As depicted in Figure~\ref{fig:gate_analysis}, tracking learned gate values against feature entropy across all four network stages (bottleneck, $28^2$, $56^2$, $112^2$) reveals that gate values stay pinned at $g = 0.5000 \pm 0.0002$, with Spearman rank correlation $r_s \approx 0$. This demonstrates that the gate fails to adapt to input complexity.
+\textbf{Empirical verification across stages.} As depicted in Figure~\ref{fig:gate_analysis}, tracking learned gate values against feature entropy across four network stages reveals that gate values stay pinned at $g \approx 0.5$, with absolute variation $\Delta g \le 2{\times}10^{-4}$ at every stage. The Spearman rank correlation between entropy and gate value varies across stages ($r_s{=}0.049, 0.234, 0.155, 0.787$), including one stage with a fairly strong correlation. Thus, while the gate value is not strictly independent of entropy at every stage, its practical range of variation is too small at any stage to provide meaningful adaptive routing.
 
-These findings show that conventional scalar gating in symmetric dual-branch architectures cannot achieve adaptive routing. Effective multi-branch transformer architectures must either employ fixed, task-aligned routing (e.g., gate=pam) or introduce explicit structural asymmetries and diversity-promoting objective functions.
+These findings show that scalar gating failed to provide adaptive routing in the evaluated ApproxDA configurations. In this setting, fixed, task-aligned routing (e.g., gate=pam) provided a more reliable alternative; explicit structural asymmetries or diversity-promoting objectives are plausible directions for recovering adaptive routing in symmetric dual-branch architectures more generally.

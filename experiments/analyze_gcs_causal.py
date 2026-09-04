@@ -588,7 +588,7 @@ def plot_results(results: dict, M: int, out_path: str):
         ax_sc.grid(True, alpha=0.25)
 
     fig.suptitle(
-        f"GCS Causal Elimination  (M={M}) — Top: metric per dataset | Bottom: scatter vs ΔDSC",
+        f"GCS Candidate-Factor Analysis  (M={M}) — Top: metric per dataset | Bottom: scatter vs ΔDSC",
         fontsize=12.2,
         fontweight="bold",
     )
