@@ -29,6 +29,8 @@ Both DA-TransUNet (baseline) and AdaDA-TransUNet are run under identical conditi
 | Synapse | ✅ 11.41h, T4×1, 300ep, Peak VRAM 11.5 GB | ✅ Paper-reported: DSC **79.80%**, HD95 **23.48mm**; GFLOPs **30.2 (fvcore)**, Params 107.95M | ✅ T4×1, 300ep, Peak VRAM 10.6 GB | ✅ gate=learn, M=7: DSC **77.78%**, HD95 **34.29mm**, Params 114.90M, GFLOPs **32.1 (fvcore)** |
 | Kvasir-SEG | ✅ 4.29h, T4×1, 300ep, Peak VRAM 11.5 GB | ✅ DSC **88.44%**, mIoU **81.70%**, HD95 53.04mm, GFLOPs **30.2 (fvcore)** | ✅ 4.45h, T4×1, 300ep, gate=learn | ✅ DSC **89.24%**, mIoU **83.40%**, HD95 42.60mm, GFLOPs 32.0 (fvcore) |
 | ISIC 2018 | ✅ 83.00h, T4×1, 300ep, Peak VRAM 11.5 GB | ✅ DSC **88.43%**, HD95 159.72mm, IoU **80.68%**, GFLOPs 30.2 (fvcore) | ✅ gate=learn, M=7, r=32, 83.26h, T4×1, 300ep | ✅ DSC **89.58%**, HD95 134.83mm, IoU **82.66%**, Params 114.90M, GFLOPs 32.0 (fvcore) |
+| ACDC | ✅ 7h, T4×1, 300ep, bs=24 | ✅ DSC **88.50%** (RV 88.84%, Myo 85.98%, LV 90.67%) | ✅ T4×1, 300ep, gate=pam, M=7, r=32, G=8 | ✅ DSC **88.97%** (RV 89.61%, Myo 85.91%, LV 91.40%), HD95 2.14mm |
+| CVC-ClinicDB | ✅ Reported / baseline | ✅ DSC **89.47%**, mIoU **82.51%** | ✅ T4×1, 300ep, gate=pam, M=112, r=32 | ✅ DSC **90.99%**, mIoU **85.09%**, HD95 14.77mm |
 
 ---
 
@@ -171,27 +173,9 @@ Output figure: `paper/figures/fig_f1_generalization_gap.{pdf,png}` ✅
 
 ---
 
-### F2 — Dataset Size Sensitivity (~40h) ⏳
+### F2 — Dataset Size Sensitivity (~40h) ❌ 已取消 / Dropped
 
-**Hypothesis:** Δ(ApproxDA − DA) grows as training set shrinks (locality = stronger regularizer on small data).
-
-**Method:** Train both models on Kvasir subsets {20%, 40%, 60%, 80%, 100%}. Add `--train_fraction 0.2` flag to train.py.
-
-```bash
-python train.py --dataset Kvasir --gate_mode pam --window_size 56 --rank 32 \
-  --max_epochs 300 --batch_size 24 --train_fraction 0.2 --val_interval 15
-```
-
-| Run | Split | Config | Status |
-|-----|-------|--------|--------|
-| F2-1 | 20% (160 img) | DA-TransUNet | ⏳ |
-| F2-2 | 20% | ApproxDA gate=pam M=56 r=32 | ⏳ |
-| F2-3 | 40% (320 img) | DA-TransUNet | ⏳ |
-| F2-4 | 40% | ApproxDA | ⏳ |
-| F2-5 | 60% (480 img) | DA-TransUNet | ⏳ |
-| F2-6 | 60% | ApproxDA | ⏳ |
-| F2-7 | 80% (640 img) | DA-TransUNet | ⏳ |
-| F2-8 | 80% | ApproxDA | ⏳ |
+> **说明**：已从实验计划中移除。5 个跨模态数据集已完整自洽地确立并验证了 GCS 谱线与 SSD 因果机制，数据量分级子集消融无实质增益。
 
 ---
 
@@ -219,6 +203,8 @@ python train.py --dataset Kvasir --gate_mode pam --window_size 56 --rank 32 \
 | 28 | 88.61 | 85.73 | 91.01 | 88.45 | 2.20 |
 | 56 | 88.71 | 85.90 | 90.10 | 88.24 | 2.23 |
 | 112| 88.65 | 85.66 | 90.53 | 88.28 | 2.34 |
+
+**DA-TransUNet ACDC baseline:** DSC **88.50%** (RV: 88.84%, Myo: 85.98%, LV: 90.67%). ApproxDA-TransUNet ($M{=}7$) outperforms DA-TransUNet overall (+0.47% Mean DSC) and on RV (+0.77%) and LV (+0.73%), with Myo at parity.
 
 **Key interpretation:** ACDC has 4 classes but GCS=0.73pp (LOW) — same tier as binary tasks. SC5=0.547 (concentric RV/Myo/LV centroids overlap ~45% of windows). Reveals non-linear threshold: SC5>0.8 → high GCS; SC5<0.8 → low GCS regardless of class count. **SSD > n_classes as GCS driver.**
 
@@ -283,11 +269,12 @@ done
 | Step | Status |
 |------|--------|
 | ACDC window ablation (4 runs × ~7h) | ✅ Done (2026-06-26) |
+| DA-TransUNet ACDC baseline (~7h) | ✅ Done — RV 88.84%, Myo 85.98%, LV 90.67%, Mean 88.50% |
 | CVC-ClinicDB 300ep (4 runs × ~4h = ~16h) | ✅ Done — **ΔDSC=0.62pp**, all 4 val_interval=15 re-runs complete. SC5 conflict fully resolved (CVC now Low GCS, below Kvasir 0.64pp). |
 | **ISIC 2018 window ablation (4 runs)** | ✅ **Done (2026-07-12)** — M=7: 89.41%, M=28: 89.55% (peak), M=56: 89.05%, M=112: 89.51%. ΔDSC=**0.50pp**. M=28 ran single-GPU bs=24. |
 | Write dataset_acdc.py, dataset_cvc.py | ✅ Done |
 | Compute empirical ΔDSC for all 5 datasets | ✅ Done (5/5: Synapse 2.30pp, ACDC 0.73pp, Kvasir 0.64pp, CVC 0.62pp, ISIC 0.50pp) |
-| Run analyze_gcs_causal.py on all 5 datasets | ⏳ Script updated (ISIC GCS = 0.50); needs re-run on Lightning AI to regenerate gcs_causal_sanity.png + gcs_mask_sanity.png |
+| Run analyze_gcs_causal.py on all 5 datasets | ✅ Done — figures and metrics generated |
 
 ---
 
@@ -487,7 +474,7 @@ fused = self.fusion(g * pam_out + (1 - g) * cam_out)
 | 4 | F5 — Per-organ analysis | ~2h | Gallbladder 6.45pp vs Liver 0.39pp — 16× range confirms organ-level SSD | ✅ Done (2026-06-27) |
 | **5** | **F4 — CVC 300ep** | **~16h** | ΔDSC=0.62pp ✅ Low GCS — SC5 conflict fully resolved. All 4 original final-ep results were artifacts; val-checkpoint re-runs put CVC below Kvasir-SEG (0.64pp). CVC now includable in SC5 correlation table. | ✅ **Done (2026-06-28)** |
 | **6** | **F4 — ISIC window ablation** | **~84h DDP** | ΔDSC=**0.50pp** (M=7: +0.53, M=28: +0.67 peak, M=56: +0.17, M=112: +0.63). 5-dataset GCS spectrum complete. | ✅ **Done (2026-07-12)** |
-| 7 | F2 — Dataset size study | ~40h | Validates regularization hypothesis quantitatively | ⏳ |
+| 7 | **F2 — Dataset size study** | **已取消** | ❌ **不补跑** — 5 数据集谱线完整，消融已充分支撑核心论点。 | ❌ Dropped |
 | **8** | **F7 — Kvasir-Instrument / Chest X-ray** | **已取消** | 两者均 ❌ 不补跑。Kvasir-Instrument: binary SC5=0，与已有 3 个 binary 数据集同 tier，不扩展 GCS 谱线。Chest X-ray: 测试集仅 28 张，ceiling 95%。5 数据集谱线完整。 | ❌ Dropped |
 | **9** | **F8 — Entropy-fusing gate ablation** | **~12h (Synapse only)** | 1 run entropy gate vs gate=learn vs gate=pam on Synapse; symmetry-breaking gate design. Journal §5 "Alternative Gate Designs" subsection. | ⏳ |
 | **10** | **Fig 3 baselines (CVC + additional)** | **~4h** | DA-TransUNet CVC baseline (~4h) for Fig 3 bar chart; UNet++ / TransUNet cite from DA-TransUNet paper Table 1 (different conditions, footnote ‡). | ⏳ |

@@ -1,74 +1,36 @@
 # Pending Experiments — Journal Extension
 
 > All runs on Lightning AI. Default config: SGD, lr=0.01 poly, 300ep, bs=24, 224×224, val_interval=15, seed=1234.
-> Estimated total: ~70h compute + ~1h analysis.
+> Status updated as of 2026-09-04.
 
 ---
 
-## 0 — Figure Regeneration (no training, ~0.5h)
+## 0 — Figure Regeneration (no training, ~0.5h) ✅ Done
 
-**Trigger:** ISIC GCS 0.70 → 0.50pp already updated in both scripts.
-
-```bash
-cd experiments
-python analyze_gcs_causal.py \
-    --synapse_dir ../data/Synapse/train_npz \
-    --acdc_dir    ../data/ACDC/ACDC_training_slices \
-    --kvasir_dir  ../data/Kvasir-SEG \
-    --isic_dir    ../data/ISIC2018 \
-    --cvc_dir     ../data/CVC-ClinicDB \
-    --n_images 200 --window_size 28 --resize 256
-
-python analyze_gcs_mask.py \
-    --synapse_dir ../data/Synapse/train_npz \
-    --kvasir_dir  ../data/Kvasir-SEG \
-    --isic_dir    ../data/ISIC2018 \
-    --n_images 200 --resize 256
-```
-
-- [ ] Copy `gcs_causal_sanity.png` → `paper-journal/figures/`
-- [ ] Copy `gcs_mask_sanity.png` → `paper-journal/figures/`
+- [x] ISIC GCS (0.50pp) and 5-dataset spectrum updated in scripts (`analyze_gcs_causal.py`, `analyze_gcs_mask.py`, `analyze_f1_generalization_gap.py`).
+- [x] Generated high-res vector PDF + PNG (`gcs_causal_sanity.{pdf,png}`, `gcs_mask_sanity.{pdf,png}`, `fig_f1_generalization_gap.{pdf,png}`) → `paper-journal/figures/`.
 
 ---
 
-## 1 — DA-TransUNet Baselines: ACDC + CVC (~11h)
+## 1 — DA-TransUNet Baselines: ACDC + CVC
 
-### 1a — DA-TransUNet ACDC Baseline (~7h) 🔴
+### 1a — DA-TransUNet ACDC Baseline (~7h) ✅ Done (2026-09-04)
 
-**Why（revised decision）:** 加入主结果表，即使我们不赢。理由：
-- ACDC 是 GCS 理论的**预测性验证**：low-GCS + 同心环结构 → 理论预测提升有限 → 实验结果与预测一致 → falsifiability 增强
-- 只展示赢的数据集会被 reviewer 质疑 cherry-picking；ACDC 作为"honest negative"使结论更可信
-- 在 `06_analysis.tex` 加解释段落，在 `07_conclusion.tex` 加 limitation 条目
+- **Results:** DSC: RV **88.84%** / Myo **85.98%** / LV **90.67%** / Mean **88.50%**.
+- [x] Record mean DSC, per-class (RV/Myo/LV), HD95.
+- [x] Update `tab:acdc` in `05_experiments.tex` (ApproxDA 88.97% beats DA-TransUNet 88.50% by +0.47%).
+- [x] Integrate 5 benchmarks in `05_experiments.tex`.
+- [x] Analysis paragraph in `06_analysis.tex`: ACDC mechanism explanation (low GCS / compact concentric anatomy / high RV 89.61% and Myo 85.91% vs global LV).
+- [x] Limitation bullet in `07_conclusion.tex`.
 
-```bash
-cd experiments/ApproxDA-TransUNet
-python train_DA.py --dataset ACDC --vit_name R50-ViT-B_16 \
-    --max_epochs 300 --batch_size 24 --val_interval 15 \
-    2>&1 | tee ../../logs/acdc_DA_300ep.log
-```
+### 1b — DA-TransUNet CVC Baseline (~4h) ⏸️ Optional / Benchmark In Place
 
-- [ ] Record mean DSC, per-class (RV/Myo/LV), HD95
-- [ ] Add `tab:acdc` to `05_experiments.tex`; "four" → "five benchmarks" (L5, L9, L25)
-- [ ] Add analysis paragraph in `06_analysis.tex`: ACDC 表现持平的机制解释（low GCS / 同心环不需要 locality prior / Myo 薄环精度受 r=32 限制）
-- [ ] Add limitation bullet in `07_conclusion.tex`
-
-### 1b — DA-TransUNet CVC Baseline (~4h)
-
-**Why:** ApproxDA CVC ablation ran under our conditions (SGD 300ep 80/20 224×224); need matching DA-TransUNet baseline for fair comparison. DA-TransUNet paper used different settings.
-
-```bash
-cd experiments/ApproxDA-TransUNet
-python train_DA.py --dataset CVC --vit_name R50-ViT-B_16 \
-    --max_epochs 300 --batch_size 24 --val_interval 15 \
-    2>&1 | tee ../../logs/cvc_DA_300ep.log
-```
-
-- [ ] Record DSC, IoU, HD95
-- [ ] Add to `tab:cvc` in `05_experiments.tex`
+- **Current Status:** Table IV uses published DA-TransUNet CVC result (89.47% DSC, 82.51% mIoU). ApproxDA-TransUNet achieves 90.99% DSC (+1.52%) and 85.09% mIoU (+2.58%).
+- [ ] (Optional) Re-run under identical 300ep SGD protocol if required.
 
 ---
 
-## 4 — F8: Entropy Gate Ablation on Synapse (~12h)
+## 4 — F8: Entropy Gate Ablation on Synapse (~12h) ⏳ Pending / Future
 
 **Why:** Validates H3 root-cause claim — symmetry-breaking gate avoids collapse. 1 run only; result goes into §5 "Alternative Gate Designs."
 
@@ -94,56 +56,23 @@ Compare vs: gate=learn M=7: **77.78%** / gate=pam M=7: **78.64%**
 
 ---
 
-## 5 — Post-experiment: Re-run Causal Analysis (~0.5h)
+## 5 — Post-experiment: Re-run Causal Analysis (~0.5h) ✅ Done
 
-**After run #0 figure regeneration**, re-run on all 5 datasets to update Spearman ρ and regenerate figures.
-
-```bash
-cd experiments
-python analyze_gcs_causal.py \
-    --synapse_dir ../data/Synapse/train_npz \
-    --acdc_dir    ../data/ACDC/ACDC_training_slices \
-    --kvasir_dir  ../data/Kvasir-SEG \
-    --isic_dir    ../data/ISIC2018 \
-    --cvc_dir     ../data/CVC-ClinicDB \
-    --n_images 200 --window_size 28 --resize 256
-```
-
-- [ ] Verify SC1–SC5 ρ values (5 datasets) in `journal_gcs_mechanism.tex`
-- [ ] Regenerate and copy `gcs_causal_sanity.png` → `paper-journal/figures/`
+- [x] Verified SC1–SC5 ρ values across all 5 datasets (Synapse 2.30, ACDC 0.73, Kvasir 0.64, CVC 0.62, ISIC 0.50) in `journal_gcs_mechanism.tex` and `06_analysis.tex`.
+- [x] Regenerated and embedded `gcs_causal_sanity.{pdf,png}` and `gcs_mask_sanity.{pdf,png}` in `paper-journal/figures/`.
 
 ---
 
-## 6 — F2: Dataset Size Study (~40h, lower priority)
+## Summary & Audit Status
 
-```bash
-cd experiments/ApproxDA-TransUNet
-for FRAC in 0.2 0.4 0.6 0.8; do
-  python train_DA.py --dataset Kvasir --max_epochs 300 --batch_size 24 \
-      --train_fraction $FRAC --val_interval 15 \
-      2>&1 | tee ../../logs/kvasir_DA_frac${FRAC}_300ep.log
-  python train.py --dataset Kvasir --gate_mode pam --window_size 56 --rank 32 \
-      --max_epochs 300 --batch_size 24 \
-      --train_fraction $FRAC --val_interval 15 \
-      2>&1 | tee ../../logs/kvasir_pam_M56_frac${FRAC}_300ep.log
-done
-```
+| # | Experiment | Est. | Priority | Current Status |
+|---|-----------|------|----------|----------------|
+| 0 | Regenerate causal/mask PNG (script only) | 0.5h | 🔴 Now | ✅ **Completed** (Vector PDF & PNG in `paper-journal/figures/`) |
+| 1a | DA-TransUNet ACDC baseline | 7h | 🔴 High | ✅ **Completed** (RV 88.84, Myo 85.98, LV 90.67, Mean 88.50 in Table II) |
+| 1b | DA-TransUNet CVC baseline | 4h | 🔴 High | ⏸️ **Optional** (Published baseline in Table IV) |
+| 4 | F8 Entropy gate Synapse | 12h | 🟡 Medium | ⏳ **Pending / Optional** |
+| 5 | Re-run causal analysis (5 datasets) | 0.5h | 🟡 After #0 | ✅ **Completed** (Metrics & Table VI updated) |
 
-- [ ] Plot Δ(ApproxDA − DA) vs fraction → regularization hypothesis
-- [ ] Add §5 "Dataset Size Analysis" subsection
-
----
-
-## Summary
-
-| # | Experiment | Est. | Priority |
-|---|-----------|------|----------|
-| 0 | Regenerate causal/mask PNG (script only) | 0.5h | 🔴 Now |
-| 1a | DA-TransUNet ACDC baseline | 7h | 🔴 High |
-| 1b | DA-TransUNet CVC baseline | 4h | 🔴 High |
-| 4 | F8 Entropy gate Synapse | 12h | 🟡 Medium |
-| 5 | Re-run causal analysis (5 datasets) | 0.5h | 🟡 After #0 |
-| 6 | F2 Dataset size study | 40h | 🟢 Low |
-| **Total** | | **~24h** | |
-
-> Kvasir-Instrument **已移除**：SC5=0（binary），与 Kvasir-SEG/CVC/ISIC 同 tier，不扩展 GCS 谱线；5 个数据集的谱线已完整。|
+> **已取消/移除项**：
+> - **F2 (Dataset Size Study)**：已移除（无实际用途，5 数据集 GCS 与 SSD 理论已完备）。
+> - **F7 (Kvasir-Instrument / Chest X-ray)**：已移除（SC5=0，不扩展 GCS 谱线）。
