@@ -289,7 +289,7 @@ class LowRankWindowedPAM(nn.Module):
         self.proj_r = nn.Linear(N, rank, bias=False)
         self.alpha = nn.Parameter(torch.zeros(1))
 
-    def forward(self, x):
+    def forward(self, x, return_attn=False):
         B, C, H, W = x.shape
         # Clamp window to feature-map size so window_size=112 gives global attention
         # at every scale without requiring H to be a multiple of self.M.
@@ -313,7 +313,10 @@ class LowRankWindowedPAM(nn.Module):
         scores = F.softmax(scores, dim=-1)
         E_out = torch.bmm(scores, D_r.transpose(1, 2))  # (B*nW, N, C)
         E_n = self.alpha * E_out.transpose(1, 2) + x_n  # (B*nW, C, N)
-        return window_reverse(E_n.view(nBW, C, M, M), M, H, W)
+        out = window_reverse(E_n.view(nBW, C, M, M), M, H, W)
+        if return_attn:
+            return out, scores
+        return out
 
 
 class GroupedCAM(nn.Module):
@@ -327,7 +330,7 @@ class GroupedCAM(nn.Module):
         self.G = groups
         self.beta = nn.Parameter(torch.zeros(1))
 
-    def forward(self, x):
+    def forward(self, x, return_attn=False):
         B, C, H, W = x.shape
         G, Cg = self.G, C // self.G
         x_g = x.contiguous().view(B * G, Cg, H * W)  # (B*G, Cg, N)
@@ -335,7 +338,10 @@ class GroupedCAM(nn.Module):
         X = F.softmax(X, dim=-1)
         E_g = torch.bmm(X.transpose(1, 2), x_g)  # (B*G, Cg, N)
         E = self.beta * E_g + x_g
-        return E.contiguous().view(B, C, H, W)
+        out = E.contiguous().view(B, C, H, W)
+        if return_attn:
+            return out, X
+        return out
 
 
 class ApproxDABlock(nn.Module):
@@ -346,6 +352,7 @@ class ApproxDABlock(nn.Module):
       'fixed' — fixed 0.5 blend
       'pam'   — PAM only (g=1)
       'cam'   — CAM only (g=0)
+      'entropy' — per-sample entropy-based gate (breaks g≈0.5 symmetry)
     """
 
     def __init__(self, channels, window_size=7, rank=32, groups=8, gate_mode="learn"):
@@ -359,20 +366,42 @@ class ApproxDABlock(nn.Module):
         self.fusion = nn.Conv2d(channels, channels, kernel_size=1)
 
     def forward(self, x):
-        pam_out = self.pam(x)
-        cam_out = self.cam(x)
-        if self.gate_mode == "pam":
-            g = 1.0
-        elif self.gate_mode == "cam":
-            g = 0.0
-        elif self.gate_mode == "fixed":
-            g = 0.5
-        else:  # 'learn'
-            g = torch.sigmoid(self.gate_fc(self.pool(x).view(x.shape[0], -1))).view(
-                x.shape[0], -1, 1, 1
-            )  # (B, C, 1, 1)
+        B = x.shape[0]
+        if self.gate_mode == "entropy":
+            pam_out, pam_attn = self.pam(x, return_attn=True)
+            cam_out, cam_attn = self.cam(x, return_attn=True)
+            g = self._entropy_gate(pam_attn, cam_attn, B)
+        else:
+            pam_out = self.pam(x)
+            cam_out = self.cam(x)
+            if self.gate_mode == "pam":
+                g = 1.0
+            elif self.gate_mode == "cam":
+                g = 0.0
+            elif self.gate_mode == "fixed":
+                g = 0.5
+            else:  # 'learn'
+                g = torch.sigmoid(self.gate_fc(self.pool(x).view(B, -1))).view(
+                    B, -1, 1, 1
+                )  # (B, C, 1, 1)
         fused = self.fusion(g * pam_out + (1.0 - g) * cam_out)
         return fused + x
+
+    def _entropy_gate(self, pam_attn, cam_attn, B):
+        """Per-sample entropy gate: lower entropy => more focused => higher weight.
+        pam_attn: (B*nW, N, r) softmaxed PAM attention, one per window
+        cam_attn: (B*G, Cg, Cg) softmaxed CAM attention, one per group
+        Returns PAM weight g of shape (B, 1, 1, 1).
+        """
+
+        def _entropy(a):
+            p = a.clamp(min=1e-8)
+            return -(p * p.log()).sum(dim=-1).mean(dim=-1)  # (B*nHeads,)
+
+        H_pam = _entropy(pam_attn).view(B, -1).mean(dim=1)  # (B,)
+        H_cam = _entropy(cam_attn).view(B, -1).mean(dim=1)  # (B,)
+        g = torch.softmax(torch.stack([-H_pam, -H_cam], dim=1), dim=1)[:, 0]  # (B,)
+        return g.view(B, 1, 1, 1)
 
 
 def hardware_config(free_mem_gb):

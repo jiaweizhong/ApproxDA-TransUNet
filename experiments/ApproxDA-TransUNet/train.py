@@ -79,7 +79,7 @@ parser.add_argument(
     "--gate_mode",
     type=str,
     default="learn",
-    choices=["learn", "fixed", "pam", "cam"],
+    choices=["learn", "fixed", "pam", "cam", "entropy"],
     help="Gate mode: learn=adaptive (default), fixed=0.5 blend, pam=PAM only, cam=CAM only",
 )
 parser.add_argument(

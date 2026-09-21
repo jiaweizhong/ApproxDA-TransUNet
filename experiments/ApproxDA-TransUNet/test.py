@@ -98,7 +98,7 @@ parser.add_argument(
     "--gate_mode",
     type=str,
     default="learn",
-    choices=["learn", "fixed", "pam", "cam"],
+    choices=["learn", "fixed", "pam", "cam", "entropy"],
     help="Must match training gate_mode",
 )
 args = parser.parse_args()
