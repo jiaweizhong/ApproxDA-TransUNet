@@ -2,8 +2,10 @@
 Statistical validation for BSPC submission, computed from EXISTING result logs
 (no new training). Produces:
   1. Paired bootstrap 95% CI + Wilcoxon signed-rank test for ApproxDA vs
-     DA-TransUNet mean DSC, per dataset (Kvasir-SEG, ISIC 2018 -- Synapse
-     excluded here, see warning below; ACDC and CVC-ClinicDB excluded: no
+     DA-TransUNet mean DSC, per dataset (Kvasir-SEG, ISIC 2018, ACDC --
+     ACDC's per-case DA-TransUNet log was found 2026-09-20 and is legitimate
+     (summary matches paper exactly), unlike Synapse's, see warning below.
+     Synapse excluded; CVC-ClinicDB excluded: no
      per-case DA-TransUNet log exists locally, published baselines only).
   2. Bootstrap 95% CI for GCS (= max_M DSC - min_M DSC) on Synapse and
      Kvasir-SEG, resampling test cases (unaffected by the Synapse warning
@@ -130,6 +132,13 @@ def main():
         "ISIC 2018": (
             REPO / "results/DA-TransUNet/ISIC2018/test_da_isic.txt",
             REPO / "results/ApproxDA-TransUNet/ISIC18/test_learn_M7.txt",
+        ),
+        # Found 2026-09-20: this per-case log DOES exist (previously assumed
+        # missing) and its summary (88.50%) matches the paper exactly --
+        # trustworthy, unlike the Synapse log.
+        "ACDC": (
+            REPO / "results/DA-TransUNet/ACDC/inference-08312026.txt",
+            REPO / "results/ApproxDA-TransUNet/ACDC/test_acdc_M7.txt",
         ),
     }
 

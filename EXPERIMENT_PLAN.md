@@ -416,11 +416,11 @@ done
 
 ---
 
-### F8 — Entropy-Fusing Gate Ablation ⏳
+### F8 — Entropy-Fusing Gate Ablation ⚠️ Blocked — Code/Result Mismatch (audited 2026-09-20)
 
 **Motivation:** gate=learn collapses to g≈0.5 due to gradient symmetry (H3). An entropy-based gate breaks symmetry by weighting each branch inversely proportional to its attention entropy — more "focused" (lower entropy) branch gets higher weight.
 
-**Design:**
+**Design (documented here, NOT present in current `Architecture/block.py`):**
 ```python
 def entropy_gate(attn_map):
     # attn_map: (B, N, r) — softmaxed attention weights
@@ -436,16 +436,13 @@ g = g.view(B, 1, 1, 1)
 fused = self.fusion(g * pam_out + (1 - g) * cam_out)
 ```
 
-**Experiments (Synapse only, ~12h):**
+**⚠️ Audit (2026-09-20):** A run was committed to `results/ApproxDA-TransUNet/M7R32-ENTROPY-09062026/` reporting **test DSC 78.87%** (`gate_mode='entropy'`, M=7, r=32, 300ep) — beating both gate=learn (77.78%) and gate=pam (78.64%). However, `Architecture/block.py`'s current `ApproxDABlock` has **no `'entropy'` case**: `__init__` only builds `self.gate_fc` `if gate_mode == "learn"`, and `forward()`'s `else` branch (entered for any mode other than pam/cam/fixed, including the string `'entropy'`) unconditionally calls `self.gate_fc` — confirmed via `git log --all -- block.py` (only 2 commits, neither adds an entropy branch) and a local repro (`ApproxDABlock(..., gate_mode='entropy')` + forward pass → `AttributeError: 'ApproxDABlock' object has no attribute 'gate_fc'`). The code that produced 78.87% was never committed back from Lightning AI; only the log files were. **This result is not reproducible and not verifiable from this repo — do not cite it in the paper or reviewer response.** No gate-value distribution was logged either, so even if the code were recovered, the core F8 question ("does g avoid 0.5?") still wouldn't be answered by the existing logs.
 
-| Run | Config | Expected outcome |
-|-----|--------|-----------------|
-| F8-1 | gate=entropy, M=7, r=32 | Does entropy gate avoid g≈0.5 collapse? |
-| Compare vs | gate=learn M=7: 77.78%, gate=pam M=7: 78.64% | Should g stabilize to meaningful value |
+**To unblock:** recover `block.py` as it existed on the Lightning AI instance that ran this (if still accessible), or re-implement the design above, commit it, and re-run with gate-value logging added. See `PENDING_RUNS.md` §4 for the full writeup and re-run command.
 
-**Journal section:** §5 "Alternative Gate Designs" — 1 paragraph + 1 DSC number. Frame as: "symmetry-breaking gates avoid collapse; entropy weighting is one principled approach."
+**Journal section:** §5 "Alternative Gate Designs" — 1 paragraph + 1 DSC number. Frame as: "symmetry-breaking gates avoid collapse; entropy weighting is one principled approach." **Not to be written until the result above is re-verified.**
 
-**Note:** Not a new paper contribution — no additional architecture ablation needed. Just demonstrates the collapse is fixable, reinforcing H3's "gradient symmetry is the root cause" claim.
+**Note:** Not a new paper contribution — no additional architecture ablation needed. Just demonstrates the collapse is fixable, reinforcing H3's "gradient symmetry is the root cause" claim — once verified.
 
 ---
 
@@ -486,7 +483,7 @@ fused = self.fusion(g * pam_out + (1 - g) * cam_out)
 | **6** | **F4 — ISIC window ablation** | **~84h DDP** | ΔDSC=**0.50pp** (M=7: +0.53, M=28: +0.67 peak, M=56: +0.17, M=112: +0.63). 5-dataset GCS spectrum complete. | ✅ **Done (2026-07-12)** |
 | 7 | **F2 — Dataset size study** | **已取消** | ❌ **不补跑** — 5 数据集谱线完整，消融已充分支撑核心论点。 | ❌ Dropped |
 | **8** | **F7 — Kvasir-Instrument / Chest X-ray** | **已取消** | 两者均 ❌ 不补跑。Kvasir-Instrument: binary SC5=0，与已有 3 个 binary 数据集同 tier，不扩展 GCS 谱线。Chest X-ray: 测试集仅 28 张，ceiling 95%。5 数据集谱线完整。 | ❌ Dropped |
-| **9** | **F8 — Entropy-fusing gate ablation** | **~12h (Synapse only)** | 1 run entropy gate vs gate=learn vs gate=pam on Synapse; symmetry-breaking gate design. Journal §5 "Alternative Gate Designs" subsection. | ⏳ |
+| **9** | **F8 — Entropy-fusing gate ablation** | **~12h (Synapse only)** | 1 run entropy gate vs gate=learn vs gate=pam on Synapse; symmetry-breaking gate design. Journal §5 "Alternative Gate Designs" subsection. | ⚠️ **Blocked — 78.87% result exists but code not in repo, unverifiable (audited 2026-09-20, see §F8)** |
 | **10** | **Fig 3 baselines (CVC + additional)** | **~4h** | DA-TransUNet CVC baseline (~4h) for Fig 3 bar chart; UNet++ / TransUNet cite from DA-TransUNet paper Table 1 (different conditions, footnote ‡). | ⏳ |
 
 > **⚠️ Conference paper unaffected by any of the above:** All conference ablations (Synapse, Kvasir) confirmed 300ep via epo300 in snapshot paths. ISIC used as supporting evidence (+0.70% framed as "consistent with low-sensitivity pattern") — no ΔDSC claimed. The epoch/ISIC-mislabeling issues are **journal-only**.
