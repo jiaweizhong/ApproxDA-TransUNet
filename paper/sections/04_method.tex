@@ -2,87 +2,90 @@
 \section{Method}
 \label{sec:method}
 
-This section introduces the overall architecture of ApproxDA-TransUNet and the placement of ApproxDABlocks within it, then details the three independently controllable approximation axes each block implements, and finally analyzes their computational complexity.
+\subsection{Architecture overview}
 
-\subsection{Architecture Overview}
+ApproxDA-TransUNet keeps the hybrid CNN--ViT encoder and decoder of DA-TransUNet~\cite{sun2024datransunet}, with an R50-ViT-B/16 backbone (Fig.~\ref{fig:framework}). Three CNN stages produce features at strides 2, 4, and 8, and a 12-layer ViT processes $14{\times}14$ patch tokens. ApproxDABlocks are placed at the bottleneck and at the three skip connections (512 channels at $28^2$, 256 at $56^2$, 64 at $112^2$). The public DA-TransUNet implementation applies dual attention only at the bottleneck and the 512- and 256-channel skips, because its decoder selects the block by the decoder channel count rather than the skip channel count; we keep that implementation unchanged as the baseline and additionally place a block at the 64-channel skip.
 
-Figure~\ref{fig:framework} illustrates the overall architecture: ApproxDA-TransUNet adopts the hybrid CNN--ViT encoder-decoder structure of DA-TransUNet~\cite{sun2024datransunet}, with an R50-ViT-B/16 backbone pretrained on ImageNet-21K. Three CNN encoder stages produce multi-scale features at strides 4, 8, and 16; a 12-layer ViT processes $14{\times}14$ patch tokens. ApproxDABlocks replace all dual-attention modules at three skip connections---512 channels at $28{\times}28$, 256 at $56{\times}56$, and 64 at $112{\times}112$---and at the bottleneck. Each block routes activations through a Low-Rank Windowed PAM branch and a Grouped CAM branch, fused by a configurable gate $g$. Figure~\ref{fig:approxda_block} details the internal structure of each ApproxDABlock and its three independently controllable approximation axes.
+Each ApproxDABlock keeps the layout of the DA-TransUNet block and replaces only its attention modules (Fig.~\ref{fig:block}). Each branch first reduces the $C$ input channels to $C/16$ with a $3{\times}3$ convolution, batch normalization, and ReLU, as in DA-TransUNet; the PAM and CAM branches then apply the approximated attention described below, followed by another $3{\times}3$ convolution block. The two branches are fused and projected back to $C$ channels.
 
-\begin{figure*}[tbp]
+\begin{figure*}[t]
   \centering
-  \includegraphics[width=\textwidth]{figures/approxda_overview}
-  \caption{ApproxDA-TransUNet architecture. ApproxDABlocks (Low-Rank Windowed PAM + Grouped CAM + gate routing) replace dual-attention modules at all skip connections and the bottleneck. \texttt{gate\_mode} controls the routing during ablation.}
+  \includegraphics[width=0.92\textwidth]{figures/approxda_overview}
+  \caption{ApproxDA-TransUNet. ApproxDABlocks (windowed low-rank PAM + grouped CAM + routing) are placed at all three skip connections and at the bottleneck; the CNN--ViT backbone of DA-TransUNet is unchanged.}
   \label{fig:framework}
 \end{figure*}
 
-\begin{figure*}[tbp]
+\begin{figure*}[t]
   \centering
-  \includegraphics[width=\textwidth]{figures/approxda_block}
-  \caption{ApproxDABlock internals with three independently controllable approximation axes: spatial scope ($M$, window size), representation fidelity ($r$, projection rank), and channel interaction ($G$, group count). Input $\mathbf{x}$ splits into a Low-Rank Windowed PAM branch (lavender, upper) and a Grouped CAM branch (green, lower); gate $g$ fuses the outputs and $\mathbf{x}$ is added as a residual.}
-  \label{fig:approxda_block}
+  \includegraphics[width=0.92\textwidth]{figures/approxda_block}
+  \caption{ApproxDABlock with three independently controllable approximation axes: spatial scope ($M$), affinity resolution ($r$), and channel interaction ($G$). Each branch reduces the input to $C/16$ channels before attention, as in DA-TransUNet; the branch outputs are fused by the per-channel routing vector $\mathbf{g}$ and projected back to $C$ channels by a $1{\times}1$ convolution.}
+  \label{fig:block}
 \end{figure*}
+% TODO(figure): redraw approxda_block.pdf for the c16 block (C/16 reduction,
+% 3x3 conv blocks, per-channel gate of size C/16, no outer residual); see
+% ../ApproxDA_ISBI_Reduction_and_Revision_Plan.md Sec. 4.1.
 
-\subsection{Attention Approximation Formulation}
+\textbf{Approximation axes.} The original dual-attention block computes dense spatial and channel attention over the full feature map. ApproxDA-TransUNet approximates it along three independent axes. \emph{Spatial scope} (window size $M$) controls how far PAM reaches; $M{\times}M$ windows trade long-range context for lower cost. \emph{Affinity resolution} (rank $r$) controls how finely attention is computed inside a window; higher $r$ approaches exact attention. \emph{Channel interaction} (groups $G$) restricts CAM to interactions within $G$ channel groups. Any two of $\{M, r, G\}$ can be held fixed while the third varies.
 
-The original DA module performs dense spatial and channel attention over the full feature map, with quadratic complexity in both spatial resolution and channel dimension. ApproxDA-TransUNet reduces this cost along three independent axes, each targeting a distinct aspect of the approximation:
+\subsection{Spatial approximation}
 
-\textbf{Spatial scope} (window size $M$) controls \emph{how far} PAM reaches. Full global attention ($M{=}H$) captures all long-range spatial relationships; restricting to $M{\times}M$ local windows trades long-range context for lower complexity. This axis most directly governs whether tasks with broader contextual requirements retain the anatomical context they depend on.
-
-\textbf{Representation fidelity} (rank $r$) controls \emph{how precisely} attention is computed within each window. Low-rank projection ($r \ll M^2$) approximates the affinity matrix at reduced cost; higher $r$ approaches exact attention.
-
-\textbf{Channel interaction} (groups $G$) controls \emph{which channels} may interact in CAM. Partitioning $C$ channels into $G$ independent groups limits cross-channel dependency to within-group interactions, reducing the interaction scope.
-
-The axes are fully independent: any two of $\{M,\,r,\,G\}$ can be held fixed while the third varies, enabling clean ablations that isolate individual approximation effects.
-
-\subsection{Spatial Approximation}
-
-Instead of computing global position attention, ApproxDA-TransUNet partitions the feature map into non-overlapping windows of size $M{\times}M$. Attention is computed independently inside each local window, reducing complexity from $\mathcal{O}(N^2C)$ to $\mathcal{O}(NM^2C)$.
-
-\textbf{Window partitioning.} Following~\cite{liu2021swin}, we partition the feature map into $n_W$ non-overlapping $M{\times}M$ windows. Window clamping $M \leftarrow \min(M, H, W)$ allows $M{=}112$ to yield global attention at all scales, enabling a clean ablation that isolates windowing from low-rank as the performance bottleneck.
-
-\textbf{Low-rank projection.} Following~\cite{wang2020linformer}, query and key features inside each window are projected from $N_w {=} M^2$ to rank $r \ll M^2$ via a learned matrix $\mathbf{W}_r \in \mathbb{R}^{r \times N_w}$, where $\mathbf{C}, \mathbf{D} \in \mathbb{R}^{N_w \times C}$ denote the query and key feature matrices within each window:
+\textbf{Full PAM.} Following~\cite{fu2019dual}, let $\mathbf{A} \in \mathbb{R}^{C \times N}$ be the (channel-reduced) input of the attention module, $N = HW$, and let $\mathbf{B}, \mathbf{C} \in \mathbb{R}^{C' \times N}$ and $\mathbf{D} \in \mathbb{R}^{C \times N}$ be query, key, and value features produced by $1{\times}1$ convolutions, with columns $\mathbf{B}_j$, $\mathbf{C}_i$, $\mathbf{D}_i$ and $C' = \max(1, C/8)$ as in the DA-TransUNet implementation. PAM computes
 \begin{equation}
-  \tilde{\mathbf{C}} = \mathbf{W}_r \mathbf{C}, \quad \tilde{\mathbf{D}} = \mathbf{W}_r \mathbf{D} \in \mathbb{R}^{r \times C}.
+  s_{ji} = \frac{\exp(\mathbf{B}_j^{\top}\mathbf{C}_i)}{\sum_{i'=1}^{N}\exp(\mathbf{B}_j^{\top}\mathbf{C}_{i'})}, \quad
+  \mathbf{E}_j = \alpha \sum_{i=1}^{N} s_{ji}\,\mathbf{D}_i + \mathbf{A}_j,
+  \label{eq:pam_full}
+\end{equation}
+where $\alpha$ is a learned scalar initialized to 0. The $N{\times}N$ attention matrix costs $\mathcal{O}(N^2C)$.
+
+\textbf{Window partitioning.} Following~\cite{liu2021swin}, the map is split into non-overlapping $M{\times}M$ windows with $M \leftarrow \min(M,H,W)$, and Eq.~\eqref{eq:pam_full} is evaluated inside each window over its $N_w = M^2$ positions. This reduces the cost to $\mathcal{O}(NM^2C)$; the window outputs are then merged back to the $H{\times}W$ grid.
+
+\textbf{Low-rank projection.} Following~\cite{wang2020linformer}, keys and values inside each window, $\mathbf{C} \in \mathbb{R}^{C' \times N_w}$ and $\mathbf{D} \in \mathbb{R}^{C \times N_w}$, are compressed along the token axis by a learned projection $\mathbf{P} \in \mathbb{R}^{N_w \times r}$ shared across windows:
+\begin{equation}
+  \tilde{\mathbf{C}} = \mathbf{C}\mathbf{P} \in \mathbb{R}^{C' \times r}, \qquad \tilde{\mathbf{D}} = \mathbf{D}\mathbf{P} \in \mathbb{R}^{C \times r}.
   \label{eq:lowrank}
 \end{equation}
-The full attention matrix $\mathbf{C}\mathbf{D}^\top \in \mathbb{R}^{N_w \times N_w}$ is approximated by $\mathbf{C}\tilde{\mathbf{D}}^\top \in \mathbb{R}^{N_w \times r}$ (original queries $\times$ projected keys), reducing total complexity to $\mathcal{O}(NrC)$. Combined, windowing and low-rank projection reduce the theoretical attention-matrix size from $\mathcal{O}(N^2)$ to $\mathcal{O}(Nr)$, a factor of $N/r$ (${\sim}390{\times}$ at $112{\times}112$ with $r{=}32$). These two hyperparameters---window size $M$ and rank $r$---form the primary experimental axes investigated on Synapse.
-
-\subsection{Channel Approximation}
-
-The original Channel Attention Module computes a $C{\times}C$ channel attention matrix at $\mathcal{O}(C^2N)$ cost. ApproxDA-TransUNet approximates this by partitioning $C$ channels into $G$ groups of width $C_g = C/G$, computing independent per-group attention:
+Each query then attends to the $r$ projected keys instead of the $N_w$ original ones:
 \begin{equation}
-  X^{(g)}_{ji} = \frac{\exp(\mathbf{A}^{(g)}_i \cdot \mathbf{A}^{(g)}_j)}{\sum_{k=1}^{C_g}\exp(\mathbf{A}^{(g)}_k \cdot \mathbf{A}^{(g)}_j)},
+  \tilde{s}_{jk} = \frac{\exp(\mathbf{B}_j^{\top}\tilde{\mathbf{C}}_k)}{\sum_{k'=1}^{r}\exp(\mathbf{B}_j^{\top}\tilde{\mathbf{C}}_{k'})}, \quad
+  \mathbf{E}_j = \alpha \sum_{k=1}^{r} \tilde{s}_{jk}\,\tilde{\mathbf{D}}_k + \mathbf{A}_j,
+  \label{eq:pam_lr}
+\end{equation}
+so the per-window attention matrix is $N_w{\times}r$ instead of $N_w{\times}N_w$, and the total cost becomes $\mathcal{O}(NrC)$. As in~\cite{fu2019dual}, no temperature scaling is applied. When $M$ is clamped to a smaller map, the first $N_w$ rows of $\mathbf{P}$ are used. Hence $M{=}112$ gives a single window per map (global spatial scope), but the attention remains rank-$r$ and is \emph{not} exact full PAM; omitting the projection ($\tilde{\mathbf{C}}{=}\mathbf{C}$, $\tilde{\mathbf{D}}{=}\mathbf{D}$) recovers exact attention within each window.
+
+\subsection{Channel approximation}
+
+CAM~\cite{fu2019dual} computes a $C{\times}C$ channel affinity at $\mathcal{O}(C^2N)$ cost. We split the $C$ channels into $G$ groups of $C_g = C/G$ channels and compute attention within each group. For group $g$ with channel rows $\mathbf{A}^{(g)}_1,\dots,\mathbf{A}^{(g)}_{C_g} \in \mathbb{R}^{N}$,
+\begin{equation}
+\begin{aligned}
+  x^{(g)}_{ij} &= \frac{\exp(-\mathbf{A}^{(g)}_i \cdot \mathbf{A}^{(g)}_j)}{\sum_{k=1}^{C_g}\exp(-\mathbf{A}^{(g)}_i \cdot \mathbf{A}^{(g)}_k)}, \\
+  \mathbf{E}^{(g)}_i &= \beta \sum_{j=1}^{C_g} x^{(g)}_{ij}\,\mathbf{A}^{(g)}_j + \mathbf{A}^{(g)}_i,
+\end{aligned}
   \label{eq:groupedcam}
 \end{equation}
-with total cost $\mathcal{O}(C^2N/G)$. Compared with dense interaction, grouped attention reduces computational complexity while preserving local channel dependencies.
+where $\beta$ is a learned scalar initialized to 0. Following the official DANet and DA-TransUNet implementations, the channel affinity is negated before the softmax (implemented as $\max_k \mathbf{A}_i\cdot\mathbf{A}_k - \mathbf{A}_i\cdot\mathbf{A}_j$, which is equivalent under the softmax). Grouping reduces the cost to $\mathcal{O}(C^2N/G)$, and $G{=}1$ recovers the CAM module of DA-TransUNet exactly. When a reduced map has fewer than $G$ channels (4 channels at the 64-channel skip), one channel per group is used.
 
-The grouping number $G$ provides another controllable approximation dimension, allowing the influence of channel approximation to be studied independently from spatial approximation.
+\subsection{Routing and complexity}
 
-\subsection{Routing Strategy}
-
-The routing of DA-TransUNet~\cite{sun2024datransunet} is extended to a configurable \texttt{gate\_mode}. PAM and CAM outputs are fused via:
+Let $\mathbf{X}$ be the block input with $C$ channels, and let $\phi$ denote a $3{\times}3$ convolution with batch normalization and ReLU. The block output is
 \begin{equation}
-  \mathbf{y} = \mathbf{W}_f\!\left(g \cdot \hat{\mathbf{P}} + (1-g) \cdot \hat{\mathbf{C}}\right) + \mathbf{x},
+\begin{aligned}
+  \mathbf{P} &= \phi_{51}\big(\mathrm{PAM}(\phi_{5a}(\mathbf{X}))\big), \quad
+  \mathbf{Q} = \phi_{52}\big(\mathrm{CAM}(\phi_{5c}(\mathbf{X}))\big), \\
+  \mathbf{Y} &= \mathrm{ReLU}\big(\mathbf{W}_f\,(\mathbf{g} \odot \mathbf{P} + (\mathbf{1}-\mathbf{g}) \odot \mathbf{Q})\big),
+\end{aligned}
   \label{eq:fusion}
 \end{equation}
-where $\hat{\mathbf{P}}$ and $\hat{\mathbf{C}}$ are the normalized PAM and CAM outputs, $\mathbf{W}_f$ is a $1{\times}1$ convolution, and $g$ is determined by the \texttt{gate\_mode} parameter:
-
+where $\phi_{5a}, \phi_{5c}$ map $C \to C/16$ channels, $\mathbf{W}_f$ is a $1{\times}1$ convolution back to $C$ channels (with dropout during training), and $\mathbf{g} \in [0,1]^{C/16}$ is a per-channel routing vector broadcast over positions, set by the routing mode:
 \begin{center}
 \small
 \begin{tabular}{@{}ll@{}}
-\texttt{pam}:   & $g = 1.0$ \quad (PAM only) \\
-\texttt{cam}:   & $g = 0.0$ \quad (CAM only) \\
-\texttt{fixed}: & $g = 0.5$ \quad (equal blend) \\
-\texttt{learn}: & $g = \sigma(\mathbf{W}_g \cdot \mathrm{GAP}(\mathbf{x})) \in (0,1)^C$ \\
+  PAM-only: & $\mathbf{g} = \mathbf{1}$ \\
+  CAM-only: & $\mathbf{g} = \mathbf{0}$ \\
+  fixed:    & $\mathbf{g} = 0.5\cdot\mathbf{1}$ \\
+  learned:  & $\mathbf{g} = \sigma(\mathbf{W}_g\,\mathrm{GAP}(\mathbf{X}))$ \\
 \end{tabular}
 \end{center}
+PAM-only and CAM-only routing build only the branch they use. With exact attention ($M$ covering the whole map, no projection), $G{=}1$, and $\mathbf{g}{=}0.5\cdot\mathbf{1}$, the block reduces to the DA-TransUNet block up to a rescaling of $\mathbf{W}_f$.
+The network is trained with $\mathcal{L} = \tfrac{1}{2}\mathcal{L}_{\mathrm{Dice}} + \tfrac{1}{2}\mathcal{L}_{\mathrm{CE}}$, as in DA-TransUNet.
 
-In gate=learn, $g \in (0,1)^C$ is a per-channel routing coefficient broadcast over all spatial positions; it collapses to a channel-wise blend rather than a spatially-adaptive or input-dependent scalar. This single-parameter design enables systematic ablation of routing strategy without any other architectural change. ApproxDA-TransUNet does not treat this routing module as a primary architectural contribution; rather, it serves as an analyzable component whose optimization dynamics---including an unexpected convergence to $g{\approx}0.5$ regardless of window size---are investigated in Section~\ref{sec:understanding}.
-
-The network is trained with a combined Dice and cross-entropy objective with equal weights:
-\begin{equation}
-  \mathcal{L} = \tfrac{1}{2}\mathcal{L}_{\text{Dice}} + \tfrac{1}{2}\mathcal{L}_{\text{CE}},
-  \label{eq:loss}
-\end{equation}
-following DA-TransUNet~\cite{sun2024datransunet} for direct comparability. Dice loss optimizes the overlap metric used at evaluation and handles class imbalance naturally; cross-entropy provides stable per-pixel gradient signal throughout training.
-
+Windowing and low-rank projection reduce the PAM attention matrix from $N{\times}N$ to $N{\times}r$, a theoretical reduction of the attention-matrix term by $N/r \approx 390$ at the $112^2$ skip with $r{=}32$. This applies to the attention operation only; the measured cost of the attention blocks and of the whole network is reported in Section~\ref{sec:efficiency}.

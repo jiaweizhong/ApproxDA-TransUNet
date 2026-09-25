@@ -111,11 +111,12 @@
 
 **Kvasir / ISIC 最终协议**：224 输入，Adam lr 1e-3（β=(0.9, 0.999)），wd 1e-4，poly decay，batch 24，2 类 CE + Dice，300 epochs。Kvasir：880/120，取最后一个 epoch。ISIC：官方 2594 / 100 / 1000，用 val 选超参数，最后在 test 上只跑一次。
 
-**需要的代码和数据准备（重跑前）**：
-- `train.py` 的 `_trainer_2d` 现在写死用 SGD，需要加 `--optimizer {sgd, adam}` 参数（Kvasir/ISIC 用 adam，Synapse 用 sgd）。DA-TransUNet 的 `train.py` 也要做同样的修改。
-- ISIC：下载官方 val（100 张）和 test（1000 张）的图像和标注，重新生成 `lists_ISIC`（train / val / test 三个文件），`dataset_isic.py` 和 `_validate_2d` 要支持 `val` split。
-- Kvasir：`generate_lists.py` 默认按 80/20 生成，会覆盖掉 880/120，**不要重新运行它**；最好在脚本里加个说明，或者改成直接读取官方划分。
-- 两个模型（DA-TransUNet 和 ApproxDA）的 list 必须完全相同：`DA-TransUNet/lists/lists_Kvasir` 和 `lists_ISIC` 现在还是占位文件，要从 ApproxDA 那边拷过去。
+**需要的代码和数据准备（重跑前）**：✅ 脚本部分已完成（2026-09-24）。详细说明和命令示例见 `ApproxDA_BIBM_Workshop_Must_Fix.md` 的 B1。
+- ✅ 两个项目都加了 `--optimizer {sgd, adam}`（adam 的 snapshot 目录加 `_adam` 后缀）。
+- ✅ `--val_interval` 只会在 `val.txt` 上验证，没有 val 的数据集直接报错；`test.py` 默认加载最后一个 epoch，新增 `--checkpoint` 和 `--split val`。
+- ✅ Kvasir list 修复了一张 train/test 重叠的图（test 从 121 张变成 120 张），并已同步到 DA-TransUNet；Synapse list 两边一致。
+- ✅ `generate_lists.py` 有防覆盖保护，新增 ISIC 官方划分模式，并会自动同步到 DA-TransUNet。
+- ⬜ ISIC 官方 val/test 数据需要下载后运行生成命令；⬜ 先排查 DA-TransUNet 在 Synapse 上只有 72% 的原因。
 
 **待决定**：
 - ✅ **超参数选择（已决定）**：ISIC 用官方 val 选 M/r/G/gate。Synapse 和 Kvasir 没有 val，按 TransUNet / DA-TransUNet 的惯例**从消融结果（test）里选最好的组合**，并在论文里如实说明：

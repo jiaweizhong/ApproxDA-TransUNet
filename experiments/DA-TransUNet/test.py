@@ -62,7 +62,7 @@ parser.add_argument(
     "--n_skip", type=int, default=3, help="using number of skip-connect, default is num"
 )
 parser.add_argument(
-    "--vit_name", type=str, default="ViT-B_16", help="select one vit model"
+    "--vit_name", type=str, default="R50-ViT-B_16", help="select one vit model (must match training)"
 )
 
 parser.add_argument(
@@ -81,12 +81,37 @@ parser.add_argument("--seed", type=int, default=1234, help="random seed")
 parser.add_argument(
     "--vit_patches_size", type=int, default=16, help="vit_patches_size, default is 16"
 )
+parser.add_argument(
+    "--optimizer",
+    type=str,
+    default="sgd",
+    choices=["sgd", "adam"],
+    help="Must match training optimizer (selects the snapshot directory)",
+)
+parser.add_argument(
+    "--checkpoint",
+    type=str,
+    default="last",
+    choices=["last", "best"],
+    help="last = final-epoch checkpoint (protocol default); best = best_model.pth "
+    "saved by val-split validation",
+)
+parser.add_argument(
+    "--split",
+    type=str,
+    default="test",
+    choices=["test", "val"],
+    help="evaluate on the test split (final evaluation) or the val split "
+    "(needs lists/<dataset>/val.txt, e.g. ISIC official val)",
+)
 args = parser.parse_args()
 
 
 def inference(args, model, test_save_path=None):
     db_test = args.Dataset(
-        base_dir=args.volume_path, split="test_vol", list_dir=args.list_dir
+        base_dir=args.volume_path,
+        split="val" if args.split == "val" else "test_vol",
+        list_dir=args.list_dir,
     )
     testloader = DataLoader(db_test, batch_size=1, shuffle=False, num_workers=1)
     logging.info("{} test iterations per epoch".format(len(testloader)))
@@ -172,8 +197,8 @@ def inference(args, model, test_save_path=None):
     mean_hd95 = np.mean(metric_list, axis=0)[1]
     mean_iou = np.mean(metric_list, axis=0)[2]
     logging.info(
-        "Testing performance in best val model: mean_dice : %f mean_hd95 : %f mean_iou : %f"
-        % (performance, mean_hd95, mean_iou)
+        "Testing performance (split=%s, checkpoint=%s): mean_dice : %f mean_hd95 : %f mean_iou : %f"
+        % (args.split, args.checkpoint, performance, mean_hd95, mean_iou)
     )
     return "Testing Finished!"
 
@@ -261,6 +286,10 @@ if __name__ == "__main__":
     snapshot_path = (
         snapshot_path + "_s" + str(args.seed) if args.seed != 1234 else snapshot_path
     )
+    snapshot_path = snapshot_path + "_adam" if args.optimizer == "adam" else snapshot_path
+
+    if args.split == "val" and not os.path.isfile(os.path.join(args.list_dir, "val.txt")):
+        raise SystemExit(f"--split val: {args.list_dir}/val.txt not found ({dataset_name} has no val split)")
 
     config_vit = CONFIGS_ViT_seg[args.vit_name]
     config_vit.n_classes = args.num_classes
@@ -275,11 +304,17 @@ if __name__ == "__main__":
         config_vit, img_size=args.img_size, num_classes=config_vit.n_classes
     ).cuda()
 
-    snapshot = os.path.join(snapshot_path, "best_model.pth")
+    # Protocol: evaluate the final-epoch checkpoint. best_model.pth is only used on
+    # request (it may be a stale file from older runs that validated on the test set).
+    ckpt_name = "best_model.pth" if args.checkpoint == "best" else f"epoch_{args.max_epochs - 1}.pth"
+    snapshot = os.path.join(snapshot_path, ckpt_name)
     if not os.path.exists(snapshot):
-        snapshot = snapshot.replace("best_model", "epoch_" + str(args.max_epochs - 1))
+        raise SystemExit(f"checkpoint not found: {snapshot}")
     net.load_state_dict(torch.load(snapshot))
     snapshot_name = snapshot_path.split("/")[-1]
+    # keep val-split and best-checkpoint logs separate from the final test logs
+    snapshot_name += "_val" if args.split == "val" else ""
+    snapshot_name += "_best" if args.checkpoint == "best" else ""
 
     log_folder = "./test_log/test_log_" + args.exp
     os.makedirs(log_folder, exist_ok=True)

@@ -1,165 +1,121 @@
 % !TEX root = ../ApproxDA-TransUNet.tex
-\section{Ablation Studies and Mechanistic Analysis}
+\section{Controlled Ablations}
 \label{sec:understanding}
 
-This section investigates why ApproxDA-TransUNet behaves differently under different approximation settings and across segmentation tasks through a series of controlled ablation studies. Beyond validating the proposed design, these experiments provide mechanistic insights into attention approximation and its task-dependent behavior.
+Each ablation varies one approximation parameter while all others, the backbone, and the training protocol are fixed.
 
-\subsection{Approximation Strength Ablation}
-\label{sec:approx_scale}
+\subsection{Window Size and Empirical Window Sensitivity}
+\label{sec:window}
 
-We first investigate how approximation strength influences segmentation performance by varying the spatial window size and approximation rank while keeping all other components unchanged. Table~\ref{tab:window_ablation} isolates this effect by comparing $M{\in}\{7,14,28,56,112\}$ under gate=pam, $r{=}32$ on Synapse. Approximation is present in all rows---the right approximation \emph{scale}, not the absence of approximation, governs performance.
-
-\begin{table}[ht]
-  \caption{Spatial Approximation Ablation on Synapse ($G$=8)}
-  \label{tab:window_ablation}
-  \begin{center}
-  \setlength{\tabcolsep}{2pt}
-  \small
-  \begin{tabular}{lccccc}
+\begin{table}[t]
+  \caption{DSC (\%) Versus Window Size $M$ (PAM-only Routing, $r{=}32$). Range $=\max_M \mathrm{DSC}(M) - \min_M \mathrm{DSC}(M)$.}
+  \label{tab:window}
+  \centering
+  \footnotesize
+  \setlength{\tabcolsep}{5pt}
+  \begin{tabular}{@{}lccc@{}}
     \toprule
-    Config & $M$ & $r$ & Gate & DSC (\%) $\uparrow$ & HD95 (mm) $\downarrow$ \\
+    Setting & Synapse & Kvasir-SEG & ISIC 2018 \\
     \midrule
-    Windowed + low-rank & 7   & 32 & pam          & 78.64          & 31.09 \\
-    Windowed + low-rank & 14  & 64 & learn$^\dag$ & 78.04          & 29.09 \\
-    Windowed + low-rank & 28  & 32 & pam          & \textbf{80.94} & \underline{27.49} \\
-    Windowed + low-rank & 56  & 32 & pam          & 78.90          & 35.23 \\
-    Global + low-rank   & 112 & 32 & pam          & \underline{79.44} & \textbf{27.26} \\
+    $M{=}7$                 & \tbd{78.64} & \tbd{89.53} & \tbd{89.41} \\
+    $M{=}28$                & \tbd{\textbf{80.94}} & \tbd{89.54} & \tbd{\textbf{89.55}} \\
+    $M{=}56$                & \tbd{78.90} & \tbd{\textbf{90.17}} & \tbd{89.05} \\
+    $M{=}112$ (global, low-rank) & \tbd{79.44} & \tbd{89.56} & \tbd{89.51} \\
+    \midrule
+    Range                   & \tbd{2.30} & \tbd{0.64} & \tbd{0.50} \\
+    \midrule
+    DA-TransUNet (re-trained) & \tbd{--} & \tbd{88.44} & \tbd{88.43} \\
     \bottomrule
   \end{tabular}
-  \end{center}
-  \vspace{-0.3em}
-  \footnotesize{$^\dag$Gate collapsed to $g{\approx}0.5$. $M{=}112$ via window clamping yields full-map attention at all scales.}
 \end{table}
 
-The Synapse DSC-vs-$M$ curve is \emph{non-monotonic}: peak at $M{=}28$ (80.94\%, $+$1.14\% vs.\ DA-TransUNet), with all other scales underperforming---too-local ($M{=}7$: 78.64\%), large-window ($M{=}56$: 78.90\%), and fully-global ($M{=}112$: 79.44\%). This pattern is analogous to the classical bias-variance tradeoff: under-context windows have high bias (missing necessary dependencies); over-context windows introduce spurious variance (irrelevant distant tokens); the intermediate $M{=}28$ achieves the optimal balance. The DSC range of 2.30\,pp across $M$ values confirms high window sensitivity on this task.
-
-The $M{=}14$, $r{=}64$ row shows that increasing rank does not compensate for gate collapse ($g{\approx}0.5$, Section~\ref{sec:collapse}): DSC 78.04\% is lower than the gate=pam M=7/r=32 baseline (78.64\%), suggesting r=32 already captures sufficient attention information and rank is not the performance bottleneck.
-
-Preserving sufficient spatial receptive field matters more than increasing rank; the optimal window scale---not rank---governs segmentation performance.
-
-\subsection{Cross-task Ablation and Global Context Sensitivity}
-\label{sec:obs2}
-
-\begin{figure}[!t]
+\begin{figure}[t]
 \centering
-\scalebox{1.0}{%
 \begin{tikzpicture}
 \begin{axis}[
-  width=\columnwidth, height=5.3cm,
+  width=\columnwidth, height=5.0cm,
   xlabel={Window size $M$},
   ylabel={$\Delta$DSC vs.\ DA-TransUNet (\%)},
-  ymin=-1.75, ymax=3.5,
+  ymin=-1.75, ymax=3.0,
   xtick={7,28,56,112},
-  xticklabels={7,28,56,112},
   xmin=4, xmax=120,
   ymajorgrids=true,
   grid style={dashed,gray!30},
   tick label style={font=\footnotesize},
   label style={font=\footnotesize},
+  legend style={font=\scriptsize, at={(0.98,0.98)}, anchor=north east},
   every axis plot/.append style={very thick, mark size=2.5pt},
 ]
-% Zero reference
 \addplot[dashed, gray!50, very thin, forget plot] coordinates {(4,0)(120,0)};
-% ISIC 2018 (drawn first, behind)
-\addplot[color=blue!65, mark=triangle*]
-  coordinates {(7,0.53) (28,0.67) (56,0.17) (112,0.63)};
-% Kvasir-SEG (drawn second)
-\addplot[color=green!50!black, mark=square*]
-  coordinates {(7,1.09) (28,1.10) (56,1.73) (112,1.12)};
-% Synapse (drawn last — on top of all other lines)
-\addplot[color=red!70!black, mark=*]
-  coordinates {(7,-1.16) (28,1.14) (56,-0.90) (112,-0.36)};
-% Peak label — Synapse (raised to y=2.0 to clear rising Kvasir line)
-\node[font=\scriptsize, color=red!80, anchor=south]
-  at (axis cs:28,1.2) {$+$1.14\%};
-% Peak label — ISIC (below point to avoid curves above)
-\node[font=\scriptsize, color=blue!55, anchor=north]
-  at (axis cs:28,0.67) {$+$0.67\%};
-% Peak label — Kvasir
-\node[font=\scriptsize, color=green!60!black, anchor=south]
-  at (axis cs:56,1.73) {$+$1.73\%};
-% Span annotation box — no GCS labels, no ratio
-\node[anchor=north east, align=left, font=\scriptsize,
-      fill=white, draw=gray!50, inner sep=3pt, rounded corners=2pt]
-  at (axis cs:119, 3.40) {%
-    \textcolor{red!70!black}{Synapse span:\phantom{0} 2.30\,pp}\\
-    \textcolor{blue!65}{ISIC span:\phantom{000} 0.50\,pp}\\
-    \textcolor{green!50!black}{Kvasir span:\phantom{00} 0.64\,pp}};
+\addplot[color=blue!65, mark=triangle*] coordinates {(7,0.53) (28,0.67) (56,0.17) (112,0.63)};
+\addlegendentry{ISIC 2018}
+\addplot[color=green!50!black, mark=square*] coordinates {(7,1.09) (28,1.10) (56,1.73) (112,1.12)};
+\addlegendentry{Kvasir-SEG}
+\addplot[color=red!70!black, mark=*] coordinates {(7,-1.16) (28,1.14) (56,-0.90) (112,-0.36)};
+\addlegendentry{Synapse}
 \end{axis}
-\end{tikzpicture}}
-\caption{$\Delta$DSC vs.\ window size $M$ (gate=pam, $r{=}32$) across three
-segmentation tasks. Curve colors: Synapse (red), ISIC~2018 (blue),
-Kvasir-SEG (green). Per-dataset DSC spans in the annotation box (top right).}
+\end{tikzpicture}
+\caption{DSC difference to DA-TransUNet versus window size $M$ (PAM-only routing, $r{=}32$); raw values in Table~\ref{tab:window}. \tbd{Curves from the BIBM runs; to be regenerated from the re-trained models.}}
 \label{fig:dsc_vs_m}
 \end{figure}
+% TODO(figure): recompute coordinates as DSC(M) - DSC(re-trained DA-TransUNet)
+% from Table tab:window after the re-runs.
 
-We next examine whether the same approximation strategy behaves consistently across different segmentation tasks. Although ApproxDA-TransUNet uses identical approximation operators across all experiments, its sensitivity to window selection varies substantially. On Synapse multi-organ CT, the DSC-vs-$M$ curve (Figure~\ref{fig:dsc_vs_m}) is non-monotonic with a sharp peak at $M{=}28$ and a 2.30\,pp range across the measured window sizes. On Kvasir-SEG, the curve is nearly flat (0.64\,pp range) with a shallow peak at $M{=}56$, indicating the task is largely window-robust. On ISIC 2018, the gate=pam window ablation confirms the same low-sensitivity pattern: the DSC span across $M{\in}\{7,28,56,112\}$ is 0.50\,pp, consistent with Kvasir-SEG and substantially lower than Synapse. With task-appropriate windows, gains are positive across all three benchmarks: $+$1.14\% (Synapse, $M{=}28$), $+$1.73\% (Kvasir, $M{=}56$), and $+$0.67\% (ISIC, $M{=}28$).
-
-These observations suggest that segmentation tasks exhibit different degrees of \textbf{Global Context Sensitivity (GCS)}---the degree to which accurate segmentation depends on preserving large-scale spatial context. Since GCS is not directly observable, we estimate it empirically through the performance response to window-size ablations, summarized by the DSC range:
+Table~\ref{tab:window} and Fig.~\ref{fig:dsc_vs_m} vary only $M$. On Synapse, DSC peaks at an intermediate window ($M{=}28$) and drops for both smaller and larger windows, giving a \tbd{2.30}-point range. Kvasir-SEG and ISIC 2018 are \tbd{3.6--4.6}$\times$ less sensitive, with ranges of \tbd{0.64} and \tbd{0.50} points. We summarize this behavior by the \emph{empirical window sensitivity}
 \[
-  \Delta\text{DSC} = \max_{M} \text{DSC}(M) - \min_{M} \text{DSC}(M),
+  S_{\mathrm{window}} = \max_M \mathrm{DSC}(M) - \min_M \mathrm{DSC}(M),
 \]
-measured under fixed gate=pam, $r{=}32$. For Synapse, $\Delta\text{DSC} = 2.30$\,pp; for Kvasir-SEG, $0.64$\,pp; for ISIC~2018, $0.50$\,pp---a 3.6$\times$ ratio vs.\ Kvasir-SEG and 4.6$\times$ vs.\ ISIC~2018, confirming that Synapse exhibits substantially higher empirical GCS. Tasks with higher empirical GCS exhibit steep DSC-vs-$M$ curves with a well-defined optimal scale; lower-GCS tasks show broad performance plateaus where any reasonable window achieves competitive performance. Crucially, high GCS does not imply approximation is harmful: with the right window, ApproxDA-TransUNet outperforms full dual attention on \emph{all} evaluated benchmarks. GCS characterizes how \emph{sensitive} performance is to window choice---not the direction of the effect.
+which describes how this architecture responds to $M$ on a given dataset; it is not an independent predictor of a task's contextual requirement, and three datasets are not sufficient to establish it as a task property. The observed difference is consistent with multi-organ CT segmentation depending more on inter-organ spatial context than polyp and skin-lesion segmentation, which are largely determined by local appearance and boundary contrast.
 
-The task-level differences in GCS are grounded in the nature of each segmentation problem. Multi-organ abdominal CT segmentation requires reasoning over long-range anatomical relationships among multiple organs. The high sensitivity to window size reflects that both too-local windows (insufficient cross-organ context) and fully-global windows (noise from unrelated background) degrade performance; the intermediate scope ($M{=}28$) provides the optimal balance. In contrast, polyp and skin lesion segmentation are primarily governed by local appearance, boundary contrast, and texture consistency. For these low-GCS tasks, attention approximation introduces an \emph{inductive bias} favoring local interactions while suppressing unnecessary long-range dependencies---a prior that better matches the intrinsic structure of the problem.
+The sensitivity also bounds how much the choice of $M$ matters in practice: on Kvasir-SEG and ISIC 2018 any tested window stays within \tbd{0.64} points of the best, whereas on Synapse the window must be tuned. On all three datasets the best window \tbd{exceeds} the re-trained DA-TransUNet, suggesting a locality-induced bias. This comparison changes both the attention approximation and the routing (PAM-only instead of PAM + CAM); the exact-attention rows of Table~\ref{tab:factors} isolate the approximation itself. Note that $M{=}112$ keeps the rank-32 projection and therefore differs from full PAM.
 
-We validate this locality bias hypothesis via controlled attention-map analysis. When comparing gate=pam $M{=}7$ (windowed) versus $M{=}112$ (global) on 10 Kvasir polyp images, windowed attention concentrates $62.3\%$ of its effect on the polyp region versus only $34.2\%$ for global attention---a $1.82{\times}$ difference confirmed in $9/10$ samples (Figure~\ref{fig:attn_map}). Windowed attention focuses on polyp boundaries while global attention disperses to surrounding tissue, providing direct evidence for the inductive bias alignment hypothesis.
+Fig.~\ref{fig:attn_map} visualizes the effect of the window on Kvasir-SEG. On 10 test images, windowed PAM ($M{=}7$) places $62.3\%$ of its contribution inside the polyp region, compared with $34.2\%$ for global PAM ($M{=}112$), and the windowed share is higher in 9 of the 10 images. Windowed attention concentrates on polyp boundaries, whereas global attention spreads over surrounding tissue. This observation is consistent with the locality interpretation but does not by itself establish a causal link to accuracy. \tbd{Maps from the BIBM checkpoints; to be regenerated.}
 
-\begin{figure}[ht]
+\begin{figure}[t]
   \centering
   \includegraphics[width=\columnwidth]{figures/attn_Kvasir_M7_r32_pam_vs_M112.png}\\[-4pt]
   \includegraphics[width=0.68\columnwidth]{figures/hot_color_code.png}
-  \caption{PAM contribution maps ($\|\text{output} - \text{input}\|_2$, per-panel normalised; colorbar below) on three Kvasir-SEG polyp images. Each row: input with GT contour (left), windowed PAM ($M{=}7$; center), global PAM ($M{=}112$; right). Brighter color indicates larger PAM contribution at that location; panels are independently normalised so magnitudes are not comparable across panels.}
+  \caption{PAM contribution maps ($\|\text{output}-\text{input}\|_2$) on three Kvasir-SEG images. Each row: input with ground-truth contour (left), windowed PAM with $M{=}7$ (center), global PAM with $M{=}112$ (right). Each panel is normalized independently, so magnitudes are not comparable across panels.}
   \label{fig:attn_map}
 \end{figure}
 
-Notably, all three datasets achieve their highest segmentation accuracy under approximate attention rather than full attention, suggesting that preserving all pairwise interactions is not always optimal. Instead, task-aligned approximation can act as a beneficial inductive bias.
+\subsection{Rank, Grouping, and Routing}
+\label{sec:factors}
 
-\subsection{Gate Ablation and Mechanistic Analysis}
-\label{sec:collapse}
-
-Finally, we investigate adaptive routing by comparing PAM-only, CAM-only, and learnable gate configurations. Table~\ref{tab:gate_ablation} reports all four gate modes on Synapse ($M{=}7$, $r{=}32$).
-
-\begin{table}[ht]
-  \caption{Gate Mode Ablation on Synapse ($M$=7, $r$=32)}
-  \label{tab:gate_ablation}
-  \begin{center}
+\begin{table}[t]
+  \caption{Single-Factor Ablations on Synapse. Each block varies one factor; the others are fixed as indicated.}
+  \label{tab:factors}
+  \centering
+  \footnotesize
   \setlength{\tabcolsep}{4pt}
-  \small
-  \begin{tabular}{llcc}
+  \begin{tabular}{@{}llcc@{}}
     \toprule
-    Gate Mode & $g$ & DSC (\%) $\uparrow$ & HD95 (mm) $\downarrow$ \\
+    Factor (fixed) & Setting & DSC$\uparrow$ & HD95$\downarrow$ \\
     \midrule
-    gate=pam                    & 1.0              & \textbf{78.64} & 31.09 \\
-    gate=cam                    & 0.0              & \underline{78.26}  & \underline{30.59} \\
-    gate=learn ($M$=14, $r$=64) & ${\approx}0.5^*$ & 78.04          & \textbf{29.09} \\
-    gate=learn                  & ${\approx}0.5^*$ & 77.78          & 34.29 \\
+    \multirow{4}{*}{\shortstack[l]{Rank $r$\\($M{=}112$, PAM)}} & $r{=}16$ & \tbd{--} & \tbd{--} \\
+                                   & $r{=}32$ & \tbd{79.44} & \tbd{27.26} \\
+                                   & $r{=}64$ & \tbd{78.93} & \tbd{31.21} \\
+                                   & no projection & \tbd{--} & \tbd{--} \\
+    \midrule
+    \shortstack[l]{Window only\\($M{=}28$, PAM)} & no projection & \tbd{--} & \tbd{--} \\
+    \midrule
+    \multirow{3}{*}{\shortstack[l]{Groups $G$\\(CAM-only)}} & $G{=}1$ & \tbd{--} & \tbd{--} \\
+                                   & $G{=}4$ & \tbd{--} & \tbd{--} \\
+                                   & $G{=}8$ & \tbd{78.26} & \tbd{30.59} \\
+    \midrule
+    \multirow{4}{*}{\shortstack[l]{Routing\\($M{=}7$, $r{=}32$)}} & PAM-only & \tbd{78.64} & \tbd{31.09} \\
+                                   & CAM-only & \tbd{78.26} & \tbd{30.59} \\
+                                   & fixed $g{=}0.5$ & \tbd{--} & \tbd{--} \\
+                                   & learned & \tbd{77.78} & \tbd{34.29} \\
     \bottomrule
   \end{tabular}
-  \end{center}
-  \vspace{-0.3em}
-  \footnotesize{$^*$Gate collapsed to $g{\approx}0.5$ throughout training.}
 \end{table}
 
-\begin{figure}[ht]
-  \centering
-  \includegraphics[width=\columnwidth]{figures/fig_entropy_scatter.png}
-  \caption{Gate value $g$ vs.\ feature entropy $H(F)$ at all four skip locations ($M{=}7$, gate=learn): bottleneck, 28$^2$, 56$^2$, 112$^2$. All cluster at $g{\approx}0.5$ ($\Delta g{\leq}0.0002$), confirming gate collapse.}
-  \label{fig:gate_analysis}
-\end{figure}
+Table~\ref{tab:factors} varies the remaining factors one at a time. Raising $r$ from 32 to 64 does \tbd{not} improve DSC, so in the tested range the window scale matters more than the rank. The no-projection rows use exact attention: at $M{=}112$ this is exact global PAM, which isolates the effect of the approximation from that of the routing, and at $M{=}28$ it removes the projection at the best Synapse window. $G$ is ablated under CAM-only routing, since the CAM branch does not contribute under PAM-only routing. \todo{grouping result.}
 
-Spatial attention alone provides stronger routing than either channel-dominated or learnable fusion. Gate=pam (78.64\%) outperforms gate=cam (78.26\%) and both gate=learn configurations (77.78\% at $M{=}7$; 78.04\% at $M{=}14$, $r{=}64$). Notably, gate=learn with a larger window and higher rank (M=14, r=64) still underperforms gate=pam at M=7 (78.04\% vs.\ 78.64\%), confirming that gate collapse is more damaging than a suboptimal window choice. In both gate=learn configurations, the gate converges to $g{\approx}0.5$ regardless of window size, producing a fixed 50/50 blend that underperforms both single-branch modes.
+Among the routing modes, PAM-only routing performs best. The learned gate converged close to $g{=}0.5$ in our Synapse experiments and did not outperform PAM-only routing; we report this as an empirical observation and use PAM-only routing in the other experiments. \todo{optional: per-channel gate distribution / trajectory of the learned gate.}
 
-The collapse is not isolated to one location but is uniform across the entire architecture. Figure~\ref{fig:gate_analysis} provides direct evidence across all four ApproxDABlock locations (top-left: bottleneck; top-right: 28$^2$ skip; bottom-left: 56$^2$ skip; bottom-right: 112$^2$ skip): gate values show no correlation with feature entropy (Spearman $r_s{\approx}0$), ruling out sample-adaptive routing. This collapse is identical at both $M{=}7$ and $M{=}14$, confirming it is a fundamental property of symmetric two-branch gating rather than a windowing artifact.
+\subsection{Limitations}
+\label{sec:limitations}
 
-\textbf{Optimization intuition.} Given fused output $\mathbf{F} = g\mathbf{F}_\text{P} + (1-g)\mathbf{F}_\text{C}$, the gate gradient is:
-\begin{equation}
-  \frac{\partial\mathcal{L}}{\partial g} = \frac{\partial\mathcal{L}}{\partial\mathbf{F}} \cdot \left(\mathbf{F}_\text{P} - \mathbf{F}_\text{C}\right).
-  \label{eq:gate_grad}
-\end{equation}
-At initialization $g{\approx}0.5$, both branches receive equal gradient $\tfrac{1}{2}\partial\mathcal{L}/\partial\mathbf{F}$. Without incentive to differentiate, $\mathbf{F}_\text{P} \approx \mathbf{F}_\text{C}$, so Eq.~\eqref{eq:gate_grad}$\approx \mathbf{0}$. This is self-reinforcing: equal gradients $\to$ convergent representations $\to$ near-zero gate gradient $\to$ $g$ fixed at~0.5---a stable equilibrium of symmetric dual-branch optimization.
-
-\textbf{Empirical evidence.} Quantitative gate monitoring confirms this collapse is near-total across all window configurations. After 300 epochs, all four locations show $\Delta g{\leq}0.0002$ at both $M{=}7$ and $M{=}14$, confirming the collapse is independent of window size.
-
-Simple scalar gating cannot provide effective adaptive routing because branch symmetry prevents meaningful specialization. Future adaptive attention mechanisms should explicitly encourage branch diversity---through asymmetric initialization, diversity-encouraging loss terms, or non-symmetric routing---rather than relying solely on learnable fusion weights.
-
+Because Synapse and Kvasir-SEG have no validation split, their configurations were selected from the test-set ablations above, so the reported ApproxDA-TransUNet results on these datasets may be optimistic. The bias is bounded by the window-sensitivity range: small on Kvasir-SEG (\tbd{0.64} points), but up to \tbd{2.30} points on Synapse, where fine window selection is precisely what our results call for; in practice, $M$ should be tuned on held-out data. The study covers three datasets and a single backbone, and whether window sensitivity can be predicted without window ablations remains open.

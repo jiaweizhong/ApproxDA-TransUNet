@@ -90,12 +90,44 @@ parser.add_argument(
     help="c16 = DANetHead-style C/16 bottleneck (default); legacy = BIBM full-width block",
 )
 parser.add_argument(
+    "--optimizer",
+    type=str,
+    default="sgd",
+    choices=["sgd", "adam"],
+    help="sgd (Synapse, lr 0.01) or adam (Kvasir/ISIC, use --base_lr 0.001), as in DA-TransUNet",
+)
+parser.add_argument(
     "--val_interval",
     type=int,
     default=0,
-    help="validate every N epochs and save best_model.pth (0 = disabled)",
+    help="validate on the val split every N epochs and save best_model.pth "
+    "(0 = disabled; requires lists/<dataset>/val.txt — never uses the test set)",
 )
 args = parser.parse_args()
+
+
+def build_optimizer(args, model):
+    """SGD for Synapse (TransUNet protocol); Adam for the 2D datasets (DA-TransUNet protocol)."""
+    if args.optimizer == "adam":
+        return optim.Adam(
+            model.parameters(), lr=args.base_lr, betas=(0.9, 0.999), weight_decay=0.0001
+        )
+    return optim.SGD(
+        model.parameters(), lr=args.base_lr, momentum=0.9, weight_decay=0.0001
+    )
+
+
+def check_val_split(args):
+    """Refuse --val_interval unless a real validation list exists (no test-set selection)."""
+    if args.val_interval <= 0:
+        return
+    val_list = os.path.join(args.list_dir, "val.txt")
+    if args.dataset in ("Synapse", "ACDC") or not os.path.isfile(val_list):
+        raise SystemExit(
+            f"--val_interval {args.val_interval}: {args.dataset} has no validation split "
+            f"({val_list} not found). Validation would use the test set; "
+            "run with --val_interval 0 and evaluate the final epoch."
+        )
 
 
 def _validate_synapse(args, model):
@@ -130,11 +162,11 @@ def _validate_synapse(args, model):
 
 
 def _validate_2d(args, model, dataset_class):
-    """Run test-split evaluation for 2D image datasets (Kvasir, ISIC)."""
+    """Run validation-split evaluation for 2D image datasets (e.g. ISIC official val)."""
     from utils import test_single_volume
 
     db_val = dataset_class(
-        base_dir=args.root_path, split="test", list_dir=args.list_dir
+        base_dir=args.root_path, split="val", list_dir=args.list_dir
     )
     val_loader = DataLoader(db_val, batch_size=1, shuffle=False, num_workers=0)
     net = model.module if hasattr(model, "module") else model
@@ -209,9 +241,7 @@ def _trainer_2d(args, model, snapshot_path, db_train, dataset_class):
     model.train()
     ce_loss = CrossEntropyLoss()
     dice_loss = DiceLoss(num_classes)
-    optimizer = optim.SGD(
-        model.parameters(), lr=base_lr, momentum=0.9, weight_decay=0.0001
-    )
+    optimizer = build_optimizer(args, model)
     writer = SummaryWriter(snapshot_path + "/log") if is_main else None
     iter_num = 0
     max_epoch = args.max_epochs
@@ -457,9 +487,7 @@ def trainer_acdc(args, model, snapshot_path):
     model.train()
     ce_loss = CrossEntropyLoss()
     dice_loss = DiceLoss(num_classes)
-    optimizer = optim.SGD(
-        model.parameters(), lr=base_lr, momentum=0.9, weight_decay=0.0001
-    )
+    optimizer = build_optimizer(args, model)
     writer = SummaryWriter(snapshot_path + "/log") if is_main else None
     iter_num = 0
     max_epoch = args.max_epochs
@@ -623,9 +651,7 @@ def trainer_synapse(args, model, snapshot_path):
     model.train()
     ce_loss = CrossEntropyLoss()
     dice_loss = DiceLoss(num_classes)
-    optimizer = optim.SGD(
-        model.parameters(), lr=base_lr, momentum=0.9, weight_decay=0.0001
-    )
+    optimizer = build_optimizer(args, model)
     writer = SummaryWriter(snapshot_path + "/log") if is_main else None
     iter_num = 0
     max_epoch = args.max_epochs
@@ -860,6 +886,8 @@ if __name__ == "__main__":
     )
     # c16 runs get their own directory so they never pick up legacy checkpoints
     snapshot_path = snapshot_path + "_c16" if args.block_version == "c16" else snapshot_path
+    snapshot_path = snapshot_path + "_adam" if args.optimizer == "adam" else snapshot_path
+    check_val_split(args)
 
     if not os.path.exists(snapshot_path):
         os.makedirs(snapshot_path)

@@ -32,7 +32,7 @@ Checkpoint files you need (already trained):
 
 ```bash
 # Dataset: https://www.kaggle.com/datasets/dogcdt/synapse
-kaggle datasets download -d dogcdt/synapse -p ../../data --unzip
+kaggle datasets download -d dogcdt/synapse -p ../data --unzip
 ```
 
 The zip unpacks directly as `Synapse/test_vol_h5/` and `Synapse/train_npz/` — no further rearrangement needed. Only `test_vol_h5/` is required for inference.
@@ -72,12 +72,12 @@ pip install kaggle
 
 # Slug: debeshjha1/kvasirseg  (original paper authors, 151 MB)
 # Zip unpacks as Kvasir-SEG/Kvasir-SEG/{images,masks}/ — double-nested
-mkdir -p ../../data/raw_kvasir
-kaggle datasets download -d debeshjha1/kvasirseg -p ../../data/raw_kvasir --unzip
-mkdir -p ../../data/Kvasir-SEG
-mv ../../data/raw_kvasir/Kvasir-SEG/Kvasir-SEG/images ../../data/Kvasir-SEG/images
-mv ../../data/raw_kvasir/Kvasir-SEG/Kvasir-SEG/masks  ../../data/Kvasir-SEG/masks
-rm -rf ../../data/raw_kvasir
+mkdir -p ../data/raw_kvasir
+kaggle datasets download -d debeshjha1/kvasirseg -p ../data/raw_kvasir --unzip
+mkdir -p ../data/Kvasir-SEG
+mv ../data/raw_kvasir/Kvasir-SEG/Kvasir-SEG/images ../data/Kvasir-SEG/images
+mv ../data/raw_kvasir/Kvasir-SEG/Kvasir-SEG/masks  ../data/Kvasir-SEG/masks
+rm -rf ../data/raw_kvasir
 ```
 
 ### Expected layout after download
@@ -96,7 +96,7 @@ data/
 ### Generate list files
 
 ```bash
-python datasets/generate_lists.py --dataset Kvasir --data_dir ../../data/Kvasir-SEG
+python datasets/generate_lists.py --dataset Kvasir --data_dir ../data/Kvasir-SEG
 # → writes lists/lists_Kvasir/train.txt  (800 cases)
 # → writes lists/lists_Kvasir/test.txt   (200 cases)
 ```
@@ -114,9 +114,9 @@ python datasets/generate_lists.py --dataset Kvasir --data_dir ../../data/Kvasir-
 # Slug: tschandl/isic2018-challenge-task1-data-segmentation  (13.8 GB)
 # Contains train/val/test splits; only training set has ground-truth masks.
 # We use training set only (2594 images) and do our own 80/20 split.
-mkdir -p ../../data/raw_isic
+mkdir -p ../data/raw_isic
 kaggle datasets download -d tschandl/isic2018-challenge-task1-data-segmentation \
-  -p ../../data/raw_isic --unzip
+  -p ../data/raw_isic --unzip
 
 # After unzip:
 #   ISIC2018_Task1-2_Training_Input/          ← images (.jpg)
@@ -124,12 +124,12 @@ kaggle datasets download -d tschandl/isic2018-challenge-task1-data-segmentation 
 #   ISIC2018_Task1-2_Validation_Input/        ← no masks, skip
 #   ISIC2018_Task1-2_Test_Input/              ← no masks, skip
 
-mkdir -p ../../data/ISIC2018/images ../../data/ISIC2018/masks
-mv ../../data/raw_isic/ISIC2018_Task1-2_Training_Input/*.jpg \
-   ../../data/ISIC2018/images/
-mv ../../data/raw_isic/ISIC2018_Task1_Training_GroundTruth/*_segmentation.png \
-   ../../data/ISIC2018/masks/
-rm -rf ../../data/raw_isic
+mkdir -p ../data/ISIC2018/images ../data/ISIC2018/masks
+mv ../data/raw_isic/ISIC2018_Task1-2_Training_Input/*.jpg \
+   ../data/ISIC2018/images/
+mv ../data/raw_isic/ISIC2018_Task1_Training_GroundTruth/*_segmentation.png \
+   ../data/ISIC2018/masks/
+rm -rf ../data/raw_isic
 ```
 
 ### Expected layout after download
@@ -148,7 +148,7 @@ data/
 ### Generate list files
 
 ```bash
-python datasets/generate_lists.py --dataset ISIC --data_dir ../../data/ISIC2018
+python datasets/generate_lists.py --dataset ISIC --data_dir ../data/ISIC2018
 # → writes lists/lists_ISIC/train.txt  (~2075 cases)
 # → writes lists/lists_ISIC/test.txt   (~519 cases)
 ```
@@ -184,9 +184,9 @@ python generate_qualitative_figure.py --mode cross_task \
   --ckpt_syn_best    ../../results/approxda_syn_m28_pam/best_model.pth \
   --ckpt_kvasir_best ../../results/approxda_kv_m56_pam/best_model.pth \
   --ckpt_isic_best   ../../results/approxda_isic_m7_learn/best_model.pth \
-  --volume_path_syn  ../../data/Synapse/test_vol_h5 \
-  --volume_path_kv   ../../data/Kvasir-SEG \
-  --volume_path_isic ../../data/ISIC2018 \
+  --volume_path_syn  ../data/Synapse/test_vol_h5 \
+  --volume_path_kv   ../data/Kvasir-SEG \
+  --volume_path_isic ../data/ISIC2018 \
   --out_dir          ../../results/paper_figures
 ```
 
@@ -216,9 +216,9 @@ python generate_qualitative_figure.py --mode da_only \
   --ckpt_da_syn    ../../results/da_transunet_syn/best_model.pth \
   --ckpt_da_kvasir ../../results/da_transunet_kv/best_model.pth \
   --ckpt_da_isic   ../../results/da_transunet_isic/best_model.pth \
-  --volume_path_syn  ../../data/Synapse/test_vol_h5 \
-  --volume_path_kv   ../../data/Kvasir-SEG \
-  --volume_path_isic ../../data/ISIC2018 \
+  --volume_path_syn  ../data/Synapse/test_vol_h5 \
+  --volume_path_kv   ../data/Kvasir-SEG \
+  --volume_path_isic ../data/ISIC2018 \
   --cases_log      ../../results/paper_figures/cases_used.json \
   --out_dir        ../../results/paper_figures
 ```
