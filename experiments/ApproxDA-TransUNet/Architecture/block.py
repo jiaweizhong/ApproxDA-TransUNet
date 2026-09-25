@@ -279,14 +279,18 @@ class LowRankWindowedPAM(nn.Module):
     Keys and values are projected from window_size^2 -> rank via self.proj_r.
     """
 
-    def __init__(self, channels, window_size=7, rank=32):
+    def __init__(self, channels, window_size=7, rank=32, qk_channels=None):
         super().__init__()
         self.M = window_size
         N = window_size**2
-        self.conv_B = nn.Conv1d(channels, channels, 1)
-        self.conv_C = nn.Conv1d(channels, channels, 1)
+        # qk_channels=None keeps the legacy full-width queries/keys; the C/16 block
+        # passes channels // 8 to match DA-TransUNet's PAM_Module.
+        qk = channels if qk_channels is None else qk_channels
+        self.conv_B = nn.Conv1d(channels, qk, 1)
+        self.conv_C = nn.Conv1d(channels, qk, 1)
         self.conv_D = nn.Conv1d(channels, channels, 1)
-        self.proj_r = nn.Linear(N, rank, bias=False)
+        # rank <= 0: no low-rank projection, i.e. exact attention inside each window
+        self.proj_r = nn.Linear(N, rank, bias=False) if rank > 0 else None
         self.alpha = nn.Parameter(torch.zeros(1))
 
     def forward(self, x):
@@ -302,7 +306,9 @@ class LowRankWindowedPAM(nn.Module):
         feat_D = self.conv_D(x_n)
         # proj_r was registered with N=self.M**2; slice weights when clamped
         N_actual = M * M
-        if N_actual == self.M**2:
+        if self.proj_r is None:
+            C_r, D_r = feat_C, feat_D  # (B*nW, C, N): exact window attention
+        elif N_actual == self.M**2:
             C_r = self.proj_r(feat_C)  # (B*nW, C, r)
             D_r = self.proj_r(feat_D)
         else:
@@ -324,7 +330,10 @@ class GroupedCAM(nn.Module):
 
     def __init__(self, channels, groups=8):
         super().__init__()
-        self.G = groups
+        # Narrow maps (e.g. 64/16 = 4 channels in the C/16 block) cannot hold
+        # more groups than channels; fall back to one channel per group.
+        self.G = min(groups, channels)
+        assert channels % self.G == 0, f"{channels} channels not divisible by {self.G} groups"
         self.beta = nn.Parameter(torch.zeros(1))
 
     def forward(self, x):
@@ -332,15 +341,88 @@ class GroupedCAM(nn.Module):
         G, Cg = self.G, C // self.G
         x_g = x.contiguous().view(B * G, Cg, H * W)  # (B*G, Cg, N)
         X = torch.bmm(x_g, x_g.transpose(1, 2))  # (B*G, Cg, Cg)
+        # Match DA-TransUNet CAM_Module: softmax(max - energy), then aggregate
+        # over the normalized axis, so G=1 reproduces the original CAM exactly.
+        X = torch.max(X, -1, keepdim=True)[0].expand_as(X) - X
         X = F.softmax(X, dim=-1)
-        E_g = torch.bmm(X.transpose(1, 2), x_g)  # (B*G, Cg, N)
+        E_g = torch.bmm(X, x_g)  # (B*G, Cg, N)
         E = self.beta * E_g + x_g
         return E.contiguous().view(B, C, H, W)
 
 
+def norm(planes):
+    """BatchNorm with the same settings as DA-TransUNet's DANetHead."""
+    return nn.BatchNorm2d(planes, momentum=0.95, eps=1e-03)
+
+
+def conv_bn_relu(cin, cout):
+    return nn.Sequential(
+        nn.Conv2d(cin, cout, 3, padding=1, bias=False), norm(cout), nn.ReLU()
+    )
+
+
 class ApproxDABlock(nn.Module):
     """
-    ApproxDA Block: LowRankWindowedPAM + GroupedCAM blended via a soft gate.
+    ApproxDA Block with DA-TransUNet's C/16 bottleneck (DANetHead layout).
+
+    Identical to DANetHead except that PAM/CAM are replaced by
+    LowRankWindowedPAM / GroupedCAM and the two branches are fused by a gate:
+      x -> conv5a (3x3, C->C/16) -> windowed low-rank PAM -> conv51 (3x3) --\
+      x -> conv5c (3x3, C->C/16) -> grouped CAM           -> conv52 (3x3) --+-> g-fusion
+        -> conv8 (Dropout2d 0.05, 1x1 C/16->C, ReLU)          (no outer residual, as DA)
+    PAM queries/keys use (C/16)/8 channels as in DA's PAM_Module (min 1).
+    DANetHead's conv6/conv7 are omitted: their outputs are discarded in DA.
+    gate_mode: 'pam' (g=1) / 'cam' (g=0) build only the branch they use;
+    'fixed' g=0.5; 'learn' g = sigmoid(Linear(GAP(x))) per C/16 channel.
+    """
+
+    def __init__(self, channels, window_size=7, rank=32, groups=8, gate_mode="learn"):
+        super().__init__()
+        inter = channels // 16
+        self.gate_mode = gate_mode
+        self.use_pam = gate_mode != "cam"
+        self.use_cam = gate_mode != "pam"
+        if self.use_pam:
+            self.conv5a = conv_bn_relu(channels, inter)
+            self.pam = LowRankWindowedPAM(
+                inter, window_size, rank, qk_channels=max(1, inter // 8)
+            )
+            self.conv51 = conv_bn_relu(inter, inter)
+        if self.use_cam:
+            self.conv5c = conv_bn_relu(channels, inter)
+            self.cam = GroupedCAM(inter, groups)
+            self.conv52 = conv_bn_relu(inter, inter)
+        if gate_mode == "learn":
+            self.pool = nn.AdaptiveAvgPool2d(1)
+            self.gate_fc = nn.Linear(channels, inter)
+        self.conv8 = nn.Sequential(
+            nn.Dropout2d(0.05, False), nn.Conv2d(inter, channels, 1), nn.ReLU()
+        )
+
+    def forward(self, x):
+        if self.gate_mode == "pam":
+            fused = self.conv51(self.pam(self.conv5a(x)))
+        elif self.gate_mode == "cam":
+            fused = self.conv52(self.cam(self.conv5c(x)))
+        else:
+            p = self.conv51(self.pam(self.conv5a(x)))
+            c = self.conv52(self.cam(self.conv5c(x)))
+            if self.gate_mode == "fixed":
+                g = 0.5
+            else:  # 'learn'
+                B = x.shape[0]
+                g = torch.sigmoid(self.gate_fc(self.pool(x).view(B, -1))).view(B, -1, 1, 1)
+            fused = g * p + (1.0 - g) * c
+        return self.conv8(fused)
+
+
+class ApproxDABlockLegacy(nn.Module):
+    """
+    Legacy ApproxDA Block (BIBM 2026 submission): full-width, no C/16 bottleneck.
+    LowRankWindowedPAM + GroupedCAM on all C channels, blended via a soft gate,
+    1x1 fusion and an outer residual. Kept for reproducing the old results.
+    Note: GroupedCAM was later aligned with DA-TransUNet's CAM_Module, so
+    cam/fixed/learn results differ from the original BIBM runs.
     gate_mode controls routing for ablation:
       'learn' — per-channel learned gate (default)
       'fixed' — fixed 0.5 blend

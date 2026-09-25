@@ -1,0 +1,13 @@
+% !TEX root = ../ApproxDA-TransUNet.tex
+\section{Introduction}
+\label{sec:intro}
+
+Convolutional encoder--decoders such as U-Net~\cite{ronneberger2015unet} and its variants~\cite{zhou2018unetpp,oktay2018attention,diakogiannis2020resunet,ibtehaz2020multiresunet} remain strong baselines for medical image segmentation but have limited receptive fields. Transformer-based models address this with global self-attention, either in hybrid CNN--Transformer designs such as TransUNet~\cite{chen2021transunet}, UCTransNet~\cite{wang2022uctransnet}, TransNorm~\cite{azad2022transnorm}, and MIM~\cite{wang2022mim}, or in largely Transformer-based designs such as Swin-Unet~\cite{cao2022swinunet}, UNETR~\cite{hatamizadeh2022unetr}, and DAE-Former~\cite{azad2023daeformer}. Dual attention~\cite{fu2019dual} combines a Position Attention Module (PAM) over spatial locations with a Channel Attention Module (CAM) over channels; DA-TransUNet~\cite{sun2024datransunet} inserts it into TransUNet, and later works extend it to multi-scale~\cite{li2025dbaanet} and state-space~\cite{ding2025damamba} models.
+
+Full PAM costs $\mathcal{O}(N^2C)$ for $N$ positions and $C$ channels. Windowed attention~\cite{liu2021swin}, low-rank projection~\cite{wang2020linformer}, and grouped channel interaction~\cite{rahman2024emcad} reduce this cost and are usually treated as accuracy-neutral. Whether they change segmentation accuracy, and whether the effect is the same across tasks, has received little controlled study.
+
+We address this question with ApproxDA-TransUNet, which replaces the dual-attention blocks of DA-TransUNet with approximated ones. With the backbone, training, and evaluation fixed, we vary one approximation parameter at a time on three datasets. Our contributions are:
+\begin{itemize}
+  \item \textbf{A controlled dual-attention approximation framework.} Window size $M$, rank $r$, and group number $G$ control the spatial scope, the affinity resolution, and the channel interaction scope of dual attention, respectively, so that each factor can be ablated in isolation.
+  \item \textbf{Evidence of dataset-dependent window sensitivity.} Synapse multi-organ CT is substantially more sensitive to $M$ than Kvasir-SEG and ISIC~2018, and with an appropriately selected window ApproxDA-TransUNet improves Dice over DA-TransUNet on all three datasets under matched evaluation.
+\end{itemize}

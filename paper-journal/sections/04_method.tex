@@ -56,10 +56,13 @@ followed by a learnable residual scale, $\mathbf{y} = \alpha \cdot \mathrm{Attn}
 
 The original Channel Attention Module computes a $C{\times}C$ channel attention matrix at $\mathcal{O}(C^2N)$ cost. ApproxDA-TransUNet approximates this by partitioning $C$ channels into $G$ groups of width $C_g = C/G$, computing independent per-group attention:
 \begin{equation}
-  X^{(g)}_{ji} = \frac{\exp(\mathbf{A}^{(g)}_i \cdot \mathbf{A}^{(g)}_j)}{\sum_{k=1}^{C_g}\exp(\mathbf{A}^{(g)}_k \cdot \mathbf{A}^{(g)}_j)},
+\begin{aligned}
+  x^{(g)}_{ij} &= \frac{\exp(-\mathbf{A}^{(g)}_i \cdot \mathbf{A}^{(g)}_j)}{\sum_{k=1}^{C_g}\exp(-\mathbf{A}^{(g)}_i \cdot \mathbf{A}^{(g)}_k)}, \\
+  \mathbf{E}^{(g)}_i &= \beta \sum_{j=1}^{C_g} x^{(g)}_{ij}\,\mathbf{A}^{(g)}_j + \mathbf{A}^{(g)}_i,
+\end{aligned}
   \label{eq:groupedcam}
 \end{equation}
-with total cost $\mathcal{O}(C^2N/G)$. Compared with dense channel interaction, grouped attention significantly reduces computational complexity while preserving local channel dependencies.
+where $\beta$ is a learned scalar initialized to 0. Following the official DANet and DA-TransUNet implementations, the channel affinity is negated before the softmax (implemented as $\max_k \mathbf{A}_i\cdot\mathbf{A}_k - \mathbf{A}_i\cdot\mathbf{A}_j$, which is equivalent under the softmax), so $G{=}1$ recovers the CAM of DA-TransUNet exactly. The total cost is $\mathcal{O}(C^2N/G)$. Compared with dense channel interaction, grouped attention significantly reduces computational complexity while preserving local channel dependencies.
 
 The grouping number $G$ provides another controllable approximation dimension, allowing the influence of channel approximation to be studied independently from spatial approximation.
 

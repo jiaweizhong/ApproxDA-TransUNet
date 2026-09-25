@@ -83,6 +83,13 @@ parser.add_argument(
     help="Gate mode: learn=adaptive (default), fixed=0.5 blend, pam=PAM only, cam=CAM only",
 )
 parser.add_argument(
+    "--block_version",
+    type=str,
+    default="c16",
+    choices=["c16", "legacy"],
+    help="c16 = DANetHead-style C/16 bottleneck (default); legacy = BIBM full-width block",
+)
+parser.add_argument(
     "--val_interval",
     type=int,
     default=0,
@@ -851,6 +858,8 @@ if __name__ == "__main__":
         if args.gate_mode != "learn"
         else snapshot_path
     )
+    # c16 runs get their own directory so they never pick up legacy checkpoints
+    snapshot_path = snapshot_path + "_c16" if args.block_version == "c16" else snapshot_path
 
     if not os.path.exists(snapshot_path):
         os.makedirs(snapshot_path)
@@ -861,6 +870,7 @@ if __name__ == "__main__":
     config_vit.rank = args.rank
     config_vit.groups = args.groups
     config_vit.gate_mode = args.gate_mode
+    config_vit.block_version = args.block_version
     if args.vit_name.find("R50") != -1:
         config_vit.patches.grid = (
             int(args.img_size / args.vit_patches_size),

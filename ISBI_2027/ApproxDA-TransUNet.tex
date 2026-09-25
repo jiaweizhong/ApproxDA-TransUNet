@@ -1,0 +1,46 @@
+% ApproxDA-TransUNet -- ISBI 2027 (4 pages + 1 page references)
+% Built with spconf.sty / IEEEbib.bst from the official ISBI template.
+% Refactored from the BIBM 2026 submission (../paper/); see
+% ../ApproxDA_ISBI_Reduction_and_Revision_Plan.md for the revision plan.
+% --------------------------------------------------------------------------
+\documentclass{article}
+\usepackage{spconf,amsmath,amssymb,graphicx}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{xcolor}
+\usepackage{enumitem}
+\setlist{nosep, leftmargin=14pt}
+
+% --- Revision markers --------------------------------------------------------
+% \tbd{..}  : number / cell that must be replaced after the P0 re-runs
+%             (validation-selected checkpoint, matched DA-TransUNet, 3 seeds).
+% \todo{..} : text that depends on pending experiments.
+% Set \revisionmarksfalse to render the final camera-ready version.
+\newif\ifrevisionmarks
+\revisionmarkstrue
+\ifrevisionmarks
+  \newcommand{\tbd}[1]{\textcolor{red}{#1}}
+  \newcommand{\todo}[1]{\textcolor{red}{[TODO: #1]}}
+\else
+  \newcommand{\tbd}[1]{#1}
+  \newcommand{\todo}[1]{}
+\fi
+
+\title{Controlled Dual-Attention Approximation Reveals Dataset-Dependent Window Sensitivity in Medical Image Segmentation}
+
+\name{Anonymous Author(s)}
+\address{Anonymous Affiliation(s)}
+
+\begin{document}
+\maketitle
+
+\input{sections/01_abstract}
+\input{sections/02_introduction}
+\input{sections/03_method}
+\input{sections/04_experiments}
+\input{sections/05_conclusion}
+
+\bibliographystyle{IEEEbib}
+\bibliography{references}
+
+\end{document}

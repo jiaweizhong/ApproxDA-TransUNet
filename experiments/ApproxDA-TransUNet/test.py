@@ -101,6 +101,13 @@ parser.add_argument(
     choices=["learn", "fixed", "pam", "cam"],
     help="Must match training gate_mode",
 )
+parser.add_argument(
+    "--block_version",
+    type=str,
+    default="c16",
+    choices=["c16", "legacy"],
+    help="Must match training block_version (c16 = DANetHead-style C/16 bottleneck)",
+)
 args = parser.parse_args()
 
 
@@ -322,6 +329,8 @@ if __name__ == "__main__":
         if args.gate_mode != "learn"
         else snapshot_path
     )
+    # c16 runs get their own directory so they never pick up legacy checkpoints
+    snapshot_path = snapshot_path + "_c16" if args.block_version == "c16" else snapshot_path
 
     config_vit = CONFIGS_ViT_seg[args.vit_name]
     config_vit.n_classes = args.num_classes
@@ -330,6 +339,7 @@ if __name__ == "__main__":
     config_vit.rank = args.rank
     config_vit.groups = args.groups
     config_vit.gate_mode = args.gate_mode
+    config_vit.block_version = args.block_version
     config_vit.patches.size = (args.vit_patches_size, args.vit_patches_size)
     if args.vit_name.find("R50") != -1:
         config_vit.patches.grid = (

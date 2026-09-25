@@ -1,0 +1,8 @@
+% !TEX root = ../ApproxDA-TransUNet.tex
+\begin{abstract}
+Dual attention is effective for medical image segmentation, but its quadratic cost has motivated windowed, low-rank, and grouped approximations whose effect on accuracy across tasks is rarely examined. We present ApproxDA-TransUNet, which replaces the dual-attention blocks of DA-TransUNet with an approximation controlled by window size $M$, projection rank $r$, and channel group number $G$. On Synapse multi-organ CT, Kvasir-SEG, and ISIC~2018, we observe strongly dataset-dependent window sensitivity: the Dice range across window sizes is \tbd{2.30} points on Synapse but only \tbd{0.64} and \tbd{0.50} points on Kvasir-SEG and ISIC~2018. With an appropriately selected window, ApproxDA-TransUNet improves Dice over DA-TransUNet on all three datasets under matched evaluation. Attention approximation is therefore not accuracy-neutral, and its window scale is a task-dependent design choice.
+\end{abstract}
+
+\begin{keywords}
+Medical image segmentation, dual attention, attention approximation, window size, ablation study
+\end{keywords}

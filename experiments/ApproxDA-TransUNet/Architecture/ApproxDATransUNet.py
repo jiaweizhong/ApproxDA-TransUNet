@@ -18,7 +18,25 @@ from torch.nn.modules.utils import _pair
 from scipy import ndimage
 from . import configs as configs
 from .block import ResNetV2
-from .block import ApproxDABlock
+from .block import ApproxDABlock, ApproxDABlockLegacy
+
+
+def make_approx_block(channels, config):
+    """Build the attention block selected by config.block_version ('c16' | 'legacy')."""
+    version = getattr(config, "block_version", "c16")
+    cls = {"c16": ApproxDABlock, "legacy": ApproxDABlockLegacy}[version]
+    return cls(
+        channels,
+        window_size=config.window_size,
+        rank=config.rank,
+        groups=config.groups,
+        gate_mode=config.gate_mode,
+    )
+
+
+# Skip channels that get an attention block, and the attribute each is stored
+# under (names kept from the original da/da2/da3 layout).
+_SKIP_BLOCK_NAMES = {64: "da", 256: "da2", 512: "da3"}
 
 from torch.nn import (
     Module,
@@ -157,13 +175,7 @@ class Embeddings(nn.Module):
         self.config = config
         img_size = _pair(img_size)
 
-        self.approx_block = ApproxDABlock(
-            768,
-            window_size=config.window_size,
-            rank=config.rank,
-            groups=config.groups,
-            gate_mode=config.gate_mode,
-        )
+        self.approx_block = make_approx_block(config.hidden_size, config)
 
         if config.patches.get("grid") is not None:  # ResNet
             grid_size = config.patches["grid"]
@@ -357,10 +369,7 @@ class DecoderBlock(nn.Module):
         out_channels,
         skip_channels=0,
         use_batchnorm=True,
-        window_size=7,
-        rank=32,
-        groups=8,
-        gate_mode="learn",
+        config=None,
     ):
         super().__init__()
         self.conv1 = Conv2dReLU(
@@ -378,26 +387,18 @@ class DecoderBlock(nn.Module):
             use_batchnorm=use_batchnorm,
         )
         self.up = nn.UpsamplingBilinear2d(scale_factor=2)
-        self.da = ApproxDABlock(
-            64, window_size=window_size, rank=rank, groups=groups, gate_mode=gate_mode
-        )
-        self.da2 = ApproxDABlock(
-            256, window_size=window_size, rank=rank, groups=groups, gate_mode=gate_mode
-        )
-        self.da3 = ApproxDABlock(
-            512, window_size=window_size, rank=rank, groups=groups, gate_mode=gate_mode
-        )
+        # Build only the block this level's skip uses (previously all three were
+        # built in every DecoderBlock, leaving 9 never-called blocks).
+        self.block_name = _SKIP_BLOCK_NAMES.get(skip_channels)
+        if self.block_name is not None:
+            setattr(self, self.block_name, make_approx_block(skip_channels, config))
 
     def forward(self, x, skip=None):
         x = self.up(x)
         if skip is not None:
             skip = skip.contiguous()
-            if skip.size(1) == 64:
-                skip = self.da(skip)
-            elif skip.size(1) == 256:
-                skip = self.da2(skip)
-            elif skip.size(1) == 512:
-                skip = self.da3(skip)
+            if self.block_name is not None:
+                skip = getattr(self, self.block_name)(skip)
 
             x = torch.cat([x, skip], dim=1)
         x = self.conv1(x)
@@ -450,10 +451,7 @@ class DecoderCup(nn.Module):
                 in_ch,
                 out_ch,
                 sk_ch,
-                window_size=config.window_size,
-                rank=config.rank,
-                groups=config.groups,
-                gate_mode=config.gate_mode,
+                config=config,
             )
             for in_ch, out_ch, sk_ch in zip(in_channels, out_channels, skip_channels)
         ]
