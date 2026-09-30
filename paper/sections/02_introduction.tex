@@ -1,19 +1,26 @@
 % !TEX root = ../ApproxDA-TransUNet.tex
 \section{Introduction}
 
-Transformers have advanced medical image segmentation by modeling long-range dependencies that convolutional networks capture only indirectly. Dual attention~\cite{fu2019dual}---a Position Attention Module (PAM) for spatial correlations and a Channel Attention Module (CAM) for channel correlations---is one such mechanism, and DA-TransUNet~\cite{sun2024datransunet} showed its effectiveness in a hybrid CNN--Transformer architecture for multi-organ and polyp segmentation. Full PAM costs $\mathcal{O}(N^2C)$ for $N$ positions and $C$ channels, and windowed attention~\cite{liu2021swin}, low-rank projection~\cite{wang2020linformer}, and grouped channel interaction~\cite{rahman2024emcad} are standard ways to reduce this cost. These approximations are usually adopted as accuracy-neutral engineering choices, which raises a question that is rarely examined across tasks with different spatial characteristics:
+Transformers have advanced medical image segmentation by enabling global long-range dependency modeling that convolutional networks capture only indirectly. Dual attention~\cite{fu2019dual}---combining a Position Attention Module (PAM) for spatial correlations and a Channel Attention Module (CAM) for channel correlations---has emerged as a powerful mechanism, and methods such as DA-TransUNet~\cite{sun2024datransunet} demonstrated its effectiveness in hybrid CNN-Transformer architectures for multi-organ and polyp segmentation. The quadratic complexity of dual attention, however, has prompted a wave of efficient approximations---windowed attention~\cite{liu2021swin}, low-rank factorization~\cite{wang2020linformer}, and grouped channel interaction~\cite{rahman2024emcad}---that are now standard design choices. These strategies are usually adopted under the implicit assumption that approximation is broadly applicable with minor accuracy trade-offs---an assumption rarely examined across tasks with different spatial characteristics:
 
 \begin{center}
-\emph{Does attention approximation change segmentation accuracy,\\
-and does the effect depend on the task?}
+\emph{When, and at what scale, is attention approximation\\
+beneficial for medical image segmentation?}
 \end{center}
+To investigate this question, we design \textbf{ApproxDA-TransUNet}\footnote{Source code will be made available upon acceptance.}: a dual-attention architecture featuring three independently controllable approximation axes---windowed PAM, low-rank projection, and grouped CAM. ApproxDA-TransUNet provides both competitive segmentation performance across benchmarks and a controllable framework for studying the spatial and channel granularity of attention.
 
-To study this question we design \textbf{ApproxDA-TransUNet}\footnote{Source code will be made available upon acceptance.}, which keeps the architecture of DA-TransUNet and replaces only its attention modules with approximations controlled by three independent parameters. With the backbone, training protocol, and evaluation fixed, we vary one parameter at a time on three datasets with different anatomical and visual characteristics, and compare against DA-TransUNet re-trained under the same protocol.
+Applying ApproxDA-TransUNet across three medical segmentation benchmarks reveals distinct task-dependent characteristics: the windowed attention operator is highly window-sensitive on multi-organ CT yet largely robust on polyp and skin lesion segmentation. With an appropriately selected window, ApproxDA-TransUNet improves Dice on all three benchmarks over DA-TransUNet, while demonstrating that context requirements diverge fundamentally across clinical targets. We further observe that, on multi-organ CT, learnable routing between spatial and channel branches converges to near-uniform weighting without surpassing single-branch PAM routing.
 
 The main contributions of this paper are:
+
 \begin{itemize}
-\item \textbf{A controlled dual-attention approximation framework.} Window size $M$, rank $r$, and group number $G$ control the spatial scope, the affinity resolution, and the channel-interaction scope of dual attention. In its exact limit the block reduces to the DA-TransUNet block, so each approximation can be ablated in isolation.
-\item \textbf{Evidence of dataset-dependent window sensitivity.} Synapse multi-organ CT is substantially more sensitive to $M$ than Kvasir-SEG and ISIC~2018, and with an appropriately selected window ApproxDA-TransUNet improves Dice over the matched DA-TransUNet on all three datasets.
+
+\item \textbf{ApproxDA-TransUNet Framework}: We propose ApproxDA-TransUNet, a dual-attention approximation architecture featuring three independently parameterizable operators---windowed PAM, low-rank projection, and grouped CAM---achieving consistent Dice gains over DA-TransUNet across three diverse benchmarks.
+
+\item \textbf{Systematic Context Sensitivity Study}: Using ApproxDA-TransUNet as a controlled diagnostic platform, we present a systematic empirical study of attention approximation across heterogeneous medical segmentation tasks, observing up to a 4.6$\times$ difference in window sensitivity across benchmarks. We formalize this behavior via an empirical \emph{Global Context Sensitivity (GCS)} metric, quantifying the architectural response to window scale across distinct anatomical targets.
+
+\item \textbf{Empirical Insights on Routing and Inductive Bias}: Our findings demonstrate that attention approximation can serve as a beneficial locality-induced bias for appearance-dominated segmentation, and document that learnable dual-branch routing tends toward static uniform fusion on multi-organ CT.
+
 \end{itemize}
 
-The remainder of this paper is organized as follows: Section~\ref{sec:related_work} reviews related work; Section~\ref{sec:method} presents ApproxDA-TransUNet; Section~\ref{sec:experiments} describes the protocol and main results; Section~\ref{sec:understanding} reports the controlled ablations; Section~\ref{sec:conclusion} concludes.
+The remainder of this paper is organized as follows: Section~\ref{sec:related_work} reviews related work; Section~\ref{sec:method} presents the ApproxDA-TransUNet framework; Section~\ref{sec:experiments} compares it with published methods; Section~\ref{sec:understanding} reports ablation studies and analysis; Section~\ref{sec:conclusion} concludes.

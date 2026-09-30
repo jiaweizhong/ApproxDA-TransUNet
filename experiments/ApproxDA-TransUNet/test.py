@@ -386,10 +386,25 @@ if __name__ == "__main__":
     if not os.path.exists(snapshot):
         raise SystemExit(f"checkpoint not found: {snapshot}")
     state_dict = torch.load(snapshot, weights_only=False)
+    # epoch_*.pth is saved from the (possibly DDP-wrapped) model -> strip "module."
+    state_dict = {
+        k[len("module."):] if k.startswith("module.") else k: v
+        for k, v in state_dict.items()
+    }
     state_dict = {
         k.replace(".ada_block.", ".approx_block."): v for k, v in state_dict.items()
     }
-    net.load_state_dict(state_dict)
+    # Legacy checkpoints still contain the never-called decoder blocks that were
+    # removed from the model; drop exactly those keys, fail on anything else.
+    missing, unexpected = net.load_state_dict(state_dict, strict=False)
+    stale = [k for k in unexpected if k.split(".")[0] == "decoder" and ".da" in k]
+    if missing or len(stale) != len(unexpected):
+        raise SystemExit(
+            f"state_dict mismatch: missing={missing[:5]} "
+            f"unexpected={[k for k in unexpected if k not in stale][:5]}"
+        )
+    if stale:
+        print(f"Ignored {len(stale)} keys of never-called legacy decoder blocks")
     snapshot_name = snapshot_path.split("/")[-1]
     # keep val-split and best-checkpoint logs separate from the final test logs
     snapshot_name += "_val" if args.split == "val" else ""

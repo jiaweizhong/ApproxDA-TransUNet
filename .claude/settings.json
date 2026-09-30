@@ -15,7 +15,15 @@
       "Bash(grep -rh \"\\\\\\\\\\\\\\\\ref{\" /c/Users/jiawe/Repos/AdaDA-TransUNet/paper/sections/)",
       "Bash(grep -rn \"\\\\\\\\\\\\\\\\includegraphics\" /c/Users/jiawe/Repos/AdaDA-TransUNet/paper/sections/)",
       "Bash(grep -rn \"\\\\\\\\\\\\\\\\fbox\" /c/Users/jiawe/Repos/AdaDA-TransUNet/paper/sections/)",
-      "Bash(python -c ' *)"
+      "Bash(python -c ' *)",
+      "Bash(grep -n \"\\\\\\\\\\\\\\\\title\" paper/ApproxDA-TransUNet.tex)",
+      "Bash(git checkout *)",
+      "Bash(PYTHONIOENCODING=utf-8 python -)",
+      "Bash(python -)",
+      "Bash(python \"C:/Users/jiawe/AppData/Local/Temp/claude/c--Users-jiawe-Repos-AdaDA-TransUNet/dc01ec41-8e9d-431f-ad2e-d46993c96698/scratchpad/fix_05.py\" 05_experiments.tex)",
+      "Bash(latexmk -pdf -interaction=nonstopmode -halt-on-error ApproxDA-TransUNet.tex)",
+      "Bash(echo \"exit $?\")",
+      "Bash(grep -nE \"^#{1,3} |^# Part B\" ApproxDA_BIBM_Workshop_Must_Fix.md)"
     ],
     "additionalDirectories": [
       "c:\\Users\\jiawe\\Repos\\AdaDA-TransUNet"

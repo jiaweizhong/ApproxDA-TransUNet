@@ -310,7 +310,13 @@ if __name__ == "__main__":
     snapshot = os.path.join(snapshot_path, ckpt_name)
     if not os.path.exists(snapshot):
         raise SystemExit(f"checkpoint not found: {snapshot}")
-    net.load_state_dict(torch.load(snapshot))
+    state_dict = torch.load(snapshot)
+    # epoch_*.pth is saved from the (possibly DataParallel-wrapped) model -> strip "module."
+    state_dict = {
+        k[len("module."):] if k.startswith("module.") else k: v
+        for k, v in state_dict.items()
+    }
+    net.load_state_dict(state_dict)
     snapshot_name = snapshot_path.split("/")[-1]
     # keep val-split and best-checkpoint logs separate from the final test logs
     snapshot_name += "_val" if args.split == "val" else ""
