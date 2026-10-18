@@ -3,8 +3,8 @@
 
 \usepackage{cite}
 \usepackage{amsmath,amssymb,amsfonts}
-\usepackage{algorithmic}
-\usepackage{algorithm}
+% \usepackage{algorithmic}  % unused; not in a base TeX Live install (texlive-science)
+% \usepackage{algorithm}    % unused
 \usepackage{graphicx}
 \usepackage{textcomp}
 \usepackage{xcolor}
@@ -17,20 +17,32 @@
 \usepackage{multirow}
 \usepackage{url}
 \usepackage{stfloats}
+\usepackage[hidelinks]{hyperref}  % clickable links (code URL), no coloured boxes
 
 \def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
     T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
 
 \begin{document}
 
-\title{ApproxDA-TransUNet: Understanding Global Context Sensitivity of Attention Approximation for Medical Image Segmentation}
+\title{ApproxDA-TransUNet: Understanding Global Context Sensitivity of Attention Approximation for Medical Image Segmentation\thanks{\IEEEauthorrefmark{1}Corresponding author.}}
 
 \author{
-\IEEEauthorblockN{Author Name}
-\IEEEauthorblockA{\textit{Department of Computer Science} \\
-\textit{University Name}\\
-City, Country \\
-author@university.edu}
+\IEEEauthorblockN{Jiawei Zhong}
+\IEEEauthorblockA{\textit{DeepSOTA AI}\\
+San Jose, United States\\
+deepsota.ai@gmail.com}
+\and
+\IEEEauthorblockN{Qin Chen}
+\IEEEauthorblockA{\textit{Shenzhen Cloudage Technology Ltd.}\\
+Shenzhen, China\\
+chenqin0773@hotmail.com}
+\and
+\IEEEauthorblockN{Hui Zhang\IEEEauthorrefmark{1}}
+\IEEEauthorblockA{\textit{College of Information, Mechanical}\\
+\textit{and Electrical Engineering}\\
+\textit{Shanghai Normal University}\\
+Shanghai, China\\
+huiz@shnu.edu.cn}
 }
 
 \maketitle

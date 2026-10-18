@@ -7,19 +7,19 @@ Transformers have advanced medical image segmentation by enabling global long-ra
 \emph{When, and at what scale, is attention approximation\\
 beneficial for medical image segmentation?}
 \end{center}
-To investigate this question, we design \textbf{ApproxDA-TransUNet}\footnote{Source code will be made available upon acceptance.}: a dual-attention architecture featuring three independently controllable approximation axes---windowed PAM, low-rank projection, and grouped CAM. ApproxDA-TransUNet provides both competitive segmentation performance across benchmarks and a controllable framework for studying the spatial and channel granularity of attention.
+To investigate this question, we design \textbf{ApproxDA-TransUNet}\footnote{Code: \url{https://github.com/deepsota-ai/ApproxDA-TransUNet}}: a dual-attention architecture featuring three independently controllable approximation axes---windowed PAM, low-rank projection, and grouped CAM. ApproxDA-TransUNet provides both competitive segmentation performance across benchmarks and a controllable framework for studying the spatial and channel granularity of attention.
 
-Applying ApproxDA-TransUNet across three medical segmentation benchmarks reveals distinct task-dependent characteristics: the windowed attention operator is highly window-sensitive on multi-organ CT yet largely robust on polyp and skin lesion segmentation. With an appropriately selected window, ApproxDA-TransUNet improves Dice on all three benchmarks over DA-TransUNet, while demonstrating that context requirements diverge fundamentally across clinical targets. We further observe that, on multi-organ CT, learnable routing between spatial and channel branches converges to near-uniform weighting without surpassing single-branch PAM routing.
+Applying ApproxDA-TransUNet across three medical segmentation benchmarks reveals distinct task-dependent characteristics: the windowed attention operator is most window-sensitive on multi-organ CT and less so on polyp and skin lesion segmentation. With an appropriately selected window, ApproxDA-TransUNet improves Dice on all three benchmarks over the reported DA-TransUNet results, while showing that sensitivity to the context window differs across clinical targets. We further observe that, on multi-organ CT, learnable routing between spatial and channel branches stays at near-uniform weighting without surpassing single-branch routing.
 
 The main contributions of this paper are:
 
 \begin{itemize}
 
-\item \textbf{ApproxDA-TransUNet Framework}: We propose ApproxDA-TransUNet, a dual-attention approximation architecture featuring three independently parameterizable operators---windowed PAM, low-rank projection, and grouped CAM---achieving consistent Dice gains over DA-TransUNet across three diverse benchmarks.
+\item \textbf{ApproxDA-TransUNet Framework}: We propose ApproxDA-TransUNet, a dual-attention approximation architecture featuring three independently parameterizable operators---windowed PAM, low-rank projection, and grouped CAM---improving Dice over the reported DA-TransUNet results on three diverse benchmarks.
 
-\item \textbf{Systematic Context Sensitivity Study}: Using ApproxDA-TransUNet as a controlled diagnostic platform, we present a systematic empirical study of attention approximation across heterogeneous medical segmentation tasks, observing up to a 4.6$\times$ difference in window sensitivity across benchmarks. We formalize this behavior via an empirical \emph{Global Context Sensitivity (GCS)} metric, quantifying the architectural response to window scale across distinct anatomical targets.
+\item \textbf{Systematic Context Sensitivity Study}: Using ApproxDA-TransUNet as a controlled diagnostic platform, we present a systematic empirical study of attention approximation across heterogeneous medical segmentation tasks, observing up to a 3.5$\times$ difference in window sensitivity across benchmarks. We formalize this behavior via an empirical \emph{Global Context Sensitivity (GCS)} metric, quantifying the architectural response to window scale across distinct anatomical targets.
 
-\item \textbf{Empirical Insights on Routing and Inductive Bias}: Our findings demonstrate that attention approximation can serve as a beneficial locality-induced bias for appearance-dominated segmentation, and document that learnable dual-branch routing tends toward static uniform fusion on multi-organ CT.
+\item \textbf{Empirical Insights on Approximation and Routing}: We find that exact attention offers no accuracy advantage over its low-rank approximation, and document that learnable dual-branch routing stays at near-uniform fusion on multi-organ CT without surpassing single-branch routing.
 
 \end{itemize}
 
