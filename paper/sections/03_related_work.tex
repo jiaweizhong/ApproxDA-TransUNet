@@ -12,7 +12,7 @@ Transformer architectures have significantly advanced medical image segmentation
 
 \subsection{Dual Attention and DA-TransUNet}
 
-DANet~\cite{fu2019dual} introduced Position Attention Modules (PAM) and Channel Attention Modules (CAM), capturing spatial and channel correlations at $\mathcal{O}(N^2C)$ and $\mathcal{O}(C^2N)$ complexity respectively. DA-TransUNet~\cite{sun2024datransunet} adapted this design for medical image segmentation by inserting dual-attention blocks at multiple skip connections of a hybrid R50-ViT-B/16 encoder-decoder, improving accuracy while inheriting the quadratic cost of full-map attention. DBAANet~\cite{li2025dbaanet} further extends dual-branch attention by aggregating position and channel attention across multiple scales, demonstrating the continued appeal of dual-attention paradigms for medical image segmentation.
+DANet~\cite{fu2019dual} introduced Position Attention Modules (PAM) and Channel Attention Modules (CAM), capturing spatial and channel correlations at $\mathcal{O}(N^2C)$ and $\mathcal{O}(C^2N)$ complexity respectively. DA-TransUNet~\cite{sun2024datransunet} adapted this design for medical image segmentation by inserting dual-attention blocks before the Transformer and at multiple skip connections of a hybrid R50-ViT-B/16 encoder-decoder, improving accuracy while inheriting the quadratic cost of full-map attention. DBAANet~\cite{li2025dbaanet} further extends dual-branch attention by aggregating position and channel attention across multiple scales, demonstrating the continued appeal of dual-attention paradigms for medical image segmentation.
 
 \subsection{Efficient Attention and Adaptive Routing}
 

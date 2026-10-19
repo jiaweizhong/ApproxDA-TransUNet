@@ -135,24 +135,37 @@ box(ax, XS[0], Y_ENC, BW_IO, BH_IO, C_IO, "Input", "3×224²", fs=11, sfs=11)
 box(ax, XS[1], Y_ENC, BW_ENC, BH_ENC, C_ENC, "CNN", "64ch · 112²", fs=11, sfs=11)
 box(ax, XS[2], Y_ENC, BW_ENC, BH_ENC, C_ENC, "CNN", "256ch · 56²", fs=11, sfs=11)
 box(ax, XS[3], Y_ENC, BW_ENC, BH_ENC, C_ENC, "CNN", "512ch · 28²", fs=11, sfs=11)
-box(ax, XS[4], Y_ENC, BW_VIT, BH_VIT, C_VIT, "ViT-B/16", "12L · 14²", fs=11, sfs=11)
+# bottleneck: R50 1/16 features -> 768-d patch embedding -> ApproxDABlock -> ViT
+# (the block precedes the transformer, as in DA-TransUNet's encoder)
+box(ax, XS[4], Y_ENC, BW_ADB, BH_ADB, C_ADB, "ApproxDABlock", "768ch · 14²", fs=10.5, sfs=11)
+ax.text(
+    XS[4],
+    Y_ENC + BH_ADB / 2 + 0.16,
+    "bottleneck",
+    ha="center",
+    va="center",
+    fontsize=10.5,
+    color="#333333",
+    style="italic",
+    zorder=6,
+)
 
 for i in range(4):
     arrow(
         ax,
         XS[i] + (BW_IO if i == 0 else BW_ENC) / 2,
         Y_ENC,
-        XS[i + 1] - (BW_VIT if i == 3 else BW_ENC) / 2,
+        XS[i + 1] - (BW_ADB if i == 3 else BW_ENC) / 2,
         Y_ENC,
     )
 
-# ── ApproxDABlocks ────────────────────────────────────────────────────────────
-for xi in XS[1:]:
+# ── skip ApproxDABlocks + ViT ─────────────────────────────────────────────────
+for xi in XS[1:4]:
     box(ax, xi, Y_ADB, BW_ADB, BH_ADB, C_ADB, "ApproxDABlock", fs=10.5)
+box(ax, XS[4], Y_ADB, BW_VIT, BH_VIT, C_VIT, "ViT-B/16", "12L · 14²", fs=11, sfs=11)
 
 # skip connections — solid black arrows
 skip_mid_y = (Y_ENC - BH_ENC / 2 + Y_ADB + BH_ADB / 2) / 2
-btlnk_mid_y = (Y_ENC - BH_VIT / 2 + Y_ADB + BH_ADB / 2) / 2
 
 for xi in XS[1:4]:
     arrow(ax, xi, Y_ENC - BH_ENC / 2, xi, Y_ADB + BH_ADB / 2, lw=1.1)
@@ -168,16 +181,7 @@ for xi in XS[1:4]:
         zorder=6,
     )
 
-arrow(ax, XS[4], Y_ENC - BH_VIT / 2, XS[4], Y_ADB + BH_ADB / 2, lw=1.3)
-ax.text(
-    XS[4] + 0.11,
-    btlnk_mid_y,
-    "bottleneck",
-    ha="left",
-    va="center",
-    fontsize=10.5,
-    zorder=6,
-)
+arrow(ax, XS[4], Y_ENC - BH_ADB / 2, XS[4], Y_ADB + BH_VIT / 2, lw=1.3)
 
 # ── decoder ───────────────────────────────────────────────────────────────────
 box(ax, XS[3], Y_DEC, BW_DEC, BH_DEC, C_DEC, "Decoder", "512ch · 28²", fs=11, sfs=11)
@@ -185,8 +189,8 @@ box(ax, XS[2], Y_DEC, BW_DEC, BH_DEC, C_DEC, "Decoder", "256ch · 56²", fs=11, 
 box(ax, XS[1], Y_DEC, BW_DEC, BH_DEC, C_DEC, "Decoder", "64ch · 112²", fs=11, sfs=11)
 box(ax, XS[0], Y_DEC, BW_IO, BH_IO, C_IO, "Output", "224²", fs=11, sfs=11)
 
-# ViT ApproxDABlock → right-edge midpoint of Up-1
-elbow(ax, XS[4], Y_ADB - BH_ADB / 2, XS[3] + BW_DEC / 2, Y_DEC)
+# ViT output → right-edge midpoint of Up-1
+elbow(ax, XS[4], Y_ADB - BH_VIT / 2, XS[3] + BW_DEC / 2, Y_DEC)
 
 for i in [3, 2, 1]:
     arrow(
@@ -343,9 +347,9 @@ ax.text(
 arrow(
     ax,
     XS[4] + BW_VIT / 2,
-    Y_ENC,
+    Y_ADB,
     VIX + 0.10,
-    Y_ENC,
+    Y_ADB,
     color="#AAAAAA",
     lw=1.1,
     dashed=True,
