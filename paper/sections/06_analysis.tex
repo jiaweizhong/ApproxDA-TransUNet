@@ -32,7 +32,7 @@ We first examine how spatial window size and projection rank govern segmentation
 
 On Synapse, the best accuracy is obtained with map-wide low-rank attention ($M{=}112$: 81.63\%), while the windowed settings $M{\in}\{7,28,56\}$ stay within 79.16--79.92\%, giving a 2.47\,pp DSC spread across window sizes. Exact attention provides no consistent accuracy advantage over the low-rank approximation; it is marginally higher only at $M{=}56$ ($+$0.15\,pp), while low-rank attention performs better at the other window sizes, although exact attention yields lower HD95 at $M{=}28$ and $M{=}112$. Rank variation at $M{=}112$ is non-monotonic ($r{=}16/32/64$: 78.71/81.63/79.92\%).
 
-\subsection{Cross-task Ablation and Global Context Sensitivity}
+\subsection{Cross-Task Window Sensitivity}
 \label{sec:obs2}
 
 \begin{figure}[!t]
@@ -89,11 +89,11 @@ On Synapse, the best accuracy is obtained with map-wide low-rank attention ($M{=
 We next assess whether attention approximation responds consistently across distinct anatomical segmentation tasks. Although ApproxDA-TransUNet employs identical approximation mechanisms across benchmarks, its empirical sensitivity to window selection diverges significantly. On Synapse multi-organ CT, the DSC-vs-$M$ curve (Figure~\ref{fig:dsc_vs_m}) peaks at map-wide attention ($M{=}112$) and spans 2.47\,pp. Conversely, on CVC-ClinicDB the curve is flat (0.71\,pp spread) with an optimum at $M{=}128$; on ISIC 2018, the range across $M{\in}\{8,32,64,128\}$ is 1.22\,pp (at $256{\times}256$ input these windows cover the same fraction of each feature map as $\{7,28,56,112\}$ at $224{\times}224$).
 The raw DSC values across the four window sizes (gate=pam, $r{=}32$) are 89.81/89.49/90.12/90.20\% on CVC-ClinicDB and 88.04/88.84/89.26/88.32\% on ISIC 2018. With the best window, ApproxDA-TransUNet exceeds the DA-TransUNet values in Tables~\ref{tab:synapse}--\ref{tab:isic} by $+$1.83\% (Synapse, $M{=}112$), $+$0.73\% (CVC-ClinicDB, $M{=}128$), and $+$0.38\% (ISIC 2018, $M{=}64$).
 
-We formalize this cross-task behavior through the empirical metric \textbf{Global Context Sensitivity (GCS)}, defined as the performance span over the window sweep:
+We quantify window sensitivity as the DSC span over the window sweep:
 \begin{equation}
   \Delta\text{DSC} = \max_{M} \text{DSC}(M) - \min_{M} \text{DSC}(M),
 \end{equation}
-measured under uniform gate=pam, $r{=}32$. Empirically, $\Delta\text{DSC} = 2.47$\,pp on Synapse, $0.71$\,pp on CVC-ClinicDB, and $1.22$\,pp on ISIC~2018---a 3.5$\times$ and 2.0$\times$ ratio relative to polyp and lesion segmentation, respectively. Rather than serving as an a priori predictive descriptor, GCS provides a quantified diagnostic of how strongly model accuracy is coupled to spatial context scale. High GCS reflects a sharp performance response to window scale and therefore requires careful window selection, whereas low GCS indicates broader robustness to receptive-scope choices. Importantly, high GCS does not indicate that approximation degrades performance, but rather characterizes performance sensitivity to window calibration.
+measured under uniform gate=pam, $r{=}32$. Empirically, $\Delta\text{DSC} = 2.47$\,pp on Synapse, $0.71$\,pp on CVC-ClinicDB, and $1.22$\,pp on ISIC~2018---a 3.5$\times$ and 2.0$\times$ ratio relative to polyp and lesion segmentation, respectively. This span is a descriptive, post hoc measure rather than an a priori predictor of a task's context needs. A large span reflects a sharp performance response to the window scale and therefore calls for careful window selection, whereas a small span indicates robustness to the choice of receptive scope. A large span does not mean that approximation degrades performance; it reflects how sensitive performance is to window calibration.
 
 These differences align with the contrasting anatomical context requirements of the tasks. Multi-organ abdominal CT segmentation involves inter-organ spatial dependencies, and map-wide attention gives the best result there. In contrast, polyp and skin lesion segmentation are driven mainly by local texture, color contrast, and boundary continuity, so the window size matters less; on CVC-ClinicDB the channel branch alone even gives the best result (Table~\ref{tab:cvc}).
 
