@@ -10,6 +10,7 @@ Outputs:
 """
 
 import matplotlib.pyplot as plt
+plt.rcParams.update({"pdf.fonttype": 42, "ps.fonttype": 42})  # TrueType, not Type 3 (IEEE PDF eXpress)
 import matplotlib.patches as mpatches
 from matplotlib.patches import FancyBboxPatch
 import numpy as np
