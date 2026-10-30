@@ -1,0 +1,33 @@
+/home/jiawei/venvs/torch/lib/python3.14/site-packages/torch/jit/_script.py:1485: FutureWarning: `torch.jit.script` is not supported in Python 3.14+ and may break. Please switch to `torch.compile` or `torch.export`.
+  warnings.warn(
+/home/jiawei/venvs/torch/lib/python3.14/site-packages/torch/nn/modules/conv.py:196: UserWarning: Initializing zero-element tensors is a no-op
+  init.kaiming_uniform_(self.weight, a=math.sqrt(5))
+Not saving results.
+Namespace(volume_path='../data/FeTA_2d/test_vol_h5', dataset='FeTA', num_classes=8, list_dir='./lists/lists_FeTA', max_iterations=20000, max_epochs=61, batch_size=24, img_size=224, is_savenii=False, n_skip=3, vit_name='R50-ViT-B_16', test_save_dir='../predictions', deterministic=1, base_lr=0.01, seed=1234, vit_patches_size=16, drop_last=False, num_workers=4, rgb=False, optimizer='sgd', ablate_cam='', precise_bn=False, eval_epoch=0, checkpoint='last', split='test', Dataset=<class 'datasets.dataset_feta.FeTA_dataset'>, z_spacing=1, is_pretrain=True, exp='TU_FeTA224')
+TU_pretrain_R50-ViT-B_16_skip3_epo61_bs24_224
+8 test iterations per epoch
+Model parameters: 107.95 M
+GFLOPs (single 224x224 slice, fvcore, includes attention bmm): 30.2
+/home/jiawei/venvs/torch/lib/python3.14/site-packages/torch/jit/_script.py:1485: FutureWarning: `torch.jit.script` is not supported in Python 3.14+ and may break. Please switch to `torch.compile` or `torch.export`.
+  warnings.warn(
+0it [00:00, ?it/s]idx 0 case sub-004 mean_dice 0.633251 mean_hd95 4.824429
+1it [00:01,  1.97s/it]idx 1 case sub-010 mean_dice 0.888975 mean_hd95 1.185406
+2it [00:05,  2.96s/it]idx 2 case sub-021 mean_dice 0.806314 mean_hd95 1.787938
+3it [00:07,  2.62s/it]idx 3 case sub-028 mean_dice 0.862282 mean_hd95 1.318604
+4it [00:12,  3.34s/it]idx 4 case sub-042 mean_dice 0.874417 mean_hd95 1.139916
+5it [00:14,  3.04s/it]idx 5 case sub-052 mean_dice 0.679761 mean_hd95 2.852226
+6it [00:17,  2.83s/it]idx 6 case sub-061 mean_dice 0.867430 mean_hd95 1.581584
+7it [00:21,  3.34s/it]idx 7 case sub-076 mean_dice 0.862052 mean_hd95 1.193443
+8it [00:24,  3.06s/it]8it [00:24,  3.01s/it]
+Inference total: 24.9s  avg per case: 3113.6ms
+Inference peak VRAM: 950 MB (0.9 GB)
+Mean class 1 eCSF mean_dice 0.743913 mean_hd95 3.097948 mean_iou 0.631406 (cases 8, missed 0, hallucinated 0/0)
+Mean class 2 GM mean_dice 0.684920 mean_hd95 1.533349 mean_iou 0.535452 (cases 8, missed 0, hallucinated 0/0)
+Mean class 3 WM mean_dice 0.867655 mean_hd95 1.597060 mean_iou 0.782533 (cases 8, missed 0, hallucinated 0/0)
+Mean class 4 LV mean_dice 0.885625 mean_hd95 1.477997 mean_iou 0.796439 (cases 8, missed 0, hallucinated 0/0)
+Mean class 5 CBM mean_dice 0.826361 mean_hd95 1.894488 mean_iou 0.718570 (cases 8, missed 0, hallucinated 0/0)
+Mean class 6 SGM mean_dice 0.851997 mean_hd95 1.944223 mean_iou 0.747436 (cases 8, missed 0, hallucinated 0/0)
+Mean class 7 BS mean_dice 0.804701 mean_hd95 2.353038 mean_iou 0.690644 (cases 8, missed 0, hallucinated 0/0)
+hallucinated organs (case, class, predicted voxels): []
+missed organs (present, not predicted; Dice 0, excluded from HD95): 0 case-class pairs
+Testing performance [all7] (split=test, checkpoint=last): mean_dice : 0.809310 mean_hd95 : 1.985443 mean_iou : 0.700354

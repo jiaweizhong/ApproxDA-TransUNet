@@ -1,0 +1,34 @@
+/home/jiawei/venvs/torch/lib/python3.14/site-packages/torch/jit/_script.py:1485: FutureWarning: `torch.jit.script` is not supported in Python 3.14+ and may break. Please switch to `torch.compile` or `torch.export`.
+  warnings.warn(
+Not saving results.
+Namespace(volume_path='../data/Synapse/test_vol_h5', dataset='Synapse', num_classes=9, list_dir='./lists/lists_Synapse', max_iterations=20000, max_epochs=300, batch_size=24, img_size=224, is_savenii=False, n_skip=3, vit_name='R50-ViT-B_16', test_save_dir='../predictions', deterministic=1, base_lr=0.01, seed=1234, vit_patches_size=16, window_size=112, rank=32, groups=8, gate_mode='pam', block_version='c16', alpha_init=0.0, ablate_attn=False, ablate_attn_at='all', lr_post=False, ablate_cam='', backbone='vit', lightvit_dir='/data/checkpoints/LightViT', no_vit=False, dec_channels=0, dec_stop112=False, pam_style='danet', pam_fusion='residual', attn_off=False, attn_opt='same', attn_lr=0.001, attn_wd=0.01, attn_off_at='all', no_block=False, aug='default', skip_ratio=4, pam_no_identity=False, attn_norm=False, run_tag='', drop_last=False, num_workers=4, rgb=False, optimizer='sgd', precise_bn=False, eval_epoch=0, checkpoint='last', split='test', Dataset=<class 'datasets.dataset_synapse.Synapse_dataset'>, z_spacing=1, is_pretrain=True, exp='ApproxDA_Synapse224')
+ApproxDA_pretrain_R50-ViT-B_16_skip3_epo300_bs24_224_M112_pam_c16_sr4
+12 test iterations per epoch
+Model parameters: 108.32 M
+GFLOPs (single 224x224 slice, fvcore, includes attention bmm): 30.9
+/home/jiawei/venvs/torch/lib/python3.14/site-packages/torch/jit/_script.py:1485: FutureWarning: `torch.jit.script` is not supported in Python 3.14+ and may break. Please switch to `torch.compile` or `torch.export`.
+  warnings.warn(
+0it [00:00, ?it/s]idx 0 case case0008 mean_dice 0.663663 mean_hd95 10.423127
+1it [00:59, 59.60s/it]idx 1 case case0022 mean_dice 0.909838 mean_hd95 2.047792
+2it [01:33, 44.25s/it]idx 2 case case0038 mean_dice 0.762256 mean_hd95 51.671694
+3it [02:10, 41.25s/it]idx 3 case case0036 mean_dice 0.855498 mean_hd95 11.042656
+4it [03:29, 56.03s/it]idx 4 case case0032 mean_dice 0.816980 mean_hd95 17.918582
+5it [04:27, 56.76s/it]idx 5 case case0002 mean_dice 0.882676 mean_hd95 3.214793
+6it [05:22, 56.23s/it]idx 6 case case0029 mean_dice 0.698753 mean_hd95 40.676147
+7it [05:59, 49.73s/it]idx 7 case case0003 mean_dice 0.661789 mean_hd95 120.334923
+8it [07:22, 60.60s/it]idx 8 case case0001 mean_dice 0.763932 mean_hd95 43.838620
+9it [08:24, 60.93s/it]idx 9 case case0004 mean_dice 0.768286 mean_hd95 15.981110
+10it [09:19, 59.19s/it]idx 10 case case0025 mean_dice 0.807103 mean_hd95 60.819066
+11it [09:51, 50.84s/it]idx 11 case case0035 mean_dice 0.887629 mean_hd95 3.276181
+12it [10:22, 44.59s/it]12it [10:22, 51.84s/it]
+Inference total: 623.6s  avg per case: 51964.9ms
+Inference peak VRAM: 909 MB (0.9 GB)
+Mean class 1 mean_dice 0.876019 mean_hd95 13.775592 mean_iou 0.781763
+Mean class 2 mean_dice 0.629310 mean_hd95 35.668868 mean_iou 0.531381
+Mean class 3 mean_dice 0.809160 mean_hd95 55.963671 mean_iou 0.714431
+Mean class 4 mean_dice 0.759697 mean_hd95 31.737746 mean_iou 0.670730
+Mean class 5 mean_dice 0.949914 mean_hd95 15.971665 mean_iou 0.905202
+Mean class 6 mean_dice 0.615725 mean_hd95 12.708146 mean_iou 0.458910
+Mean class 7 mean_dice 0.885314 mean_hd95 62.958616 mean_iou 0.807208
+Mean class 8 mean_dice 0.793795 mean_hd95 25.378824 mean_iou 0.672075
+Testing performance (split=test, checkpoint=last): mean_dice : 0.789867 mean_hd95 : 31.770391 mean_iou : 0.692712

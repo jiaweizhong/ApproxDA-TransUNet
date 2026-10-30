@@ -1,0 +1,39 @@
+/home/jiawei/venvs/torch/lib/python3.14/site-packages/timm/models/layers/__init__.py:49: FutureWarning: Importing from timm.models.layers is deprecated, please import via timm.layers
+  warnings.warn(f"Importing from {__name__} is deprecated, please import via timm.layers", FutureWarning)
+/home/jiawei/venvs/torch/lib/python3.14/site-packages/torch/jit/_script.py:1485: FutureWarning: `torch.jit.script` is not supported in Python 3.14+ and may break. Please switch to `torch.compile` or `torch.export`.
+  warnings.warn(
+/home/jiawei/venvs/torch/lib/python3.14/site-packages/torch/functional.py:504: UserWarning: torch.meshgrid: in an upcoming release, it will be required to pass the indexing argument. (Triggered internally at /__w/pytorch/pytorch/aten/src/ATen/native/TensorShape.cpp:4221.)
+  return _VF.meshgrid(tensors, **kwargs)  # type: ignore[attr-defined]
+Not saving results.
+SwinTransformerSys expand initial----depths:[2, 2, 2, 2];depths_decoder:[1, 2, 2, 2];drop_path_rate:0.2;num_classes:8
+---final upsample expand_first---
+Namespace(volume_path='../data/FeTA_2d/test_vol_h5', dataset='FeTA', num_classes=8, list_dir='./lists/lists_FeTA', max_iterations=20000, max_epochs=61, batch_size=24, img_size=224, is_savenii=False, n_skip=3, vit_name='R50-ViT-B_16', test_save_dir='../predictions', deterministic=1, base_lr=0.01, seed=1234, vit_patches_size=16, drop_last=False, num_workers=4, rgb=False, optimizer='sgd', ablate_cam='', precise_bn=False, eval_epoch=0, checkpoint='last', split='test', Dataset=<class 'datasets.dataset_feta.FeTA_dataset'>, z_spacing=1, is_pretrain=True, exp='SwinUNet_FeTA224')
+SwinUNet_epo61_bs24_224
+8 test iterations per epoch
+Model parameters: 27.17 M
+GFLOPs (single 224x224 slice, fvcore, includes attention bmm): 6.2
+/home/jiawei/venvs/torch/lib/python3.14/site-packages/timm/models/layers/__init__.py:49: FutureWarning: Importing from timm.models.layers is deprecated, please import via timm.layers
+  warnings.warn(f"Importing from {__name__} is deprecated, please import via timm.layers", FutureWarning)
+/home/jiawei/venvs/torch/lib/python3.14/site-packages/torch/jit/_script.py:1485: FutureWarning: `torch.jit.script` is not supported in Python 3.14+ and may break. Please switch to `torch.compile` or `torch.export`.
+  warnings.warn(
+0it [00:00, ?it/s]idx 0 case sub-004 mean_dice 0.609277 mean_hd95 5.568495
+1it [00:01,  1.33s/it]idx 1 case sub-010 mean_dice 0.886080 mean_hd95 1.256615
+2it [00:04,  2.19s/it]idx 2 case sub-021 mean_dice 0.784391 mean_hd95 2.290988
+3it [00:05,  1.92s/it]idx 3 case sub-028 mean_dice 0.842806 mean_hd95 1.633625
+4it [00:09,  2.65s/it]idx 4 case sub-042 mean_dice 0.867907 mean_hd95 1.159719
+5it [00:11,  2.33s/it]idx 5 case sub-052 mean_dice 0.555872 mean_hd95 5.205565
+6it [00:13,  2.14s/it]idx 6 case sub-061 mean_dice 0.856082 mean_hd95 1.654861
+7it [00:16,  2.61s/it]idx 7 case sub-076 mean_dice 0.858072 mean_hd95 1.216059
+8it [00:18,  2.31s/it]8it [00:18,  2.29s/it]
+Inference total: 19.7s  avg per case: 2458.8ms
+Inference peak VRAM: 292 MB (0.3 GB)
+Mean class 1 eCSF mean_dice 0.739531 mean_hd95 4.096152 mean_iou 0.628783 (cases 8, missed 0, hallucinated 0/0)
+Mean class 2 GM mean_dice 0.679715 mean_hd95 1.622595 mean_iou 0.530289 (cases 8, missed 0, hallucinated 0/0)
+Mean class 3 WM mean_dice 0.830674 mean_hd95 1.893182 mean_iou 0.748952 (cases 8, missed 0, hallucinated 0/0)
+Mean class 4 LV mean_dice 0.833204 mean_hd95 1.920127 mean_iou 0.728186 (cases 8, missed 0, hallucinated 0/0)
+Mean class 5 CBM mean_dice 0.815895 mean_hd95 2.194304 mean_iou 0.704743 (cases 8, missed 0, hallucinated 0/0)
+Mean class 6 SGM mean_dice 0.829042 mean_hd95 2.272550 mean_iou 0.715912 (cases 8, missed 0, hallucinated 0/0)
+Mean class 7 BS mean_dice 0.749866 mean_hd95 3.488778 mean_iou 0.630113 (cases 8, missed 0, hallucinated 0/0)
+hallucinated organs (case, class, predicted voxels): []
+missed organs (present, not predicted; Dice 0, excluded from HD95): 0 case-class pairs
+Testing performance [all7] (split=test, checkpoint=last): mean_dice : 0.782561 mean_hd95 : 2.498241 mean_iou : 0.669568

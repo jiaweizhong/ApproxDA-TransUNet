@@ -60,6 +60,24 @@ parser.add_argument(
     "--vit_patches_size", type=int, default=16, help="vit_patches_size, default is 16"
 )
 parser.add_argument(
+    "--drop_last",
+    action="store_true",
+    help="drop the incomplete last training batch of each epoch (snapshot suffix _dl); with BN momentum "
+    "0.95 a 1-image last batch (ISIC 75/25) dominates the running statistics",
+)
+parser.add_argument(
+    "--num_workers",
+    type=int,
+    default=4,
+    help="training DataLoader workers (4 = all runs so far); a different value changes the augmentation "
+    "RNG stream, so it gets a _nw<N> snapshot suffix",
+)
+parser.add_argument(
+    "--rgb",
+    action="store_true",
+    help="Kvasir/ISIC only: feed RGB images instead of grayscale (snapshot suffix _rgb)",
+)
+parser.add_argument(
     "--optimizer",
     type=str,
     default="sgd",
@@ -130,7 +148,8 @@ def _validate_2d(args, model, dataset_class):
     from utils import test_single_volume
 
     db_val = dataset_class(
-        base_dir=args.root_path, split="val", list_dir=args.list_dir
+        base_dir=args.root_path, split="val", list_dir=args.list_dir,
+        **({"rgb": True} if args.rgb else {}),
     )
     val_loader = DataLoader(db_val, batch_size=1, shuffle=False, num_workers=0)
     net = model.module if hasattr(model, "module") else model
@@ -171,7 +190,8 @@ def _trainer_2d(args, model, snapshot_path, db_train, dataset_class):
         db_train,
         batch_size=batch_size,
         shuffle=True,
-        num_workers=0,
+        num_workers=args.num_workers,
+        drop_last=args.drop_last,
         pin_memory=True,
         worker_init_fn=worker_init_fn,
     )
@@ -282,6 +302,7 @@ def trainer_kvasir(args, model, snapshot_path):
         list_dir=args.list_dir,
         split="train",
         transform=transforms.Compose([RandomGenerator([args.img_size, args.img_size])]),
+        **({"rgb": True} if args.rgb else {}),
     )
     return _trainer_2d(args, model, snapshot_path, db_train, Kvasir_dataset)
 
@@ -294,12 +315,36 @@ def trainer_isic(args, model, snapshot_path):
         list_dir=args.list_dir,
         split="train",
         transform=transforms.Compose([RandomGenerator([args.img_size, args.img_size])]),
+        **({"rgb": True} if args.rgb else {}),
     )
     return _trainer_2d(args, model, snapshot_path, db_train, ISIC_dataset)
 
 
-def trainer_synapse(args, model, snapshot_path):
+def trainer_cvc(args, model, snapshot_path):
+    from datasets.dataset_cvc import CVC_dataset, RandomGenerator
+
+    db_train = CVC_dataset(
+        base_dir=args.root_path,
+        list_dir=args.list_dir,
+        split="train",
+        transform=transforms.Compose([RandomGenerator([args.img_size, args.img_size])]),
+        **({"rgb": True} if args.rgb else {}),
+    )
+    return _trainer_2d(args, model, snapshot_path, db_train, CVC_dataset)
+
+
+def trainer_acdc(args, model, snapshot_path):
+    """ACDC (MT-UNet 70/10/20 release, 224 px slices): the Synapse trainer with the ACDC slice dataset."""
+    from datasets.dataset_acdc import ACDC_dataset
+
+    return trainer_synapse(args, model, snapshot_path, dataset_cls=ACDC_dataset)
+
+
+def trainer_synapse(args, model, snapshot_path, dataset_cls=None):
     from datasets.dataset_synapse import Synapse_dataset, RandomGenerator
+
+    if dataset_cls is not None:  # trainer_acdc: same protocol, different slice dataset
+        Synapse_dataset = dataset_cls
 
     logging.basicConfig(
         filename=snapshot_path + "/log.txt",
@@ -330,7 +375,8 @@ def trainer_synapse(args, model, snapshot_path):
         db_train,
         batch_size=batch_size,
         shuffle=True,
-        num_workers=0,
+        num_workers=args.num_workers,
+        drop_last=args.drop_last,
         pin_memory=True,
         worker_init_fn=worker_init_fn,
     )
@@ -451,6 +497,9 @@ def trainer_synapse(args, model, snapshot_path):
 
 
 if __name__ == "__main__":
+    # Python 3.14 defaults to forkserver on Linux, which cannot pickle the local
+    # worker_init_fn; keep the fork start method the original runs used.
+    torch.multiprocessing.set_start_method("fork")
     if not args.deterministic:
         cudnn.benchmark = True
         cudnn.deterministic = False
@@ -469,6 +518,21 @@ if __name__ == "__main__":
             "list_dir": "./lists/lists_Synapse",
             "num_classes": 9,
         },
+        "AMOS": {
+            "root_path": "../data/AMOS_CT_2d/train_npz",
+            "list_dir": "./lists/lists_AMOS",
+            "num_classes": 16,
+        },
+        "FeTA": {
+            "root_path": "../data/FeTA_2d/train_npz",
+            "list_dir": "./lists/lists_FeTA",
+            "num_classes": 8,
+        },
+        "ACDC": {
+            "root_path": "../data/ACDC_MTUNet",
+            "list_dir": "./lists/lists_ACDC",
+            "num_classes": 4,
+        },
         "Kvasir": {
             "root_path": "../data/Kvasir-SEG",
             "list_dir": "./lists/lists_Kvasir",
@@ -477,6 +541,11 @@ if __name__ == "__main__":
         "ISIC": {
             "root_path": "../data/ISIC2018",
             "list_dir": "./lists/lists_ISIC",
+            "num_classes": 2,
+        },
+        "CVC": {
+            "root_path": "../data/CVC-ClinicDB",
+            "list_dir": "./lists/lists_CVC",
             "num_classes": 2,
         },
     }
@@ -517,6 +586,11 @@ if __name__ == "__main__":
         snapshot_path + "_s" + str(args.seed) if args.seed != 1234 else snapshot_path
     )
     snapshot_path = snapshot_path + "_adam" if args.optimizer == "adam" else snapshot_path
+    snapshot_path = snapshot_path + "_rgb" if args.rgb else snapshot_path
+    snapshot_path = snapshot_path + f"_nw{args.num_workers}" if args.num_workers != 4 else snapshot_path
+    snapshot_path = snapshot_path + "_dl" if args.drop_last else snapshot_path
+    if args.rgb and dataset_name not in ("Kvasir", "ISIC", "CVC"):
+        raise SystemExit("--rgb is only implemented for Kvasir, ISIC and CVC")
     check_val_split(args)
 
     if not os.path.exists(snapshot_path):
@@ -536,7 +610,11 @@ if __name__ == "__main__":
 
     trainer = {
         "Synapse": trainer_synapse,
+        "AMOS": trainer_synapse,  # same slice format (ApproxDA-TransUNet/datasets/prepare_amos.py)
+        "FeTA": trainer_synapse,  # same slice format (ApproxDA-TransUNet/datasets/prepare_feta.py)
+        "ACDC": trainer_acdc,
         "Kvasir": trainer_kvasir,
         "ISIC": trainer_isic,
+        "CVC": trainer_cvc,
     }
     trainer[dataset_name](args, net, snapshot_path)

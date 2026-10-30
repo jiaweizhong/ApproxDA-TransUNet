@@ -63,6 +63,22 @@ def calculate_metric_percase(pred, gt):
         return 0, 0, 0
 
 
+def calculate_metric_percase_nan(pred, gt, spacing=None):
+    """Absent-organ-aware metric (test.py on AMOS). The legacy metric above scores a class that is absent from the
+    ground truth as Dice 1 when it is predicted and 0 when it is correctly left out; here such a class returns NaN
+    (excluded from the means, nnU-Net convention). A missed organ scores Dice / IoU 0 and HD95 NaN. HD95 is in the
+    units of `spacing` and is computed on the bounding box of pred | gt padded by one voxel, which gives the same
+    value as the full volume. Also returns the predicted and true voxel counts (hallucinated / missed organs)."""
+    pred, gt = pred > 0, gt > 0
+    n_pred, n_gt = int(pred.sum()), int(gt.sum())
+    if n_gt == 0:
+        return np.nan, np.nan, np.nan, n_pred, n_gt
+    if n_pred == 0:
+        return 0.0, np.nan, 0.0, n_pred, n_gt
+    box = tuple(slice(max(int(i.min()) - 1, 0), int(i.max()) + 2) for i in np.nonzero(pred | gt))
+    p, g = pred[box], gt[box]
+    return metric.binary.dc(p, g), metric.binary.hd95(p, g, voxelspacing=spacing), metric.binary.jc(p, g), n_pred, n_gt
+
 def test_single_volume(
     image,
     label,
@@ -72,12 +88,14 @@ def test_single_volume(
     test_save_path=None,
     case=None,
     z_spacing=1,
+    metric_mode="legacy",
+    spacing=None,
 ):
     image, label = (
         image.squeeze(0).cpu().detach().numpy(),
         label.squeeze(0).cpu().detach().numpy(),
     )
-    if len(image.shape) == 3:
+    if len(label.shape) == 3:  # 3D volume (D, H, W); 2D images have an (H, W) label
         prediction = np.zeros_like(label)
         for ind in range(image.shape[0]):
             slice = image[ind, :, :]
@@ -98,12 +116,15 @@ def test_single_volume(
                     pred = out
                 prediction[ind] = pred
     else:
-        x, y = image.shape
+        x, y = image.shape[:2]
         if x != patch_size[0] or y != patch_size[1]:
-            image_r = zoom(image, (patch_size[0] / x, patch_size[1] / y), order=3)
+            scale = (patch_size[0] / x, patch_size[1] / y) + (1,) * (image.ndim - 2)
+            image_r = zoom(image, scale, order=3)
         else:
             image_r = image
-        input = torch.from_numpy(image_r).unsqueeze(0).unsqueeze(0).float().cuda()
+        input = torch.from_numpy(image_r).float()
+        # (H, W) grayscale -> (1, 1, H, W); (H, W, 3) RGB -> (1, 3, H, W)
+        input = (input.permute(2, 0, 1) if input.ndim == 3 else input.unsqueeze(0)).unsqueeze(0).cuda()
         net.eval()
         with torch.no_grad():
             out = torch.argmax(torch.softmax(net(input), dim=1), dim=1).squeeze(0)
@@ -114,7 +135,10 @@ def test_single_volume(
                 )
     metric_list = []
     for i in range(1, classes):
-        metric_list.append(calculate_metric_percase(prediction == i, label == i))
+        if metric_mode == "nan":  # AMOS: organs absent from some cases (same metric as ApproxDA-TransUNet/utils.py)
+            metric_list.append(calculate_metric_percase_nan(prediction == i, label == i, spacing))
+        else:
+            metric_list.append(calculate_metric_percase(prediction == i, label == i))
 
     if test_save_path is not None:
         img_itk = sitk.GetImageFromArray(image.astype(np.float32))

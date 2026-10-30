@@ -35,15 +35,16 @@ class RandomGenerator(object):
             image, label = random_rot_flip(image, label)
         elif random.random() > 0.5:
             image, label = random_rotate(image, label)
-        x, y = image.shape
+        x, y = image.shape[:2]
         if x != self.output_size[0] or y != self.output_size[1]:
-            image = zoom(
-                image, (self.output_size[0] / x, self.output_size[1] / y), order=3
-            )
+            scale = (self.output_size[0] / x, self.output_size[1] / y)
+            image = zoom(image, scale + (1,) * (image.ndim - 2), order=3)
             label = zoom(
                 label, (self.output_size[0] / x, self.output_size[1] / y), order=0
             )
-        image = torch.from_numpy(image.astype(np.float32)).unsqueeze(0)
+        image = torch.from_numpy(image.astype(np.float32))
+        # (H, W) grayscale -> (1, H, W); (H, W, 3) RGB -> (3, H, W)
+        image = image.permute(2, 0, 1) if image.ndim == 3 else image.unsqueeze(0)
         label = torch.from_numpy(label.astype(np.float32))
         return {"image": image, "label": label.long()}
 
@@ -63,8 +64,9 @@ class ISIC_dataset(Dataset):
     test.py calls with split='test_vol'; we remap it to 'test' transparently.
     """
 
-    def __init__(self, base_dir, list_dir, split, transform=None):
+    def __init__(self, base_dir, list_dir, split, transform=None, rgb=False):
         self.transform = transform
+        self.rgb = rgb  # True: (H, W, 3) RGB input; False: grayscale (default)
         list_split = "test" if split == "test_vol" else split
         self.sample_list = open(os.path.join(list_dir, list_split + ".txt")).readlines()
         self.img_dir = os.path.join(base_dir, "images")
@@ -77,7 +79,7 @@ class ISIC_dataset(Dataset):
         name = self.sample_list[idx].strip("\n")
         image = (
             np.array(
-                Image.open(os.path.join(self.img_dir, name + ".jpg")).convert("L"),
+                Image.open(os.path.join(self.img_dir, name + ".jpg")).convert("RGB" if self.rgb else "L"),
                 dtype=np.float32,
             )
             / 255.0

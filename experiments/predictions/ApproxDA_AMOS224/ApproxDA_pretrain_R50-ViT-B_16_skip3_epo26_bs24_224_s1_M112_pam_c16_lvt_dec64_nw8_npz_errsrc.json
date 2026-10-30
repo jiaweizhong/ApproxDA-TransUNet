@@ -1,0 +1,266 @@
+{
+ "pred_dir": "/home/jiawei/projects/ApproxDA-TransUNet/experiments/predictions/ApproxDA_AMOS224/ApproxDA_pretrain_R50-ViT-B_16_skip3_epo26_bs24_224_s1_M112_pam_c16_lvt_dec64_nw8_npz",
+ "cases": 100,
+ "bins": [
+  "<=2mm",
+  "2-5mm",
+  "5-15mm",
+  ">15mm",
+  "absent"
+ ],
+ "organs": {
+  "spleen": {
+   "dice": 89.97,
+   "deficit_pts": 0.67,
+   "rt_dice": 97.86,
+   "err_ml": 5477.7,
+   "fp_pct": 19.1,
+   "bins_pct": [
+    33.2,
+    19.2,
+    32.2,
+    15.5,
+    0.0
+   ],
+   "z_extent_pct": 26.0
+  },
+  "kidney_R": {
+   "dice": 90.12,
+   "deficit_pts": 0.66,
+   "rt_dice": 97.25,
+   "err_ml": 2552.8,
+   "fp_pct": 57.6,
+   "bins_pct": [
+    48.0,
+    12.6,
+    9.7,
+    28.7,
+    1.0
+   ],
+   "z_extent_pct": 7.7
+  },
+  "kidney_L": {
+   "dice": 89.8,
+   "deficit_pts": 0.68,
+   "rt_dice": 97.23,
+   "err_ml": 2643.1,
+   "fp_pct": 42.2,
+   "bins_pct": [
+    51.6,
+    18.0,
+    16.1,
+    14.3,
+    0.0
+   ],
+   "z_extent_pct": 11.7
+  },
+  "gallbladder": {
+   "dice": 75.02,
+   "deficit_pts": 1.67,
+   "rt_dice": 96.01,
+   "err_ml": 1338.7,
+   "fp_pct": 41.7,
+   "bins_pct": [
+    35.4,
+    22.4,
+    20.6,
+    19.7,
+    2.0
+   ],
+   "z_extent_pct": 43.5
+  },
+  "esophagus": {
+   "dice": 76.47,
+   "deficit_pts": 1.57,
+   "rt_dice": 92.86,
+   "err_ml": 831.2,
+   "fp_pct": 47.3,
+   "bins_pct": [
+    62.6,
+    23.9,
+    11.1,
+    2.5,
+    0.0
+   ],
+   "z_extent_pct": 11.5
+  },
+  "liver": {
+   "dice": 94.12,
+   "deficit_pts": 0.39,
+   "rt_dice": 98.82,
+   "err_ml": 15100.0,
+   "fp_pct": 51.7,
+   "bins_pct": [
+    43.2,
+    18.3,
+    12.9,
+    25.7,
+    0.0
+   ],
+   "z_extent_pct": 9.4
+  },
+  "stomach": {
+   "dice": 83.7,
+   "deficit_pts": 1.09,
+   "rt_dice": 98.14,
+   "err_ml": 9887.3,
+   "fp_pct": 34.9,
+   "bins_pct": [
+    33.3,
+    24.9,
+    25.3,
+    15.5,
+    1.0
+   ],
+   "z_extent_pct": 18.0
+  },
+  "aorta": {
+   "dice": 90.95,
+   "deficit_pts": 0.6,
+   "rt_dice": 95.77,
+   "err_ml": 2534.2,
+   "fp_pct": 38.1,
+   "bins_pct": [
+    58.3,
+    16.8,
+    19.0,
+    5.9,
+    0.0
+   ],
+   "z_extent_pct": 6.1
+  },
+  "ivc": {
+   "dice": 81.27,
+   "deficit_pts": 1.25,
+   "rt_dice": 94.96,
+   "err_ml": 2469.6,
+   "fp_pct": 55.5,
+   "bins_pct": [
+    57.7,
+    26.3,
+    11.7,
+    4.3,
+    0.0
+   ],
+   "z_extent_pct": 7.2
+  },
+  "pancreas": {
+   "dice": 73.18,
+   "deficit_pts": 1.79,
+   "rt_dice": 95.96,
+   "err_ml": 3389.3,
+   "fp_pct": 43.7,
+   "bins_pct": [
+    47.3,
+    32.8,
+    16.2,
+    3.7,
+    0.0
+   ],
+   "z_extent_pct": 8.2
+  },
+  "adrenal_R": {
+   "dice": 65.97,
+   "deficit_pts": 2.27,
+   "rt_dice": 88.0,
+   "err_ml": 212.3,
+   "fp_pct": 48.2,
+   "bins_pct": [
+    76.7,
+    15.2,
+    5.7,
+    2.5,
+    0.0
+   ],
+   "z_extent_pct": 11.7
+  },
+  "adrenal_L": {
+   "dice": 66.02,
+   "deficit_pts": 2.27,
+   "rt_dice": 88.61,
+   "err_ml": 229.3,
+   "fp_pct": 43.4,
+   "bins_pct": [
+    77.5,
+    14.2,
+    7.2,
+    1.1,
+    0.0
+   ],
+   "z_extent_pct": 14.2
+  },
+  "duodenum": {
+   "dice": 65.91,
+   "deficit_pts": 2.27,
+   "rt_dice": 95.33,
+   "err_ml": 3803.9,
+   "fp_pct": 49.7,
+   "bins_pct": [
+    39.2,
+    30.5,
+    21.3,
+    8.1,
+    0.9
+   ],
+   "z_extent_pct": 7.9
+  },
+  "bladder": {
+   "dice": 81.8,
+   "deficit_pts": 1.21,
+   "rt_dice": 97.89,
+   "err_ml": 3930.7,
+   "fp_pct": 76.2,
+   "bins_pct": [
+    28.0,
+    18.5,
+    20.5,
+    33.1,
+    0.0
+   ],
+   "z_extent_pct": 38.5
+  },
+  "prostate_uterus": {
+   "dice": 76.94,
+   "deficit_pts": 1.54,
+   "rt_dice": 97.24,
+   "err_ml": 1940.9,
+   "fp_pct": 54.2,
+   "bins_pct": [
+    36.8,
+    28.3,
+    19.2,
+    15.3,
+    0.4
+   ],
+   "z_extent_pct": 26.2
+  }
+ },
+ "all": {
+  "err_ml": 56341.2,
+  "fp_pct": 45.8,
+  "bins_pct": [
+   41.5,
+   21.7,
+   18.8,
+   17.6,
+   0.3
+  ],
+  "fp_bins_pct": [
+   16.7,
+   7.1,
+   6.9,
+   14.8,
+   0.3
+  ],
+  "fn_bins_pct": [
+   24.8,
+   14.7,
+   11.9,
+   2.8,
+   0.0
+  ],
+  "z_extent_pct": 15.6,
+  "mean_dice": 80.08,
+  "mean_rt_dice": 95.46
+ }
+}

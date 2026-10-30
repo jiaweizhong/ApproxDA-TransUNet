@@ -1,0 +1,59 @@
+/home/jiawei/venvs/torch/lib/python3.14/site-packages/torch/jit/_script.py:1485: FutureWarning: `torch.jit.script` is not supported in Python 3.14+ and may break. Please switch to `torch.compile` or `torch.export`.
+  warnings.warn(
+/home/jiawei/venvs/torch/lib/python3.14/site-packages/torch/nn/modules/conv.py:196: UserWarning: Initializing zero-element tensors is a no-op
+  init.kaiming_uniform_(self.weight, a=math.sqrt(5))
+Not saving results.
+Namespace(volume_path='../data/ACDC_MTUNet', dataset='ACDC', num_classes=4, list_dir='./lists/lists_ACDC', max_iterations=20000, max_epochs=300, batch_size=24, img_size=224, is_savenii=False, n_skip=3, vit_name='R50-ViT-B_16', test_save_dir='../predictions', deterministic=1, base_lr=0.01, seed=1, vit_patches_size=16, drop_last=False, num_workers=4, rgb=False, optimizer='sgd', ablate_cam='', precise_bn=False, eval_epoch=0, checkpoint='last', split='test', Dataset=<class 'datasets.dataset_acdc.ACDC_dataset'>, z_spacing=1, is_pretrain=True, exp='TU_ACDC224')
+TU_pretrain_R50-ViT-B_16_skip3_epo300_bs24_224_s1
+40 test iterations per epoch
+Model parameters: 107.95 M
+GFLOPs (single 224x224 slice, fvcore, includes attention bmm): 30.2
+/home/jiawei/venvs/torch/lib/python3.14/site-packages/torch/jit/_script.py:1485: FutureWarning: `torch.jit.script` is not supported in Python 3.14+ and may break. Please switch to `torch.compile` or `torch.export`.
+  warnings.warn(
+0it [00:00, ?it/s]idx 0 case case_002_volume_ED mean_dice 0.922235 mean_hd95 1.000000
+1it [00:00,  4.73it/s]idx 1 case case_002_volume_ES mean_dice 0.889375 mean_hd95 1.138071
+2it [00:00,  5.00it/s]idx 2 case case_003_volume_ED mean_dice 0.935942 mean_hd95 1.000000
+3it [00:00,  5.09it/s]idx 3 case case_003_volume_ES mean_dice 0.925459 mean_hd95 1.000000
+4it [00:00,  5.13it/s]idx 4 case case_008_volume_ED mean_dice 0.935107 mean_hd95 1.000000
+5it [00:00,  5.16it/s]idx 5 case case_008_volume_ES mean_dice 0.917471 mean_hd95 1.000000
+6it [00:01,  5.19it/s]idx 6 case case_009_volume_ED mean_dice 0.911962 mean_hd95 1.333333
+7it [00:01,  5.18it/s]idx 7 case case_009_volume_ES mean_dice 0.882060 mean_hd95 3.497051
+8it [00:01,  5.18it/s]idx 8 case case_012_volume_ED mean_dice 0.891091 mean_hd95 1.138071
+9it [00:01,  5.17it/s]idx 9 case case_012_volume_ES mean_dice 0.819331 mean_hd95 1.720759
+10it [00:01,  5.18it/s]idx 10 case case_014_volume_ED mean_dice 0.903538 mean_hd95 1.138071
+11it [00:02,  5.18it/s]idx 11 case case_014_volume_ES mean_dice 0.936230 mean_hd95 1.000000
+12it [00:02,  5.19it/s]idx 12 case case_017_volume_ED mean_dice 0.910808 mean_hd95 1.000000
+13it [00:02,  5.55it/s]idx 13 case case_017_volume_ES mean_dice 0.935100 mean_hd95 1.000000
+14it [00:02,  5.90it/s]idx 14 case case_024_volume_ED mean_dice 0.934157 mean_hd95 1.000000
+15it [00:02,  6.40it/s]idx 15 case case_024_volume_ES mean_dice 0.925409 mean_hd95 1.000000
+16it [00:02,  6.82it/s]idx 16 case case_042_volume_ED mean_dice 0.932420 mean_hd95 1.000000
+17it [00:03,  6.87it/s]idx 17 case case_042_volume_ES mean_dice 0.919080 mean_hd95 1.000000
+18it [00:03,  6.95it/s]idx 18 case case_048_volume_ED mean_dice 0.914649 mean_hd95 1.000000
+19it [00:03,  7.21it/s]idx 19 case case_048_volume_ES mean_dice 0.875287 mean_hd95 1.244017
+20it [00:03,  7.43it/s]idx 20 case case_049_volume_ED mean_dice 0.868502 mean_hd95 1.910279
+21it [00:03,  7.83it/s]idx 21 case case_049_volume_ES mean_dice 0.853263 mean_hd95 1.368744
+22it [00:03,  8.18it/s]idx 22 case case_053_volume_ED mean_dice 0.937829 mean_hd95 1.000000
+23it [00:03,  8.39it/s]idx 23 case case_053_volume_ES mean_dice 0.912790 mean_hd95 1.000000
+24it [00:03,  8.58it/s]idx 24 case case_055_volume_ED mean_dice 0.909008 mean_hd95 1.000000
+25it [00:03,  8.03it/s]idx 25 case case_055_volume_ES mean_dice 0.864277 mean_hd95 1.483163
+26it [00:04,  7.71it/s]idx 26 case case_064_volume_ED mean_dice 0.945531 mean_hd95 1.000000
+27it [00:04,  6.76it/s]idx 27 case case_064_volume_ES mean_dice 0.914950 mean_hd95 1.000000
+28it [00:04,  6.20it/s]idx 28 case case_067_volume_ED mean_dice 0.922296 mean_hd95 1.000000
+29it [00:04,  5.87it/s]idx 29 case case_067_volume_ES mean_dice 0.916338 mean_hd95 1.000000
+30it [00:04,  5.69it/s]idx 30 case case_079_volume_ED mean_dice 0.944148 mean_hd95 1.000000
+31it [00:05,  5.94it/s]idx 31 case case_079_volume_ES mean_dice 0.905697 mean_hd95 1.000000
+32it [00:05,  6.24it/s]idx 32 case case_081_volume_ED mean_dice 0.920208 mean_hd95 1.138071
+33it [00:05,  4.95it/s]idx 33 case case_081_volume_ES mean_dice 0.895829 mean_hd95 1.483163
+34it [00:05,  4.33it/s]idx 34 case case_088_volume_ED mean_dice 0.920868 mean_hd95 1.000000
+35it [00:06,  4.01it/s]idx 35 case case_088_volume_ES mean_dice 0.902084 mean_hd95 1.138071
+36it [00:06,  3.82it/s]idx 36 case case_092_volume_ED mean_dice 0.929681 mean_hd95 1.000000
+37it [00:06,  3.73it/s]idx 37 case case_092_volume_ES mean_dice 0.917733 mean_hd95 1.138071
+38it [00:06,  3.68it/s]idx 38 case case_095_volume_ED mean_dice 0.933451 mean_hd95 1.000000
+39it [00:07,  3.74it/s]idx 39 case case_095_volume_ES mean_dice 0.903947 mean_hd95 1.276142
+40it [00:07,  3.80it/s]40it [00:07,  5.36it/s]
+Inference total: 8.3s  avg per case: 206.8ms
+Inference peak VRAM: 949 MB (0.9 GB)
+Mean class 1 mean_dice 0.891814 mean_hd95 1.504815 mean_iou 0.811680
+Mean class 2 mean_dice 0.885771 mean_hd95 1.020711 mean_iou 0.795987
+Mean class 3 mean_dice 0.955050 mean_hd95 1.010355 mean_iou 0.914478
+Testing performance (split=test, checkpoint=last): mean_dice : 0.910878 mean_hd95 : 1.178627 mean_iou : 0.840715

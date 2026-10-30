@@ -85,6 +85,13 @@ parser.add_argument(
     help="Must match the gate_mode used during training",
 )
 parser.add_argument(
+    "--checkpoint",
+    type=str,
+    default=None,
+    help="checkpoint to analyse; overrides the snapshot path built from the other args",
+)
+parser.add_argument("--block_version", type=str, default="c16", choices=["c16", "legacy"])
+parser.add_argument(
     "--out_dir",
     type=str,
     default="figures",
@@ -114,7 +121,7 @@ snapshot_path += "_s" + str(args.seed) if args.seed != 1234 else ""
 snapshot_path += "_M" + str(args.window_size) if args.window_size != 7 else ""
 snapshot_path += "_r" + str(args.rank) if args.rank != 32 else ""
 
-checkpoint = os.path.join(snapshot_path, "best_model.pth")
+checkpoint = args.checkpoint or os.path.join(snapshot_path, "best_model.pth")
 if not os.path.exists(checkpoint):
     checkpoint = os.path.join(snapshot_path, "epoch_{}.pth".format(args.max_epochs - 1))
 if not os.path.exists(checkpoint):
@@ -129,6 +136,7 @@ config_vit.window_size = args.window_size
 config_vit.rank = args.rank
 config_vit.groups = args.groups
 config_vit.gate_mode = args.gate_mode
+config_vit.block_version = args.block_version
 if args.vit_name.find("R50") != -1:
     config_vit.patches.grid = (
         args.img_size // args.vit_patches_size,
@@ -219,7 +227,7 @@ if args.dataset == "Synapse":
     db = Synapse_dataset(
         base_dir=args.volume_path, split="test_vol", list_dir=args.list_dir
     )
-    loader = DataLoader(db, batch_size=1, shuffle=False, num_workers=1)
+    loader = DataLoader(db, batch_size=1, shuffle=False, num_workers=0)  # no workers: py3.14 forkserver re-imports this script
     print("Running inference on {} Synapse volumes …".format(len(db)))
     for sample in loader:
         img_vol = sample["image"].squeeze(0).cpu().numpy()
@@ -389,13 +397,14 @@ try:
 
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
+    plt.rcParams.update({"pdf.fonttype": 42, "ps.fonttype": 42})  # TrueType, not Type 3 (IEEE PDF eXpress)
 
     os.makedirs(args.out_dir, exist_ok=True)
     DPI = 300
     FS = 11
 
     n = len(spearman_results)
-    cols = min(n, 4)
+    cols = min(n, 2)  # 2x2 grid for the four blocks (single-column paper figure)
     rows = (n + cols - 1) // cols
     labels = [
         ".".join(name.split(".")[-2:]) if "." in name else name
@@ -407,7 +416,7 @@ try:
     # ── Figure A: gate distribution boxplot per block ──────────────────────
     fig, ax = plt.subplots(figsize=(max(4, n * 1.4), 3.5))
     g_data = [torch.cat(records[i]["g"]).numpy() for i in active_idx]
-    bp = ax.boxplot(g_data, labels=labels, patch_artist=True, notch=False)
+    bp = ax.boxplot(g_data, tick_labels=labels, patch_artist=True, notch=False)
     for patch in bp["boxes"]:
         patch.set_facecolor("#a8c8e8")
     ax.set_ylabel("Mean gate value $g$", fontsize=FS)
@@ -420,26 +429,38 @@ try:
     print(f"\nFig A saved: {path_A}")
 
     # ── Figure B: entropy H(F) vs gate g scatter ───────────────────────────
+    # block names in the figure as in the paper caption (decoder block 0 / 1 / 2 hold the 28^2 / 56^2 / 112^2 skips)
+    BLOCK_TITLES = {"approx_block": "Bottleneck", "da3": "28$^2$ skip", "da2": "56$^2$ skip", "da": "112$^2$ skip"}
     fig, axes = plt.subplots(rows, cols, figsize=(4 * cols, 3.5 * rows))
     axes = np.array(axes).flatten() if n > 1 else [axes]
     for i, (name, r_H, p_H, r_Var, p_Var, H_all, Var_all, g_all) in enumerate(
         spearman_results
     ):
         ax = axes[i]
-        ax.scatter(H_all, g_all, alpha=0.25, s=5, color="steelblue", rasterized=True)
-        ax.set_xlabel("Feature entropy $H(F)$", fontsize=FS)
-        ax.set_ylabel("Mean gate $g$", fontsize=FS)
-        sig = (
-            "***"
-            if p_H < 0.001
-            else ("**" if p_H < 0.01 else ("*" if p_H < 0.05 else "n.s."))
+        # H(F) varies only in the 4th decimal; plot it as an explicit offset so the
+        # axis label carries the offset instead of matplotlib's overlapping offset text
+        H0 = np.floor(H_all.min() * 1e3) / 1e3
+        # the gate stays within ~1e-3 of 0.5: show (g - 0.5) x 10^4 instead of 5-decimal ticks
+        # paper Fig. 5: small edge-less dots (the default 1.5 pt marker edge drew overlapping rings), one colour-blind-safe
+        # (Okabe-Ito) colour per block; vector, for the paper PDF
+        ax.scatter((H_all - H0) * 1e4, (g_all - 0.5) * 1e4, s=4, linewidths=0, alpha=0.5,
+                   color=("#0072B2", "#D55E00", "#009E73", "#CC79A7")[i % 4])
+        ax.set_xlabel(rf"$(H(F) - {H0:.3f}) \times 10^{{4}}$", fontsize=FS + 2)
+        ax.set_ylabel(r"$(g - 0.5) \times 10^{4}$", fontsize=FS + 2)
+        dg_m, dg_e = f"{g_all.max() - g_all.min():.1e}".split("e")
+        print(f"  {labels[i]}: delta g = {g_all.max() - g_all.min():.3e}, mean g = {g_all.mean():.4f}")
+        ax.set_title(
+            f"{BLOCK_TITLES.get(name.split('.')[-1], labels[i])}\n$r_s={r_H:+.3f}$    $\\Delta g={dg_m} \\times 10^{{{int(dg_e)}}}$",
+            fontsize=FS + 2,
         )
-        ax.set_title(f"{labels[i]}\n$r_s$={r_H:+.3f} {sig}", fontsize=FS)
+        ax.tick_params(labelsize=FS)
     for ax in axes[n:]:
         ax.set_visible(False)
-    fig.tight_layout()
+    # no outer margin and tight inter-panel spacing: the paper figure is one column wide
+    fig.tight_layout(pad=0.2, w_pad=0.8, h_pad=0.8)
     path_B = os.path.join(args.out_dir, "fig_B_entropy_scatter.png")
-    fig.savefig(path_B, dpi=DPI)
+    fig.savefig(path_B, dpi=DPI, bbox_inches="tight", pad_inches=0)
+    fig.savefig(path_B.replace(".png", ".pdf"), bbox_inches="tight", pad_inches=0)
     plt.close(fig)
     print(f"Fig B saved: {path_B}")
 

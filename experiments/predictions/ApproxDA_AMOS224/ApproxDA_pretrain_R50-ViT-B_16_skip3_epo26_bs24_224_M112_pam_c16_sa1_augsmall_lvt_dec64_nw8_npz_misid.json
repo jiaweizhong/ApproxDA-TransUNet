@@ -1,0 +1,5669 @@
+{
+ "pred_dir": "/home/jiawei/projects/ApproxDA-TransUNet/experiments/predictions/ApproxDA_AMOS224/ApproxDA_pretrain_R50-ViT-B_16_skip3_epo26_bs24_224_M112_pam_c16_sa1_augsmall_lvt_dec64_nw8_npz",
+ "cases": 100,
+ "params": {
+  "far_mm": 15.0,
+  "min_ml": 1.0,
+  "max_overlap": 0.1
+ },
+ "error_ml": 41306.1,
+ "far_organ_to_organ_pct": 2.99,
+ "far_background_to_organ_pct": 8.27,
+ "far_pairs_pct": {
+  "bg->stomach": 3.18,
+  "bg->liver": 2.78,
+  "bg->bladder": 0.71,
+  "stomach->liver": 0.69,
+  "bg->duodenum": 0.37,
+  "bg->gallbladder": 0.28,
+  "bg->pancreas": 0.27,
+  "liver->stomach": 0.24,
+  "spleen->stomach": 0.24,
+  "stomach->spleen": 0.2,
+  "stomach->pancreas": 0.18,
+  "bg->prostate_uterus": 0.17,
+  "bg->spleen": 0.15,
+  "liver->gallbladder": 0.15,
+  "aorta->kidney_L": 0.13,
+  "prostate_uterus->bladder": 0.11,
+  "bg->ivc": 0.1,
+  "bg->kidney_R": 0.1,
+  "duodenum->stomach": 0.09,
+  "spleen->liver": 0.09,
+  "spleen->kidney_L": 0.08,
+  "duodenum->pancreas": 0.08,
+  "gallbladder->liver": 0.07,
+  "bg->kidney_L": 0.07,
+  "liver->kidney_R": 0.06,
+  "stomach->duodenum": 0.06,
+  "bg->aorta": 0.05,
+  "gallbladder->stomach": 0.05,
+  "bladder->stomach": 0.05,
+  "bladder->prostate_uterus": 0.04,
+  "pancreas->liver": 0.04,
+  "pancreas->stomach": 0.04,
+  "aorta->spleen": 0.03,
+  "liver->pancreas": 0.03,
+  "ivc->duodenum": 0.03,
+  "bg->esophagus": 0.03,
+  "liver->spleen": 0.03,
+  "spleen->pancreas": 0.02,
+  "duodenum->gallbladder": 0.02,
+  "prostate_uterus->kidney_L": 0.01,
+  "esophagus->aorta": 0.01,
+  "kidney_L->spleen": 0.01,
+  "aorta->ivc": 0.01,
+  "ivc->liver": 0.01,
+  "esophagus->ivc": 0.01,
+  "aorta->liver": 0.01,
+  "bg->adrenal_R": 0.01,
+  "bg->adrenal_L": 0.01,
+  "pancreas->duodenum": 0.01,
+  "adrenal_L->pancreas": 0.0,
+  "stomach->gallbladder": 0.0,
+  "ivc->pancreas": 0.0,
+  "gallbladder->duodenum": 0.0,
+  "pancreas->spleen": 0.0,
+  "gallbladder->bladder": 0.0,
+  "duodenum->ivc": 0.0,
+  "kidney_R->liver": 0.0,
+  "bladder->liver": 0.0,
+  "aorta->pancreas": 0.0,
+  "stomach->esophagus": 0.0,
+  "adrenal_R->duodenum": 0.0,
+  "stomach->kidney_L": 0.0,
+  "stomach->bladder": 0.0,
+  "liver->adrenal_R": 0.0,
+  "liver->duodenum": 0.0,
+  "prostate_uterus->spleen": 0.0,
+  "liver->ivc": 0.0,
+  "aorta->esophagus": 0.0,
+  "ivc->aorta": 0.0,
+  "stomach->kidney_R": 0.0,
+  "adrenal_R->liver": 0.0,
+  "duodenum->liver": 0.0,
+  "prostate_uterus->kidney_R": 0.0,
+  "esophagus->kidney_R": 0.0,
+  "kidney_R->duodenum": 0.0,
+  "aorta->duodenum": 0.0,
+  "stomach->adrenal_L": 0.0,
+  "duodenum->adrenal_R": 0.0,
+  "ivc->adrenal_R": 0.0,
+  "kidney_L->pancreas": 0.0,
+  "pancreas->ivc": 0.0,
+  "esophagus->duodenum": 0.0,
+  "liver->aorta": 0.0,
+  "duodenum->kidney_R": 0.0,
+  "pancreas->gallbladder": 0.0,
+  "gallbladder->ivc": 0.0,
+  "pancreas->kidney_L": 0.0,
+  "duodenum->aorta": 0.0,
+  "esophagus->pancreas": 0.0,
+  "gallbladder->kidney_R": 0.0,
+  "ivc->gallbladder": 0.0,
+  "spleen->adrenal_L": 0.0,
+  "adrenal_R->ivc": 0.0,
+  "adrenal_L->kidney_L": 0.0,
+  "esophagus->kidney_L": 0.0,
+  "bladder->kidney_R": 0.0,
+  "adrenal_L->duodenum": 0.0,
+  "bladder->aorta": 0.0,
+  "liver->bladder": 0.0,
+  "kidney_L->aorta": 0.0,
+  "kidney_L->adrenal_L": 0.0,
+  "kidney_R->ivc": 0.0,
+  "adrenal_R->gallbladder": 0.0,
+  "adrenal_R->pancreas": 0.0,
+  "aorta->gallbladder": 0.0,
+  "adrenal_L->spleen": 0.0,
+  "ivc->kidney_R": 0.0,
+  "esophagus->spleen": 0.0,
+  "kidney_R->adrenal_R": 0.0
+ },
+ "misplaced": {
+  "n": 433,
+  "cases": 88,
+  "err_pct": 5.42,
+  "by_pair (n, ml)": {
+   "bg->stomach": [
+    113,
+    916.29
+   ],
+   "bg->liver": [
+    59,
+    273.28
+   ],
+   "stomach->liver": [
+    14,
+    228.42
+   ],
+   "bg->prostate_uterus": [
+    15,
+    82.43
+   ],
+   "bg->bladder": [
+    25,
+    79.2
+   ],
+   "bg->duodenum": [
+    17,
+    56.59
+   ],
+   "aorta->kidney_L": [
+    8,
+    55.45
+   ],
+   "bg->pancreas": [
+    18,
+    51.65
+   ],
+   "bg->gallbladder": [
+    13,
+    45.77
+   ],
+   "bg->spleen": [
+    14,
+    44.66
+   ],
+   "liver->stomach": [
+    8,
+    42.39
+   ],
+   "bg->kidney_R": [
+    14,
+    31.74
+   ],
+   "stomach->spleen": [
+    9,
+    26.22
+   ],
+   "prostate_uterus->bladder": [
+    6,
+    25.46
+   ],
+   "liver->spleen": [
+    3,
+    22.89
+   ],
+   "bg->aorta": [
+    8,
+    18.42
+   ],
+   "bladder->stomach": [
+    4,
+    18.11
+   ],
+   "bg->kidney_L": [
+    10,
+    17.84
+   ],
+   "spleen->kidney_L": [
+    3,
+    17.13
+   ],
+   "bladder->prostate_uterus": [
+    5,
+    16.64
+   ],
+   "spleen->liver": [
+    2,
+    15.97
+   ],
+   "aorta->spleen": [
+    2,
+    13.68
+   ],
+   "bg->ivc": [
+    3,
+    11.06
+   ],
+   "stomach->pancreas": [
+    6,
+    9.94
+   ],
+   "duodenum->stomach": [
+    7,
+    9.62
+   ],
+   "spleen->stomach": [
+    5,
+    8.88
+   ],
+   "duodenum->gallbladder": [
+    3,
+    8.79
+   ],
+   "gallbladder->liver": [
+    2,
+    8.07
+   ],
+   "liver->kidney_R": [
+    4,
+    7.9
+   ],
+   "liver->gallbladder": [
+    3,
+    6.96
+   ],
+   "pancreas->stomach": [
+    3,
+    6.61
+   ],
+   "spleen->pancreas": [
+    2,
+    6.15
+   ],
+   "stomach->duodenum": [
+    2,
+    6.07
+   ],
+   "esophagus->aorta": [
+    3,
+    5.64
+   ],
+   "bg->esophagus": [
+    2,
+    4.97
+   ],
+   "pancreas->liver": [
+    3,
+    4.94
+   ],
+   "prostate_uterus->kidney_L": [
+    1,
+    4.4
+   ],
+   "bg->adrenal_R": [
+    1,
+    3.8
+   ],
+   "duodenum->pancreas": [
+    2,
+    3.64
+   ],
+   "gallbladder->stomach": [
+    2,
+    3.62
+   ],
+   "kidney_L->spleen": [
+    1,
+    3.3
+   ],
+   "pancreas->duodenum": [
+    1,
+    3.11
+   ],
+   "aorta->liver": [
+    1,
+    2.99
+   ],
+   "stomach->gallbladder": [
+    1,
+    1.95
+   ],
+   "liver->pancreas": [
+    1,
+    1.51
+   ],
+   "esophagus->ivc": [
+    1,
+    1.43
+   ],
+   "ivc->duodenum": [
+    1,
+    1.16
+   ],
+   "ivc->liver": [
+    1,
+    1.11
+   ],
+   "liver->adrenal_R": [
+    1,
+    1.06
+   ]
+  },
+  "by_case (n, ml)": {
+   "amos_0373": [
+    16,
+    224.25
+   ],
+   "amos_0140": [
+    13,
+    159.4
+   ],
+   "amos_0194": [
+    8,
+    108.55
+   ],
+   "amos_0034": [
+    12,
+    97.7
+   ],
+   "amos_0311": [
+    9,
+    96.08
+   ],
+   "amos_0056": [
+    16,
+    90.02
+   ],
+   "amos_0326": [
+    15,
+    76.56
+   ],
+   "amos_0318": [
+    5,
+    65.34
+   ],
+   "amos_0357": [
+    6,
+    60.61
+   ],
+   "amos_0283": [
+    8,
+    59.26
+   ],
+   "amos_0399": [
+    7,
+    57.29
+   ],
+   "amos_0250": [
+    10,
+    56.8
+   ],
+   "amos_0150": [
+    9,
+    41.71
+   ],
+   "amos_0106": [
+    4,
+    38.42
+   ],
+   "amos_0155": [
+    12,
+    36.42
+   ],
+   "amos_0040": [
+    7,
+    35.48
+   ],
+   "amos_0202": [
+    8,
+    35.47
+   ],
+   "amos_0218": [
+    8,
+    33.83
+   ],
+   "amos_0344": [
+    11,
+    33.18
+   ],
+   "amos_0385": [
+    5,
+    32.59
+   ],
+   "amos_0204": [
+    11,
+    32.55
+   ],
+   "amos_0293": [
+    4,
+    29.61
+   ],
+   "amos_0238": [
+    4,
+    27.65
+   ],
+   "amos_0136": [
+    8,
+    26.59
+   ],
+   "amos_0356": [
+    9,
+    25.72
+   ],
+   "amos_0219": [
+    8,
+    25.55
+   ],
+   "amos_0409": [
+    2,
+    25.43
+   ],
+   "amos_0208": [
+    5,
+    25.14
+   ],
+   "amos_0364": [
+    9,
+    24.98
+   ],
+   "amos_0070": [
+    4,
+    24.41
+   ],
+   "amos_0123": [
+    6,
+    24.2
+   ],
+   "amos_0063": [
+    8,
+    23.87
+   ],
+   "amos_0228": [
+    3,
+    23.78
+   ],
+   "amos_0258": [
+    7,
+    23.34
+   ],
+   "amos_0339": [
+    4,
+    21.61
+   ],
+   "amos_0174": [
+    4,
+    21.22
+   ],
+   "amos_0247": [
+    5,
+    20.85
+   ],
+   "amos_0032": [
+    6,
+    20.18
+   ],
+   "amos_0377": [
+    5,
+    18.58
+   ],
+   "amos_0287": [
+    4,
+    18.05
+   ],
+   "amos_0278": [
+    6,
+    17.8
+   ],
+   "amos_0257": [
+    6,
+    16.7
+   ],
+   "amos_0233": [
+    6,
+    16.63
+   ],
+   "amos_0189": [
+    5,
+    15.22
+   ],
+   "amos_0346": [
+    3,
+    14.15
+   ],
+   "amos_0308": [
+    7,
+    12.74
+   ],
+   "amos_0108": [
+    3,
+    12.28
+   ],
+   "amos_0061": [
+    3,
+    11.73
+   ],
+   "amos_0051": [
+    5,
+    11.4
+   ],
+   "amos_0117": [
+    4,
+    10.85
+   ],
+   "amos_0112": [
+    3,
+    10.34
+   ],
+   "amos_0292": [
+    2,
+    10.1
+   ],
+   "amos_0176": [
+    5,
+    9.6
+   ],
+   "amos_0284": [
+    3,
+    9.23
+   ],
+   "amos_0022": [
+    2,
+    8.98
+   ],
+   "amos_0316": [
+    3,
+    7.47
+   ],
+   "amos_0313": [
+    3,
+    6.94
+   ],
+   "amos_0244": [
+    1,
+    6.87
+   ],
+   "amos_0018": [
+    3,
+    6.84
+   ],
+   "amos_0008": [
+    2,
+    6.68
+   ],
+   "amos_0120": [
+    3,
+    6.27
+   ],
+   "amos_0223": [
+    4,
+    5.92
+   ],
+   "amos_0203": [
+    3,
+    5.09
+   ],
+   "amos_0029": [
+    2,
+    4.84
+   ],
+   "amos_0206": [
+    2,
+    4.61
+   ],
+   "amos_0323": [
+    3,
+    4.35
+   ],
+   "amos_0310": [
+    3,
+    4.2
+   ],
+   "amos_0128": [
+    2,
+    4.19
+   ],
+   "amos_0191": [
+    1,
+    4.14
+   ],
+   "amos_0309": [
+    2,
+    4.12
+   ],
+   "amos_0207": [
+    2,
+    3.95
+   ],
+   "amos_0144": [
+    1,
+    3.94
+   ],
+   "amos_0368": [
+    2,
+    3.63
+   ],
+   "amos_0085": [
+    2,
+    3.55
+   ],
+   "amos_0041": [
+    2,
+    3.41
+   ],
+   "amos_0397": [
+    3,
+    3.35
+   ],
+   "amos_0372": [
+    2,
+    3.3
+   ],
+   "amos_0342": [
+    2,
+    3.29
+   ],
+   "amos_0328": [
+    1,
+    2.76
+   ],
+   "amos_0157": [
+    2,
+    2.65
+   ],
+   "amos_0286": [
+    2,
+    2.52
+   ],
+   "amos_0087": [
+    1,
+    1.91
+   ],
+   "amos_0333": [
+    1,
+    1.87
+   ],
+   "amos_0013": [
+    1,
+    1.63
+   ],
+   "amos_0280": [
+    1,
+    1.28
+   ],
+   "amos_0090": [
+    1,
+    1.17
+   ],
+   "amos_0352": [
+    1,
+    1.11
+   ],
+   "amos_0255": [
+    1,
+    1.04
+   ]
+  }
+ },
+ "missed": {
+  "n": 18,
+  "cases": 15,
+  "by_pair (n, ml)": {
+   "gallbladder->bg": [
+    3,
+    194.14
+   ],
+   "gallbladder->liver": [
+    1,
+    78.21
+   ],
+   "bladder->bg": [
+    1,
+    76.5
+   ],
+   "aorta->bg": [
+    6,
+    52.92
+   ],
+   "prostate_uterus->bg": [
+    3,
+    34.74
+   ],
+   "prostate_uterus->bladder": [
+    1,
+    15.29
+   ],
+   "kidney_L->aorta": [
+    1,
+    6.24
+   ],
+   "adrenal_L->bg": [
+    1,
+    2.26
+   ],
+   "liver->bg": [
+    1,
+    1.84
+   ]
+  }
+ },
+ "misplaced_components": [
+  {
+   "pred": "kidney_L",
+   "true": "spleen",
+   "ml": 4.46,
+   "err_ml": 4.46,
+   "z": [
+    90,
+    91
+   ],
+   "case": "amos_0008"
+  },
+  {
+   "pred": "liver",
+   "true": "bg",
+   "ml": 2.22,
+   "err_ml": 2.22,
+   "z": [
+    90,
+    91
+   ],
+   "case": "amos_0008"
+  },
+  {
+   "pred": "stomach",
+   "true": "bg",
+   "ml": 1.63,
+   "err_ml": 1.63,
+   "z": [
+    51,
+    53
+   ],
+   "case": "amos_0013"
+  },
+  {
+   "pred": "liver",
+   "true": "bg",
+   "ml": 4.02,
+   "err_ml": 4.02,
+   "z": [
+    57,
+    60
+   ],
+   "case": "amos_0018"
+  },
+  {
+   "pred": "stomach",
+   "true": "bg",
+   "ml": 1.15,
+   "err_ml": 1.15,
+   "z": [
+    73,
+    75
+   ],
+   "case": "amos_0018"
+  },
+  {
+   "pred": "prostate_uterus",
+   "true": "bg",
+   "ml": 1.67,
+   "err_ml": 1.67,
+   "z": [
+    31,
+    33
+   ],
+   "case": "amos_0018"
+  },
+  {
+   "pred": "stomach",
+   "true": "bg",
+   "ml": 2.99,
+   "err_ml": 2.99,
+   "z": [
+    72,
+    74
+   ],
+   "case": "amos_0022"
+  },
+  {
+   "pred": "stomach",
+   "true": "bg",
+   "ml": 5.99,
+   "err_ml": 5.99,
+   "z": [
+    76,
+    81
+   ],
+   "case": "amos_0022"
+  },
+  {
+   "pred": "stomach",
+   "true": "bg",
+   "ml": 3.79,
+   "err_ml": 3.79,
+   "z": [
+    52,
+    53
+   ],
+   "case": "amos_0029"
+  },
+  {
+   "pred": "pancreas",
+   "true": "bg",
+   "ml": 1.05,
+   "err_ml": 1.05,
+   "z": [
+    61,
+    62
+   ],
+   "case": "amos_0029"
+  },
+  {
+   "pred": "spleen",
+   "true": "liver",
+   "ml": 1.82,
+   "err_ml": 1.82,
+   "z": [
+    104,
+    106
+   ],
+   "case": "amos_0032"
+  },
+  {
+   "pred": "kidney_L",
+   "true": "bg",
+   "ml": 1.04,
+   "err_ml": 1.04,
+   "z": [
+    69,
+    70
+   ],
+   "case": "amos_0032"
+  },
+  {
+   "pred": "liver",
+   "true": "bg",
+   "ml": 1.62,
+   "err_ml": 1.62,
+   "z": [
+    79,
+    81
+   ],
+   "case": "amos_0032"
+  },
+  {
+   "pred": "stomach",
+   "true": "bg",
+   "ml": 1.02,
+   "err_ml": 1.02,
+   "z": [
+    81,
+    82
+   ],
+   "case": "amos_0032"
+  },
+  {
+   "pred": "stomach",
+   "true": "bg",
+   "ml": 4.62,
+   "err_ml": 4.62,
+   "z": [
+    82,
+    83
+   ],
+   "case": "amos_0032"
+  },
+  {
+   "pred": "stomach",
+   "true": "liver",
+   "ml": 10.06,
+   "err_ml": 10.06,
+   "z": [
+    107,
+    110
+   ],
+   "case": "amos_0032"
+  },
+  {
+   "pred": "spleen",
+   "true": "bg",
+   "ml": 8.76,
+   "err_ml": 8.76,
+   "z": [
+    99,
+    103
+   ],
+   "case": "amos_0034"
+  },
+  {
+   "pred": "kidney_R",
+   "true": "liver",
+   "ml": 1.05,
+   "err_ml": 1.05,
+   "z": [
+    79,
+    80
+   ],
+   "case": "amos_0034"
+  },
+  {
+   "pred": "kidney_L",
+   "true": "bg",
+   "ml": 1.73,
+   "err_ml": 1.73,
+   "z": [
+    100,
+    101
+   ],
+   "case": "amos_0034"
+  },
+  {
+   "pred": "liver",
+   "true": "bg",
+   "ml": 3.03,
+   "err_ml": 3.03,
+   "z": [
+    53,
+    57
+   ],
+   "case": "amos_0034"
+  },
+  {
+   "pred": "stomach",
+   "true": "bg",
+   "ml": 66.55,
+   "err_ml": 66.55,
+   "z": [
+    34,
+    40
+   ],
+   "case": "amos_0034"
+  },
+  {
+   "pred": "stomach",
+   "true": "bg",
+   "ml": 3.49,
+   "err_ml": 3.49,
+   "z": [
+    56,
+    61
+   ],
+   "case": "amos_0034"
+  },
+  {
+   "pred": "stomach",
+   "true": "bg",
+   "ml": 1.35,
+   "err_ml": 1.35,
+   "z": [
+    64,
+    65
+   ],
+   "case": "amos_0034"
+  },
+  {
+   "pred": "stomach",
+   "true": "bg",
+   "ml": 6.39,
+   "err_ml": 6.39,
+   "z": [
+    66,
+    68
+   ],
+   "case": "amos_0034"
+  },
+  {
+   "pred": "pancreas",
+   "true": "stomach",
+   "ml": 1.57,
+   "err_ml": 1.57,
+   "z": [
+    81,
+    82
+   ],
+   "case": "amos_0034"
+  },
+  {
+   "pred": "bladder",
+   "true": "bg",
+   "ml": 1.15,
+   "err_ml": 1.15,
+   "z": [
+    39,
+    41
+   ],
+   "case": "amos_0034"
+  },
+  {
+   "pred": "bladder",
+   "true": "bg",
+   "ml": 1.49,
+   "err_ml": 1.49,
+   "z": [
+    40,
+    41
+   ],
+   "case": "amos_0034"
+  },
+  {
+   "pred": "prostate_uterus",
+   "true": "bg",
+   "ml": 1.14,
+   "err_ml": 1.14,
+   "z": [
+    34,
+    36
+   ],
+   "case": "amos_0034"
+  },
+  {
+   "pred": "kidney_R",
+   "true": "bg",
+   "ml": 1.99,
+   "err_ml": 1.99,
+   "z": [
+    20,
+    23
+   ],
+   "case": "amos_0040"
+  },
+  {
+   "pred": "kidney_R",
+   "true": "bg",
+   "ml": 1.79,
+   "err_ml": 1.79,
+   "z": [
+    26,
+    27
+   ],
+   "case": "amos_0040"
+  },
+  {
+   "pred": "gallbladder",
+   "true": "bg",
+   "ml": 1.02,
+   "err_ml": 1.02,
+   "z": [
+    80,
+    82
+   ],
+   "case": "amos_0040"
+  },
+  {
+   "pred": "liver",
+   "true": "bg",
+   "ml": 13.95,
+   "err_ml": 13.95,
+   "z": [
+    33,
+    38
+   ],
+   "case": "amos_0040"
+  },
+  {
+   "pred": "bladder",
+   "true": "bg",
+   "ml": 1.18,
+   "err_ml": 1.18,
+   "z": [
+    20,
+    21
+   ],
+   "case": "amos_0040"
+  },
+  {
+   "pred": "bladder",
+   "true": "bg",
+   "ml": 1.15,
+   "err_ml": 1.15,
+   "z": [
+    25,
+    27
+   ],
+   "case": "amos_0040"
+  },
+  {
+   "pred": "bladder",
+   "true": "bg",
+   "ml": 14.4,
+   "err_ml": 14.4,
+   "z": [
+    31,
+    36
+   ],
+   "case": "amos_0040"
+  },
+  {
+   "pred": "spleen",
+   "true": "bg",
+   "ml": 1.46,
+   "err_ml": 1.46,
+   "z": [
+    52,
+    55
+   ],
+   "case": "amos_0041"
+  },
+  {
+   "pred": "gallbladder",
+   "true": "stomach",
+   "ml": 1.95,
+   "err_ml": 1.83,
+   "z": [
+    49,
+    55
+   ],
+   "case": "amos_0041"
+  },
+  {
+   "pred": "gallbladder",
+   "true": "duodenum",
+   "ml": 2.54,
+   "err_ml": 2.53,
+   "z": [
+    70,
+    73
+   ],
+   "case": "amos_0051"
+  },
+  {
+   "pred": "stomach",
+   "true": "bg",
+   "ml": 1.86,
+   "err_ml": 1.86,
+   "z": [
+    62,
+    63
+   ],
+   "case": "amos_0051"
+  },
+  {
+   "pred": "stomach",
+   "true": "liver",
+   "ml": 1.02,
+   "err_ml": 1.02,
+   "z": [
+    79,
+    81
+   ],
+   "case": "amos_0051"
+  },
+  {
+   "pred": "pancreas",
+   "true": "bg",
+   "ml": 1.12,
+   "err_ml": 1.12,
+   "z": [
+    65,
+    67
+   ],
+   "case": "amos_0051"
+  },
+  {
+   "pred": "bladder",
+   "true": "bg",
+   "ml": 4.86,
+   "err_ml": 4.86,
+   "z": [
+    24,
+    25
+   ],
+   "case": "amos_0051"
+  },
+  {
+   "pred": "gallbladder",
+   "true": "bg",
+   "ml": 7.41,
+   "err_ml": 7.41,
+   "z": [
+    66,
+    70
+   ],
+   "case": "amos_0056"
+  },
+  {
+   "pred": "esophagus",
+   "true": "bg",
+   "ml": 2.0,
+   "err_ml": 2.0,
+   "z": [
+    89,
+    95
+   ],
+   "case": "amos_0056"
+  },
+  {
+   "pred": "liver",
+   "true": "bg",
+   "ml": 2.18,
+   "err_ml": 2.18,
+   "z": [
+    40,
+    43
+   ],
+   "case": "amos_0056"
+  },
+  {
+   "pred": "liver",
+   "true": "bg",
+   "ml": 1.39,
+   "err_ml": 1.39,
+   "z": [
+    45,
+    48
+   ],
+   "case": "amos_0056"
+  },
+  {
+   "pred": "liver",
+   "true": "bg",
+   "ml": 8.2,
+   "err_ml": 8.2,
+   "z": [
+    48,
+    51
+   ],
+   "case": "amos_0056"
+  },
+  {
+   "pred": "liver",
+   "true": "bg",
+   "ml": 2.37,
+   "err_ml": 2.37,
+   "z": [
+    53,
+    57
+   ],
+   "case": "amos_0056"
+  },
+  {
+   "pred": "liver",
+   "true": "bg",
+   "ml": 1.05,
+   "err_ml": 1.05,
+   "z": [
+    57,
+    58
+   ],
+   "case": "amos_0056"
+  },
+  {
+   "pred": "liver",
+   "true": "bg",
+   "ml": 1.75,
+   "err_ml": 1.75,
+   "z": [
+    74,
+    75
+   ],
+   "case": "amos_0056"
+  },
+  {
+   "pred": "stomach",
+   "true": "bg",
+   "ml": 1.01,
+   "err_ml": 1.01,
+   "z": [
+    54,
+    55
+   ],
+   "case": "amos_0056"
+  },
+  {
+   "pred": "stomach",
+   "true": "bg",
+   "ml": 5.2,
+   "err_ml": 5.2,
+   "z": [
+    69,
+    73
+   ],
+   "case": "amos_0056"
+  },
+  {
+   "pred": "stomach",
+   "true": "bg",
+   "ml": 10.75,
+   "err_ml": 10.75,
+   "z": [
+    69,
+    75
+   ],
+   "case": "amos_0056"
+  },
+  {
+   "pred": "stomach",
+   "true": "bg",
+   "ml": 1.25,
+   "err_ml": 1.25,
+   "z": [
+    73,
+    75
+   ],
+   "case": "amos_0056"
+  },
+  {
+   "pred": "pancreas",
+   "true": "bg",
+   "ml": 14.48,
+   "err_ml": 14.48,
+   "z": [
+    61,
+    69
+   ],
+   "case": "amos_0056"
+  },
+  {
+   "pred": "pancreas",
+   "true": "stomach",
+   "ml": 2.12,
+   "err_ml": 2.12,
+   "z": [
+    72,
+    74
+   ],
+   "case": "amos_0056"
+  },
+  {
+   "pred": "duodenum",
+   "true": "bg",
+   "ml": 15.16,
+   "err_ml": 15.16,
+   "z": [
+    55,
+    66
+   ],
+   "case": "amos_0056"
+  },
+  {
+   "pred": "duodenum",
+   "true": "bg",
+   "ml": 13.7,
+   "err_ml": 13.7,
+   "z": [
+    64,
+    70
+   ],
+   "case": "amos_0056"
+  },
+  {
+   "pred": "kidney_R",
+   "true": "bg",
+   "ml": 2.19,
+   "err_ml": 2.19,
+   "z": [
+    33,
+    36
+   ],
+   "case": "amos_0061"
+  },
+  {
+   "pred": "stomach",
+   "true": "bg",
+   "ml": 4.42,
+   "err_ml": 4.42,
+   "z": [
+    34,
+    37
+   ],
+   "case": "amos_0061"
+  },
+  {
+   "pred": "bladder",
+   "true": "prostate_uterus",
+   "ml": 5.12,
+   "err_ml": 5.12,
+   "z": [
+    18,
+    21
+   ],
+   "case": "amos_0061"
+  },
+  {
+   "pred": "liver",
+   "true": "bg",
+   "ml": 1.66,
+   "err_ml": 1.66,
+   "z": [
+    63,
+    65
+   ],
+   "case": "amos_0063"
+  },
+  {
+   "pred": "liver",
+   "true": "bg",
+   "ml": 5.3,
+   "err_ml": 5.3,
+   "z": [
+    67,
+    72
+   ],
+   "case": "amos_0063"
+  },
+  {
+   "pred": "liver",
+   "true": "bg",
+   "ml": 1.06,
+   "err_ml": 1.06,
+   "z": [
+    83,
+    84
+   ],
+   "case": "amos_0063"
+  },
+  {
+   "pred": "pancreas",
+   "true": "bg",
+   "ml": 4.28,
+   "err_ml": 4.28,
+   "z": [
+    79,
+    82
+   ],
+   "case": "amos_0063"
+  },
+  {
+   "pred": "pancreas",
+   "true": "bg",
+   "ml": 1.21,
+   "err_ml": 1.21,
+   "z": [
+    82,
+    83
+   ],
+   "case": "amos_0063"
+  },
+  {
+   "pred": "bladder",
+   "true": "bg",
+   "ml": 5.16,
+   "err_ml": 5.16,
+   "z": [
+    24,
+    25
+   ],
+   "case": "amos_0063"
+  },
+  {
+   "pred": "bladder",
+   "true": "bg",
+   "ml": 3.64,
+   "err_ml": 3.64,
+   "z": [
+    28,
+    29
+   ],
+   "case": "amos_0063"
+  },
+  {
+   "pred": "bladder",
+   "true": "bg",
+   "ml": 1.56,
+   "err_ml": 1.56,
+   "z": [
+    28,
+    29
+   ],
+   "case": "amos_0063"
+  },
+  {
+   "pred": "liver",
+   "true": "stomach",
+   "ml": 14.78,
+   "err_ml": 14.78,
+   "z": [
+    67,
+    69
+   ],
+   "case": "amos_0070"
+  },
+  {
+   "pred": "liver",
+   "true": "stomach",
+   "ml": 5.81,
+   "err_ml": 5.81,
+   "z": [
+    70,
+    71
+   ],
+   "case": "amos_0070"
+  },
+  {
+   "pred": "liver",
+   "true": "stomach",
+   "ml": 2.05,
+   "err_ml": 2.05,
+   "z": [
+    82,
+    84
+   ],
+   "case": "amos_0070"
+  },
+  {
+   "pred": "stomach",
+   "true": "bg",
+   "ml": 1.77,
+   "err_ml": 1.77,
+   "z": [
+    65,
+    66
+   ],
+   "case": "amos_0070"
+  },
+  {
+   "pred": "liver",
+   "true": "spleen",
+   "ml": 1.74,
+   "err_ml": 1.74,
+   "z": [
+    77,
+    80
+   ],
+   "case": "amos_0085"
+  },
+  {
+   "pred": "duodenum",
+   "true": "bg",
+   "ml": 1.81,
+   "err_ml": 1.81,
+   "z": [
+    62,
+    65
+   ],
+   "case": "amos_0085"
+  },
+  {
+   "pred": "kidney_R",
+   "true": "bg",
+   "ml": 1.91,
+   "err_ml": 1.91,
+   "z": [
+    57,
+    60
+   ],
+   "case": "amos_0087"
+  },
+  {
+   "pred": "gallbladder",
+   "true": "bg",
+   "ml": 1.17,
+   "err_ml": 1.17,
+   "z": [
+    63,
+    64
+   ],
+   "case": "amos_0090"
+  },
+  {
+   "pred": "kidney_R",
+   "true": "bg",
+   "ml": 1.23,
+   "err_ml": 1.23,
+   "z": [
+    62,
+    66
+   ],
+   "case": "amos_0106"
+  },
+  {
+   "pred": "liver",
+   "true": "bg",
+   "ml": 2.74,
+   "err_ml": 2.74,
+   "z": [
+    86,
+    88
+   ],
+   "case": "amos_0106"
+  },
+  {
+   "pred": "stomach",
+   "true": "bg",
+   "ml": 32.23,
+   "err_ml": 32.23,
+   "z": [
+    61,
+    69
+   ],
+   "case": "amos_0106"
+  },
+  {
+   "pred": "prostate_uterus",
+   "true": "bg",
+   "ml": 2.22,
+   "err_ml": 2.22,
+   "z": [
+    14,
+    16
+   ],
+   "case": "amos_0106"
+  },
+  {
+   "pred": "liver",
+   "true": "bg",
+   "ml": 2.23,
+   "err_ml": 2.23,
+   "z": [
+    82,
+    86
+   ],
+   "case": "amos_0108"
+  },
+  {
+   "pred": "stomach",
+   "true": "liver",
+   "ml": 7.32,
+   "err_ml": 7.32,
+   "z": [
+    54,
+    57
+   ],
+   "case": "amos_0108"
+  },
+  {
+   "pred": "stomach",
+   "true": "liver",
+   "ml": 2.73,
+   "err_ml": 2.73,
+   "z": [
+    73,
+    75
+   ],
+   "case": "amos_0108"
+  },
+  {
+   "pred": "kidney_R",
+   "true": "liver",
+   "ml": 4.31,
+   "err_ml": 4.31,
+   "z": [
+    73,
+    75
+   ],
+   "case": "amos_0112"
+  },
+  {
+   "pred": "kidney_L",
+   "true": "bg",
+   "ml": 1.88,
+   "err_ml": 1.88,
+   "z": [
+    52,
+    54
+   ],
+   "case": "amos_0112"
+  },
+  {
+   "pred": "bladder",
+   "true": "bg",
+   "ml": 4.15,
+   "err_ml": 4.15,
+   "z": [
+    22,
+    23
+   ],
+   "case": "amos_0112"
+  },
+  {
+   "pred": "kidney_R",
+   "true": "bg",
+   "ml": 3.71,
+   "err_ml": 3.71,
+   "z": [
+    18,
+    19
+   ],
+   "case": "amos_0117"
+  },
+  {
+   "pred": "liver",
+   "true": "bg",
+   "ml": 4.33,
+   "err_ml": 4.33,
+   "z": [
+    96,
+    98
+   ],
+   "case": "amos_0117"
+  },
+  {
+   "pred": "stomach",
+   "true": "bg",
+   "ml": 1.39,
+   "err_ml": 1.39,
+   "z": [
+    16,
+    17
+   ],
+   "case": "amos_0117"
+  },
+  {
+   "pred": "duodenum",
+   "true": "bg",
+   "ml": 1.42,
+   "err_ml": 1.42,
+   "z": [
+    34,
+    37
+   ],
+   "case": "amos_0117"
+  },
+  {
+   "pred": "kidney_L",
+   "true": "bg",
+   "ml": 2.17,
+   "err_ml": 2.17,
+   "z": [
+    46,
+    48
+   ],
+   "case": "amos_0120"
+  },
+  {
+   "pred": "gallbladder",
+   "true": "bg",
+   "ml": 2.37,
+   "err_ml": 2.37,
+   "z": [
+    73,
+    76
+   ],
+   "case": "amos_0120"
+  },
+  {
+   "pred": "duodenum",
+   "true": "bg",
+   "ml": 1.73,
+   "err_ml": 1.73,
+   "z": [
+    73,
+    75
+   ],
+   "case": "amos_0120"
+  },
+  {
+   "pred": "liver",
+   "true": "stomach",
+   "ml": 1.02,
+   "err_ml": 1.02,
+   "z": [
+    59,
+    60
+   ],
+   "case": "amos_0123"
+  },
+  {
+   "pred": "liver",
+   "true": "bg",
+   "ml": 1.25,
+   "err_ml": 1.25,
+   "z": [
+    71,
+    72
+   ],
+   "case": "amos_0123"
+  },
+  {
+   "pred": "stomach",
+   "true": "bg",
+   "ml": 1.5,
+   "err_ml": 1.5,
+   "z": [
+    45,
+    46
+   ],
+   "case": "amos_0123"
+  },
+  {
+   "pred": "stomach",
+   "true": "bg",
+   "ml": 7.78,
+   "err_ml": 7.78,
+   "z": [
+    45,
+    49
+   ],
+   "case": "amos_0123"
+  },
+  {
+   "pred": "bladder",
+   "true": "bg",
+   "ml": 7.43,
+   "err_ml": 7.43,
+   "z": [
+    12,
+    15
+   ],
+   "case": "amos_0123"
+  },
+  {
+   "pred": "prostate_uterus",
+   "true": "bladder",
+   "ml": 5.22,
+   "err_ml": 5.22,
+   "z": [
+    12,
+    13
+   ],
+   "case": "amos_0123"
+  },
+  {
+   "pred": "liver",
+   "true": "pancreas",
+   "ml": 1.37,
+   "err_ml": 1.37,
+   "z": [
+    70,
+    73
+   ],
+   "case": "amos_0128"
+  },
+  {
+   "pred": "pancreas",
+   "true": "bg",
+   "ml": 2.82,
+   "err_ml": 2.82,
+   "z": [
+    66,
+    71
+   ],
+   "case": "amos_0128"
+  },
+  {
+   "pred": "gallbladder",
+   "true": "bg",
+   "ml": 4.96,
+   "err_ml": 4.96,
+   "z": [
+    64,
+    66
+   ],
+   "case": "amos_0136"
+  },
+  {
+   "pred": "gallbladder",
+   "true": "bg",
+   "ml": 3.88,
+   "err_ml": 3.88,
+   "z": [
+    73,
+    75
+   ],
+   "case": "amos_0136"
+  },
+  {
+   "pred": "liver",
+   "true": "bg",
+   "ml": 2.68,
+   "err_ml": 2.68,
+   "z": [
+    51,
+    52
+   ],
+   "case": "amos_0136"
+  },
+  {
+   "pred": "liver",
+   "true": "bg",
+   "ml": 1.65,
+   "err_ml": 1.65,
+   "z": [
+    67,
+    70
+   ],
+   "case": "amos_0136"
+  },
+  {
+   "pred": "stomach",
+   "true": "bg",
+   "ml": 2.18,
+   "err_ml": 2.18,
+   "z": [
+    67,
+    69
+   ],
+   "case": "amos_0136"
+  },
+  {
+   "pred": "pancreas",
+   "true": "bg",
+   "ml": 1.16,
+   "err_ml": 1.16,
+   "z": [
+    62,
+    65
+   ],
+   "case": "amos_0136"
+  },
+  {
+   "pred": "bladder",
+   "true": "prostate_uterus",
+   "ml": 2.39,
+   "err_ml": 2.39,
+   "z": [
+    16,
+    18
+   ],
+   "case": "amos_0136"
+  },
+  {
+   "pred": "bladder",
+   "true": "prostate_uterus",
+   "ml": 7.69,
+   "err_ml": 7.69,
+   "z": [
+    19,
+    21
+   ],
+   "case": "amos_0136"
+  },
+  {
+   "pred": "spleen",
+   "true": "liver",
+   "ml": 18.14,
+   "err_ml": 18.14,
+   "z": [
+    93,
+    95
+   ],
+   "case": "amos_0140"
+  },
+  {
+   "pred": "liver",
+   "true": "bg",
+   "ml": 1.01,
+   "err_ml": 1.01,
+   "z": [
+    58,
+    59
+   ],
+   "case": "amos_0140"
+  },
+  {
+   "pred": "liver",
+   "true": "bg",
+   "ml": 2.92,
+   "err_ml": 2.92,
+   "z": [
+    62,
+    63
+   ],
+   "case": "amos_0140"
+  },
+  {
+   "pred": "liver",
+   "true": "bg",
+   "ml": 6.7,
+   "err_ml": 6.7,
+   "z": [
+    66,
+    71
+   ],
+   "case": "amos_0140"
+  },
+  {
+   "pred": "liver",
+   "true": "bg",
+   "ml": 1.44,
+   "err_ml": 1.44,
+   "z": [
+    67,
+    68
+   ],
+   "case": "amos_0140"
+  },
+  {
+   "pred": "liver",
+   "true": "stomach",
+   "ml": 2.17,
+   "err_ml": 2.17,
+   "z": [
+    77,
+    78
+   ],
+   "case": "amos_0140"
+  },
+  {
+   "pred": "stomach",
+   "true": "bg",
+   "ml": 1.64,
+   "err_ml": 1.64,
+   "z": [
+    39,
+    40
+   ],
+   "case": "amos_0140"
+  },
+  {
+   "pred": "stomach",
+   "true": "bg",
+   "ml": 6.36,
+   "err_ml": 6.36,
+   "z": [
+    50,
+    55
+   ],
+   "case": "amos_0140"
+  },
+  {
+   "pred": "stomach",
+   "true": "bg",
+   "ml": 107.2,
+   "err_ml": 107.2,
+   "z": [
+    57,
+    74
+   ],
+   "case": "amos_0140"
+  },
+  {
+   "pred": "stomach",
+   "true": "bg",
+   "ml": 1.28,
+   "err_ml": 1.28,
+   "z": [
+    74,
+    76
+   ],
+   "case": "amos_0140"
+  },
+  {
+   "pred": "stomach",
+   "true": "bg",
+   "ml": 3.05,
+   "err_ml": 3.05,
+   "z": [
+    93,
+    94
+   ],
+   "case": "amos_0140"
+  },
+  {
+   "pred": "bladder",
+   "true": "bg",
+   "ml": 5.46,
+   "err_ml": 5.46,
+   "z": [
+    26,
+    27
+   ],
+   "case": "amos_0140"
+  },
+  {
+   "pred": "bladder",
+   "true": "bg",
+   "ml": 2.03,
+   "err_ml": 2.03,
+   "z": [
+    26,
+    27
+   ],
+   "case": "amos_0140"
+  },
+  {
+   "pred": "gallbladder",
+   "true": "liver",
+   "ml": 3.94,
+   "err_ml": 3.94,
+   "z": [
+    77,
+    79
+   ],
+   "case": "amos_0144"
+  },
+  {
+   "pred": "spleen",
+   "true": "bg",
+   "ml": 2.2,
+   "err_ml": 2.2,
+   "z": [
+    82,
+    88
+   ],
+   "case": "amos_0150"
+  },
+  {
+   "pred": "gallbladder",
+   "true": "bg",
+   "ml": 2.93,
+   "err_ml": 2.93,
+   "z": [
+    73,
+    75
+   ],
+   "case": "amos_0150"
+  },
+  {
+   "pred": "liver",
+   "true": "bg",
+   "ml": 2.01,
+   "err_ml": 2.01,
+   "z": [
+    53,
+    57
+   ],
+   "case": "amos_0150"
+  },
+  {
+   "pred": "liver",
+   "true": "bg",
+   "ml": 1.26,
+   "err_ml": 1.26,
+   "z": [
+    56,
+    57
+   ],
+   "case": "amos_0150"
+  },
+  {
+   "pred": "liver",
+   "true": "bg",
+   "ml": 6.44,
+   "err_ml": 6.44,
+   "z": [
+    56,
+    63
+   ],
+   "case": "amos_0150"
+  },
+  {
+   "pred": "stomach",
+   "true": "bg",
+   "ml": 9.72,
+   "err_ml": 9.72,
+   "z": [
+    61,
+    63
+   ],
+   "case": "amos_0150"
+  },
+  {
+   "pred": "stomach",
+   "true": "bg",
+   "ml": 13.25,
+   "err_ml": 13.25,
+   "z": [
+    64,
+    67
+   ],
+   "case": "amos_0150"
+  },
+  {
+   "pred": "stomach",
+   "true": "spleen",
+   "ml": 1.95,
+   "err_ml": 1.95,
+   "z": [
+    81,
+    83
+   ],
+   "case": "amos_0150"
+  },
+  {
+   "pred": "pancreas",
+   "true": "bg",
+   "ml": 1.95,
+   "err_ml": 1.95,
+   "z": [
+    66,
+    68
+   ],
+   "case": "amos_0150"
+  },
+  {
+   "pred": "kidney_R",
+   "true": "bg",
+   "ml": 1.29,
+   "err_ml": 1.29,
+   "z": [
+    96,
+    98
+   ],
+   "case": "amos_0155"
+  },
+  {
+   "pred": "kidney_R",
+   "true": "bg",
+   "ml": 2.58,
+   "err_ml": 2.58,
+   "z": [
+    117,
+    119
+   ],
+   "case": "amos_0155"
+  },
+  {
+   "pred": "gallbladder",
+   "true": "bg",
+   "ml": 8.99,
+   "err_ml": 8.99,
+   "z": [
+    87,
+    90
+   ],
+   "case": "amos_0155"
+  },
+  {
+   "pred": "liver",
+   "true": "bg",
+   "ml": 1.35,
+   "err_ml": 1.35,
+   "z": [
+    99,
+    103
+   ],
+   "case": "amos_0155"
+  },
+  {
+   "pred": "liver",
+   "true": "bg",
+   "ml": 1.77,
+   "err_ml": 1.77,
+   "z": [
+    100,
+    101
+   ],
+   "case": "amos_0155"
+  },
+  {
+   "pred": "stomach",
+   "true": "gallbladder",
+   "ml": 2.39,
+   "err_ml": 2.39,
+   "z": [
+    56,
+    59
+   ],
+   "case": "amos_0155"
+  },
+  {
+   "pred": "stomach",
+   "true": "gallbladder",
+   "ml": 1.23,
+   "err_ml": 1.23,
+   "z": [
+    59,
+    63
+   ],
+   "case": "amos_0155"
+  },
+  {
+   "pred": "stomach",
+   "true": "liver",
+   "ml": 2.29,
+   "err_ml": 2.29,
+   "z": [
+    86,
+    87
+   ],
+   "case": "amos_0155"
+  },
+  {
+   "pred": "aorta",
+   "true": "bg",
+   "ml": 2.3,
+   "err_ml": 2.3,
+   "z": [
+    96,
+    98
+   ],
+   "case": "amos_0155"
+  },
+  {
+   "pred": "ivc",
+   "true": "bg",
+   "ml": 7.23,
+   "err_ml": 7.23,
+   "z": [
+    92,
+    100
+   ],
+   "case": "amos_0155"
+  },
+  {
+   "pred": "adrenal_R",
+   "true": "bg",
+   "ml": 3.8,
+   "err_ml": 3.71,
+   "z": [
+    74,
+    80
+   ],
+   "case": "amos_0155"
+  },
+  {
+   "pred": "bladder",
+   "true": "bg",
+   "ml": 1.2,
+   "err_ml": 1.2,
+   "z": [
+    118,
+    119
+   ],
+   "case": "amos_0155"
+  },
+  {
+   "pred": "kidney_L",
+   "true": "bg",
+   "ml": 1.47,
+   "err_ml": 1.47,
+   "z": [
+    49,
+    52
+   ],
+   "case": "amos_0157"
+  },
+  {
+   "pred": "stomach",
+   "true": "bg",
+   "ml": 1.18,
+   "err_ml": 1.18,
+   "z": [
+    46,
+    47
+   ],
+   "case": "amos_0157"
+  },
+  {
+   "pred": "kidney_R",
+   "true": "bg",
+   "ml": 4.89,
+   "err_ml": 4.89,
+   "z": [
+    52,
+    53
+   ],
+   "case": "amos_0174"
+  },
+  {
+   "pred": "liver",
+   "true": "bg",
+   "ml": 10.54,
+   "err_ml": 10.54,
+   "z": [
+    63,
+    69
+   ],
+   "case": "amos_0174"
+  },
+  {
+   "pred": "liver",
+   "true": "stomach",
+   "ml": 2.66,
+   "err_ml": 2.66,
+   "z": [
+    70,
+    71
+   ],
+   "case": "amos_0174"
+  },
+  {
+   "pred": "aorta",
+   "true": "bg",
+   "ml": 3.13,
+   "err_ml": 3.13,
+   "z": [
+    101,
+    103
+   ],
+   "case": "amos_0174"
+  },
+  {
+   "pred": "kidney_L",
+   "true": "bg",
+   "ml": 2.59,
+   "err_ml": 2.59,
+   "z": [
+    51,
+    55
+   ],
+   "case": "amos_0176"
+  },
+  {
+   "pred": "liver",
+   "true": "bg",
+   "ml": 1.56,
+   "err_ml": 1.56,
+   "z": [
+    60,
+    62
+   ],
+   "case": "amos_0176"
+  },
+  {
+   "pred": "liver",
+   "true": "bg",
+   "ml": 1.53,
+   "err_ml": 1.53,
+   "z": [
+    68,
+    75
+   ],
+   "case": "amos_0176"
+  },
+  {
+   "pred": "stomach",
+   "true": "bg",
+   "ml": 1.89,
+   "err_ml": 1.89,
+   "z": [
+    64,
+    65
+   ],
+   "case": "amos_0176"
+  },
+  {
+   "pred": "pancreas",
+   "true": "duodenum",
+   "ml": 2.03,
+   "err_ml": 2.03,
+   "z": [
+    57,
+    59
+   ],
+   "case": "amos_0176"
+  },
+  {
+   "pred": "kidney_R",
+   "true": "liver",
+   "ml": 1.35,
+   "err_ml": 1.35,
+   "z": [
+    72,
+    73
+   ],
+   "case": "amos_0189"
+  },
+  {
+   "pred": "liver",
+   "true": "pancreas",
+   "ml": 2.38,
+   "err_ml": 2.38,
+   "z": [
+    62,
+    63
+   ],
+   "case": "amos_0189"
+  },
+  {
+   "pred": "stomach",
+   "true": "bg",
+   "ml": 3.53,
+   "err_ml": 3.53,
+   "z": [
+    64,
+    65
+   ],
+   "case": "amos_0189"
+  },
+  {
+   "pred": "bladder",
+   "true": "bg",
+   "ml": 1.49,
+   "err_ml": 1.49,
+   "z": [
+    18,
+    19
+   ],
+   "case": "amos_0189"
+  },
+  {
+   "pred": "prostate_uterus",
+   "true": "bg",
+   "ml": 6.47,
+   "err_ml": 6.47,
+   "z": [
+    24,
+    26
+   ],
+   "case": "amos_0189"
+  },
+  {
+   "pred": "liver",
+   "true": "bg",
+   "ml": 4.14,
+   "err_ml": 4.14,
+   "z": [
+    44,
+    47
+   ],
+   "case": "amos_0191"
+  },
+  {
+   "pred": "spleen",
+   "true": "bg",
+   "ml": 9.08,
+   "err_ml": 9.08,
+   "z": [
+    45,
+    52
+   ],
+   "case": "amos_0194"
+  },
+  {
+   "pred": "liver",
+   "true": "bg",
+   "ml": 2.96,
+   "err_ml": 2.96,
+   "z": [
+    0,
+    3
+   ],
+   "case": "amos_0194"
+  },
+  {
+   "pred": "liver",
+   "true": "bg",
+   "ml": 47.71,
+   "err_ml": 47.71,
+   "z": [
+    0,
+    5
+   ],
+   "case": "amos_0194"
+  },
+  {
+   "pred": "liver",
+   "true": "bg",
+   "ml": 1.73,
+   "err_ml": 1.73,
+   "z": [
+    0,
+    2
+   ],
+   "case": "amos_0194"
+  },
+  {
+   "pred": "liver",
+   "true": "bg",
+   "ml": 39.57,
+   "err_ml": 39.57,
+   "z": [
+    0,
+    6
+   ],
+   "case": "amos_0194"
+  },
+  {
+   "pred": "liver",
+   "true": "bg",
+   "ml": 2.82,
+   "err_ml": 2.82,
+   "z": [
+    2,
+    4
+   ],
+   "case": "amos_0194"
+  },
+  {
+   "pred": "liver",
+   "true": "bg",
+   "ml": 3.67,
+   "err_ml": 3.67,
+   "z": [
+    44,
+    49
+   ],
+   "case": "amos_0194"
+  },
+  {
+   "pred": "pancreas",
+   "true": "bg",
+   "ml": 1.01,
+   "err_ml": 1.01,
+   "z": [
+    50,
+    53
+   ],
+   "case": "amos_0194"
+  },
+  {
+   "pred": "stomach",
+   "true": "bg",
+   "ml": 1.93,
+   "err_ml": 1.93,
+   "z": [
+    27,
+    28
+   ],
+   "case": "amos_0202"
+  },
+  {
+   "pred": "stomach",
+   "true": "bg",
+   "ml": 4.73,
+   "err_ml": 4.73,
+   "z": [
+    29,
+    31
+   ],
+   "case": "amos_0202"
+  },
+  {
+   "pred": "stomach",
+   "true": "bg",
+   "ml": 5.22,
+   "err_ml": 5.22,
+   "z": [
+    29,
+    31
+   ],
+   "case": "amos_0202"
+  },
+  {
+   "pred": "stomach",
+   "true": "bg",
+   "ml": 3.42,
+   "err_ml": 3.42,
+   "z": [
+    30,
+    35
+   ],
+   "case": "amos_0202"
+  },
+  {
+   "pred": "stomach",
+   "true": "bg",
+   "ml": 2.5,
+   "err_ml": 2.5,
+   "z": [
+    33,
+    36
+   ],
+   "case": "amos_0202"
+  },
+  {
+   "pred": "stomach",
+   "true": "bg",
+   "ml": 15.6,
+   "err_ml": 15.6,
+   "z": [
+    50,
+    53
+   ],
+   "case": "amos_0202"
+  },
+  {
+   "pred": "stomach",
+   "true": "bg",
+   "ml": 1.04,
+   "err_ml": 1.04,
+   "z": [
+    56,
+    57
+   ],
+   "case": "amos_0202"
+  },
+  {
+   "pred": "bladder",
+   "true": "prostate_uterus",
+   "ml": 1.03,
+   "err_ml": 1.03,
+   "z": [
+    9,
+    12
+   ],
+   "case": "amos_0202"
+  },
+  {
+   "pred": "liver",
+   "true": "stomach",
+   "ml": 1.0,
+   "err_ml": 1.0,
+   "z": [
+    202,
+    204
+   ],
+   "case": "amos_0203"
+  },
+  {
+   "pred": "stomach",
+   "true": "duodenum",
+   "ml": 1.15,
+   "err_ml": 1.15,
+   "z": [
+    163,
+    165
+   ],
+   "case": "amos_0203"
+  },
+  {
+   "pred": "duodenum",
+   "true": "bg",
+   "ml": 2.94,
+   "err_ml": 2.94,
+   "z": [
+    169,
+    180
+   ],
+   "case": "amos_0203"
+  },
+  {
+   "pred": "spleen",
+   "true": "bg",
+   "ml": 4.21,
+   "err_ml": 4.21,
+   "z": [
+    195,
+    208
+   ],
+   "case": "amos_0204"
+  },
+  {
+   "pred": "kidney_R",
+   "true": "liver",
+   "ml": 1.19,
+   "err_ml": 1.19,
+   "z": [
+    155,
+    158
+   ],
+   "case": "amos_0204"
+  },
+  {
+   "pred": "kidney_L",
+   "true": "aorta",
+   "ml": 2.41,
+   "err_ml": 2.41,
+   "z": [
+    188,
+    191
+   ],
+   "case": "amos_0204"
+  },
+  {
+   "pred": "kidney_L",
+   "true": "aorta",
+   "ml": 7.15,
+   "err_ml": 7.15,
+   "z": [
+    194,
+    208
+   ],
+   "case": "amos_0204"
+  },
+  {
+   "pred": "gallbladder",
+   "true": "bg",
+   "ml": 3.67,
+   "err_ml": 3.67,
+   "z": [
+    155,
+    169
+   ],
+   "case": "amos_0204"
+  },
+  {
+   "pred": "stomach",
+   "true": "spleen",
+   "ml": 3.24,
+   "err_ml": 3.24,
+   "z": [
+    173,
+    179
+   ],
+   "case": "amos_0204"
+  },
+  {
+   "pred": "stomach",
+   "true": "spleen",
+   "ml": 1.14,
+   "err_ml": 1.14,
+   "z": [
+    179,
+    183
+   ],
+   "case": "amos_0204"
+  },
+  {
+   "pred": "ivc",
+   "true": "bg",
+   "ml": 2.52,
+   "err_ml": 2.52,
+   "z": [
+    194,
+    201
+   ],
+   "case": "amos_0204"
+  },
+  {
+   "pred": "pancreas",
+   "true": "liver",
+   "ml": 1.51,
+   "err_ml": 1.51,
+   "z": [
+    146,
+    154
+   ],
+   "case": "amos_0204"
+  },
+  {
+   "pred": "pancreas",
+   "true": "bg",
+   "ml": 3.15,
+   "err_ml": 3.08,
+   "z": [
+    148,
+    161
+   ],
+   "case": "amos_0204"
+  },
+  {
+   "pred": "bladder",
+   "true": "prostate_uterus",
+   "ml": 2.36,
+   "err_ml": 2.36,
+   "z": [
+    14,
+    18
+   ],
+   "case": "amos_0204"
+  },
+  {
+   "pred": "kidney_R",
+   "true": "bg",
+   "ml": 2.53,
+   "err_ml": 2.53,
+   "z": [
+    106,
+    113
+   ],
+   "case": "amos_0206"
+  },
+  {
+   "pred": "stomach",
+   "true": "bg",
+   "ml": 2.08,
+   "err_ml": 2.08,
+   "z": [
+    177,
+    180
+   ],
+   "case": "amos_0206"
+  },
+  {
+   "pred": "liver",
+   "true": "stomach",
+   "ml": 2.56,
+   "err_ml": 2.56,
+   "z": [
+    199,
+    204
+   ],
+   "case": "amos_0207"
+  },
+  {
+   "pred": "duodenum",
+   "true": "bg",
+   "ml": 1.39,
+   "err_ml": 1.39,
+   "z": [
+    170,
+    177
+   ],
+   "case": "amos_0207"
+  },
+  {
+   "pred": "liver",
+   "true": "gallbladder",
+   "ml": 1.19,
+   "err_ml": 1.19,
+   "z": [
+    167,
+    170
+   ],
+   "case": "amos_0208"
+  },
+  {
+   "pred": "stomach",
+   "true": "bg",
+   "ml": 10.48,
+   "err_ml": 10.48,
+   "z": [
+    131,
+    140
+   ],
+   "case": "amos_0208"
+  },
+  {
+   "pred": "stomach",
+   "true": "bg",
+   "ml": 1.12,
+   "err_ml": 1.12,
+   "z": [
+    132,
+    135
+   ],
+   "case": "amos_0208"
+  },
+  {
+   "pred": "stomach",
+   "true": "bg",
+   "ml": 5.39,
+   "err_ml": 5.39,
+   "z": [
+    136,
+    147
+   ],
+   "case": "amos_0208"
+  },
+  {
+   "pred": "stomach",
+   "true": "bg",
+   "ml": 6.96,
+   "err_ml": 6.96,
+   "z": [
+    192,
+    196
+   ],
+   "case": "amos_0208"
+  },
+  {
+   "pred": "stomach",
+   "true": "bg",
+   "ml": 3.61,
+   "err_ml": 3.61,
+   "z": [
+    99,
+    101
+   ],
+   "case": "amos_0218"
+  },
+  {
+   "pred": "stomach",
+   "true": "bg",
+   "ml": 8.7,
+   "err_ml": 8.7,
+   "z": [
+    100,
+    104
+   ],
+   "case": "amos_0218"
+  },
+  {
+   "pred": "stomach",
+   "true": "bg",
+   "ml": 9.55,
+   "err_ml": 9.55,
+   "z": [
+    110,
+    113
+   ],
+   "case": "amos_0218"
+  },
+  {
+   "pred": "stomach",
+   "true": "duodenum",
+   "ml": 1.34,
+   "err_ml": 1.34,
+   "z": [
+    140,
+    144
+   ],
+   "case": "amos_0218"
+  },
+  {
+   "pred": "pancreas",
+   "true": "bg",
+   "ml": 4.67,
+   "err_ml": 4.67,
+   "z": [
+    101,
+    106
+   ],
+   "case": "amos_0218"
+  },
+  {
+   "pred": "bladder",
+   "true": "bg",
+   "ml": 1.16,
+   "err_ml": 1.16,
+   "z": [
+    31,
+    34
+   ],
+   "case": "amos_0218"
+  },
+  {
+   "pred": "bladder",
+   "true": "bg",
+   "ml": 2.13,
+   "err_ml": 2.13,
+   "z": [
+    38,
+    41
+   ],
+   "case": "amos_0218"
+  },
+  {
+   "pred": "prostate_uterus",
+   "true": "bladder",
+   "ml": 2.67,
+   "err_ml": 2.67,
+   "z": [
+    30,
+    33
+   ],
+   "case": "amos_0218"
+  },
+  {
+   "pred": "kidney_R",
+   "true": "bg",
+   "ml": 2.83,
+   "err_ml": 2.83,
+   "z": [
+    110,
+    117
+   ],
+   "case": "amos_0219"
+  },
+  {
+   "pred": "stomach",
+   "true": "bg",
+   "ml": 7.47,
+   "err_ml": 7.47,
+   "z": [
+    114,
+    118
+   ],
+   "case": "amos_0219"
+  },
+  {
+   "pred": "stomach",
+   "true": "bg",
+   "ml": 2.74,
+   "err_ml": 2.74,
+   "z": [
+    121,
+    126
+   ],
+   "case": "amos_0219"
+  },
+  {
+   "pred": "stomach",
+   "true": "bg",
+   "ml": 3.07,
+   "err_ml": 3.07,
+   "z": [
+    131,
+    137
+   ],
+   "case": "amos_0219"
+  },
+  {
+   "pred": "stomach",
+   "true": "bg",
+   "ml": 3.38,
+   "err_ml": 3.38,
+   "z": [
+    138,
+    144
+   ],
+   "case": "amos_0219"
+  },
+  {
+   "pred": "aorta",
+   "true": "bg",
+   "ml": 1.43,
+   "err_ml": 1.43,
+   "z": [
+    104,
+    108
+   ],
+   "case": "amos_0219"
+  },
+  {
+   "pred": "aorta",
+   "true": "esophagus",
+   "ml": 2.51,
+   "err_ml": 2.51,
+   "z": [
+    179,
+    186
+   ],
+   "case": "amos_0219"
+  },
+  {
+   "pred": "prostate_uterus",
+   "true": "bladder",
+   "ml": 2.12,
+   "err_ml": 2.12,
+   "z": [
+    44,
+    47
+   ],
+   "case": "amos_0219"
+  },
+  {
+   "pred": "stomach",
+   "true": "bg",
+   "ml": 1.78,
+   "err_ml": 1.78,
+   "z": [
+    115,
+    117
+   ],
+   "case": "amos_0223"
+  },
+  {
+   "pred": "stomach",
+   "true": "bg",
+   "ml": 1.2,
+   "err_ml": 1.2,
+   "z": [
+    119,
+    121
+   ],
+   "case": "amos_0223"
+  },
+  {
+   "pred": "stomach",
+   "true": "bg",
+   "ml": 1.46,
+   "err_ml": 1.46,
+   "z": [
+    186,
+    189
+   ],
+   "case": "amos_0223"
+  },
+  {
+   "pred": "bladder",
+   "true": "bg",
+   "ml": 1.48,
+   "err_ml": 1.48,
+   "z": [
+    21,
+    28
+   ],
+   "case": "amos_0223"
+  },
+  {
+   "pred": "spleen",
+   "true": "bg",
+   "ml": 4.13,
+   "err_ml": 4.13,
+   "z": [
+    119,
+    127
+   ],
+   "case": "amos_0228"
+  },
+  {
+   "pred": "liver",
+   "true": "bg",
+   "ml": 5.42,
+   "err_ml": 5.42,
+   "z": [
+    139,
+    147
+   ],
+   "case": "amos_0228"
+  },
+  {
+   "pred": "liver",
+   "true": "spleen",
+   "ml": 14.23,
+   "err_ml": 14.22,
+   "z": [
+    199,
+    208
+   ],
+   "case": "amos_0228"
+  },
+  {
+   "pred": "spleen",
+   "true": "stomach",
+   "ml": 2.9,
+   "err_ml": 2.9,
+   "z": [
+    178,
+    182
+   ],
+   "case": "amos_0233"
+  },
+  {
+   "pred": "spleen",
+   "true": "stomach",
+   "ml": 1.05,
+   "err_ml": 1.05,
+   "z": [
+    184,
+    186
+   ],
+   "case": "amos_0233"
+  },
+  {
+   "pred": "stomach",
+   "true": "bg",
+   "ml": 4.47,
+   "err_ml": 4.3,
+   "z": [
+    137,
+    139
+   ],
+   "case": "amos_0233"
+  },
+  {
+   "pred": "stomach",
+   "true": "bg",
+   "ml": 1.04,
+   "err_ml": 1.04,
+   "z": [
+    142,
+    146
+   ],
+   "case": "amos_0233"
+  },
+  {
+   "pred": "stomach",
+   "true": "bg",
+   "ml": 1.97,
+   "err_ml": 1.97,
+   "z": [
+    159,
+    162
+   ],
+   "case": "amos_0233"
+  },
+  {
+   "pred": "bladder",
+   "true": "bg",
+   "ml": 5.2,
+   "err_ml": 5.2,
+   "z": [
+    44,
+    48
+   ],
+   "case": "amos_0233"
+  },
+  {
+   "pred": "stomach",
+   "true": "bg",
+   "ml": 8.71,
+   "err_ml": 8.71,
+   "z": [
+    116,
+    121
+   ],
+   "case": "amos_0238"
+  },
+  {
+   "pred": "stomach",
+   "true": "liver",
+   "ml": 3.21,
+   "err_ml": 3.21,
+   "z": [
+    141,
+    149
+   ],
+   "case": "amos_0238"
+  },
+  {
+   "pred": "stomach",
+   "true": "liver",
+   "ml": 14.58,
+   "err_ml": 14.58,
+   "z": [
+    176,
+    186
+   ],
+   "case": "amos_0238"
+  },
+  {
+   "pred": "aorta",
+   "true": "bg",
+   "ml": 1.15,
+   "err_ml": 1.15,
+   "z": [
+    157,
+    165
+   ],
+   "case": "amos_0238"
+  },
+  {
+   "pred": "bladder",
+   "true": "prostate_uterus",
+   "ml": 6.87,
+   "err_ml": 6.87,
+   "z": [
+    59,
+    63
+   ],
+   "case": "amos_0244"
+  },
+  {
+   "pred": "stomach",
+   "true": "bg",
+   "ml": 3.25,
+   "err_ml": 3.25,
+   "z": [
+    156,
+    164
+   ],
+   "case": "amos_0247"
+  },
+  {
+   "pred": "stomach",
+   "true": "bg",
+   "ml": 3.04,
+   "err_ml": 3.04,
+   "z": [
+    166,
+    170
+   ],
+   "case": "amos_0247"
+  },
+  {
+   "pred": "stomach",
+   "true": "bg",
+   "ml": 9.58,
+   "err_ml": 9.58,
+   "z": [
+    214,
+    219
+   ],
+   "case": "amos_0247"
+  },
+  {
+   "pred": "pancreas",
+   "true": "bg",
+   "ml": 3.92,
+   "err_ml": 3.83,
+   "z": [
+    170,
+    173
+   ],
+   "case": "amos_0247"
+  },
+  {
+   "pred": "prostate_uterus",
+   "true": "bg",
+   "ml": 1.06,
+   "err_ml": 1.06,
+   "z": [
+    30,
+    34
+   ],
+   "case": "amos_0247"
+  },
+  {
+   "pred": "spleen",
+   "true": "bg",
+   "ml": 1.88,
+   "err_ml": 1.88,
+   "z": [
+    117,
+    122
+   ],
+   "case": "amos_0250"
+  },
+  {
+   "pred": "spleen",
+   "true": "bg",
+   "ml": 1.33,
+   "err_ml": 1.33,
+   "z": [
+    133,
+    138
+   ],
+   "case": "amos_0250"
+  },
+  {
+   "pred": "kidney_L",
+   "true": "bg",
+   "ml": 1.33,
+   "err_ml": 1.33,
+   "z": [
+    103,
+    106
+   ],
+   "case": "amos_0250"
+  },
+  {
+   "pred": "liver",
+   "true": "bg",
+   "ml": 1.49,
+   "err_ml": 1.49,
+   "z": [
+    195,
+    199
+   ],
+   "case": "amos_0250"
+  },
+  {
+   "pred": "stomach",
+   "true": "bg",
+   "ml": 1.06,
+   "err_ml": 1.06,
+   "z": [
+    111,
+    113
+   ],
+   "case": "amos_0250"
+  },
+  {
+   "pred": "stomach",
+   "true": "duodenum",
+   "ml": 1.57,
+   "err_ml": 1.57,
+   "z": [
+    128,
+    131
+   ],
+   "case": "amos_0250"
+  },
+  {
+   "pred": "pancreas",
+   "true": "duodenum",
+   "ml": 1.61,
+   "err_ml": 1.61,
+   "z": [
+    113,
+    120
+   ],
+   "case": "amos_0250"
+  },
+  {
+   "pred": "duodenum",
+   "true": "bg",
+   "ml": 1.65,
+   "err_ml": 1.65,
+   "z": [
+    101,
+    112
+   ],
+   "case": "amos_0250"
+  },
+  {
+   "pred": "prostate_uterus",
+   "true": "bg",
+   "ml": 42.34,
+   "err_ml": 42.34,
+   "z": [
+    21,
+    37
+   ],
+   "case": "amos_0250"
+  },
+  {
+   "pred": "prostate_uterus",
+   "true": "bg",
+   "ml": 2.54,
+   "err_ml": 2.54,
+   "z": [
+    38,
+    42
+   ],
+   "case": "amos_0250"
+  },
+  {
+   "pred": "spleen",
+   "true": "bg",
+   "ml": 1.04,
+   "err_ml": 1.04,
+   "z": [
+    145,
+    148
+   ],
+   "case": "amos_0255"
+  },
+  {
+   "pred": "gallbladder",
+   "true": "bg",
+   "ml": 4.83,
+   "err_ml": 4.83,
+   "z": [
+    72,
+    74
+   ],
+   "case": "amos_0257"
+  },
+  {
+   "pred": "liver",
+   "true": "bg",
+   "ml": 1.13,
+   "err_ml": 1.13,
+   "z": [
+    60,
+    62
+   ],
+   "case": "amos_0257"
+  },
+  {
+   "pred": "liver",
+   "true": "bg",
+   "ml": 2.78,
+   "err_ml": 2.78,
+   "z": [
+    64,
+    66
+   ],
+   "case": "amos_0257"
+  },
+  {
+   "pred": "liver",
+   "true": "bg",
+   "ml": 1.25,
+   "err_ml": 1.25,
+   "z": [
+    67,
+    70
+   ],
+   "case": "amos_0257"
+  },
+  {
+   "pred": "pancreas",
+   "true": "spleen",
+   "ml": 4.76,
+   "err_ml": 4.76,
+   "z": [
+    71,
+    76
+   ],
+   "case": "amos_0257"
+  },
+  {
+   "pred": "prostate_uterus",
+   "true": "bg",
+   "ml": 1.95,
+   "err_ml": 1.95,
+   "z": [
+    34,
+    35
+   ],
+   "case": "amos_0257"
+  },
+  {
+   "pred": "stomach",
+   "true": "duodenum",
+   "ml": 1.73,
+   "err_ml": 1.73,
+   "z": [
+    46,
+    47
+   ],
+   "case": "amos_0258"
+  },
+  {
+   "pred": "stomach",
+   "true": "duodenum",
+   "ml": 1.11,
+   "err_ml": 1.11,
+   "z": [
+    48,
+    49
+   ],
+   "case": "amos_0258"
+  },
+  {
+   "pred": "stomach",
+   "true": "bg",
+   "ml": 5.69,
+   "err_ml": 5.69,
+   "z": [
+    52,
+    54
+   ],
+   "case": "amos_0258"
+  },
+  {
+   "pred": "stomach",
+   "true": "bg",
+   "ml": 8.48,
+   "err_ml": 8.48,
+   "z": [
+    52,
+    56
+   ],
+   "case": "amos_0258"
+  },
+  {
+   "pred": "stomach",
+   "true": "pancreas",
+   "ml": 3.97,
+   "err_ml": 3.97,
+   "z": [
+    56,
+    59
+   ],
+   "case": "amos_0258"
+  },
+  {
+   "pred": "pancreas",
+   "true": "bg",
+   "ml": 1.13,
+   "err_ml": 1.13,
+   "z": [
+    54,
+    58
+   ],
+   "case": "amos_0258"
+  },
+  {
+   "pred": "duodenum",
+   "true": "bg",
+   "ml": 1.23,
+   "err_ml": 1.23,
+   "z": [
+    55,
+    57
+   ],
+   "case": "amos_0258"
+  },
+  {
+   "pred": "spleen",
+   "true": "kidney_L",
+   "ml": 3.3,
+   "err_ml": 3.3,
+   "z": [
+    157,
+    161
+   ],
+   "case": "amos_0278"
+  },
+  {
+   "pred": "spleen",
+   "true": "liver",
+   "ml": 2.93,
+   "err_ml": 2.93,
+   "z": [
+    202,
+    206
+   ],
+   "case": "amos_0278"
+  },
+  {
+   "pred": "stomach",
+   "true": "bg",
+   "ml": 1.4,
+   "err_ml": 1.4,
+   "z": [
+    142,
+    146
+   ],
+   "case": "amos_0278"
+  },
+  {
+   "pred": "stomach",
+   "true": "bg",
+   "ml": 2.83,
+   "err_ml": 2.83,
+   "z": [
+    149,
+    151
+   ],
+   "case": "amos_0278"
+  },
+  {
+   "pred": "stomach",
+   "true": "bg",
+   "ml": 2.28,
+   "err_ml": 2.28,
+   "z": [
+    198,
+    201
+   ],
+   "case": "amos_0278"
+  },
+  {
+   "pred": "stomach",
+   "true": "bg",
+   "ml": 5.06,
+   "err_ml": 5.06,
+   "z": [
+    201,
+    207
+   ],
+   "case": "amos_0278"
+  },
+  {
+   "pred": "pancreas",
+   "true": "stomach",
+   "ml": 1.28,
+   "err_ml": 1.28,
+   "z": [
+    135,
+    138
+   ],
+   "case": "amos_0280"
+  },
+  {
+   "pred": "gallbladder",
+   "true": "bg",
+   "ml": 1.05,
+   "err_ml": 1.05,
+   "z": [
+    131,
+    136
+   ],
+   "case": "amos_0283"
+  },
+  {
+   "pred": "stomach",
+   "true": "bg",
+   "ml": 21.28,
+   "err_ml": 21.28,
+   "z": [
+    54,
+    64
+   ],
+   "case": "amos_0283"
+  },
+  {
+   "pred": "stomach",
+   "true": "bg",
+   "ml": 1.72,
+   "err_ml": 1.72,
+   "z": [
+    68,
+    76
+   ],
+   "case": "amos_0283"
+  },
+  {
+   "pred": "stomach",
+   "true": "bg",
+   "ml": 28.63,
+   "err_ml": 28.63,
+   "z": [
+    106,
+    124
+   ],
+   "case": "amos_0283"
+  },
+  {
+   "pred": "stomach",
+   "true": "bg",
+   "ml": 1.1,
+   "err_ml": 1.1,
+   "z": [
+    124,
+    127
+   ],
+   "case": "amos_0283"
+  },
+  {
+   "pred": "stomach",
+   "true": "bg",
+   "ml": 2.29,
+   "err_ml": 2.29,
+   "z": [
+    131,
+    136
+   ],
+   "case": "amos_0283"
+  },
+  {
+   "pred": "stomach",
+   "true": "liver",
+   "ml": 1.18,
+   "err_ml": 1.18,
+   "z": [
+    169,
+    171
+   ],
+   "case": "amos_0283"
+  },
+  {
+   "pred": "bladder",
+   "true": "bg",
+   "ml": 2.01,
+   "err_ml": 2.01,
+   "z": [
+    41,
+    45
+   ],
+   "case": "amos_0283"
+  },
+  {
+   "pred": "liver",
+   "true": "gallbladder",
+   "ml": 6.88,
+   "err_ml": 6.88,
+   "z": [
+    137,
+    148
+   ],
+   "case": "amos_0284"
+  },
+  {
+   "pred": "stomach",
+   "true": "pancreas",
+   "ml": 1.26,
+   "err_ml": 1.26,
+   "z": [
+    143,
+    147
+   ],
+   "case": "amos_0284"
+  },
+  {
+   "pred": "stomach",
+   "true": "bg",
+   "ml": 1.09,
+   "err_ml": 1.09,
+   "z": [
+    167,
+    169
+   ],
+   "case": "amos_0284"
+  },
+  {
+   "pred": "stomach",
+   "true": "pancreas",
+   "ml": 1.38,
+   "err_ml": 1.38,
+   "z": [
+    173,
+    178
+   ],
+   "case": "amos_0286"
+  },
+  {
+   "pred": "duodenum",
+   "true": "bg",
+   "ml": 1.14,
+   "err_ml": 1.14,
+   "z": [
+    134,
+    140
+   ],
+   "case": "amos_0286"
+  },
+  {
+   "pred": "liver",
+   "true": "bg",
+   "ml": 1.14,
+   "err_ml": 1.14,
+   "z": [
+    317,
+    326
+   ],
+   "case": "amos_0287"
+  },
+  {
+   "pred": "stomach",
+   "true": "bladder",
+   "ml": 1.18,
+   "err_ml": 1.18,
+   "z": [
+    45,
+    50
+   ],
+   "case": "amos_0287"
+  },
+  {
+   "pred": "stomach",
+   "true": "bladder",
+   "ml": 7.5,
+   "err_ml": 7.5,
+   "z": [
+    59,
+    73
+   ],
+   "case": "amos_0287"
+  },
+  {
+   "pred": "stomach",
+   "true": "bladder",
+   "ml": 8.23,
+   "err_ml": 8.23,
+   "z": [
+    77,
+    83
+   ],
+   "case": "amos_0287"
+  },
+  {
+   "pred": "stomach",
+   "true": "bg",
+   "ml": 8.49,
+   "err_ml": 8.49,
+   "z": [
+    62,
+    65
+   ],
+   "case": "amos_0292"
+  },
+  {
+   "pred": "stomach",
+   "true": "bg",
+   "ml": 1.61,
+   "err_ml": 1.61,
+   "z": [
+    67,
+    69
+   ],
+   "case": "amos_0292"
+  },
+  {
+   "pred": "liver",
+   "true": "bg",
+   "ml": 19.08,
+   "err_ml": 19.08,
+   "z": [
+    224,
+    238
+   ],
+   "case": "amos_0293"
+  },
+  {
+   "pred": "stomach",
+   "true": "bg",
+   "ml": 4.65,
+   "err_ml": 4.65,
+   "z": [
+    122,
+    128
+   ],
+   "case": "amos_0293"
+  },
+  {
+   "pred": "stomach",
+   "true": "bg",
+   "ml": 4.55,
+   "err_ml": 4.55,
+   "z": [
+    133,
+    138
+   ],
+   "case": "amos_0293"
+  },
+  {
+   "pred": "aorta",
+   "true": "esophagus",
+   "ml": 1.33,
+   "err_ml": 1.33,
+   "z": [
+    216,
+    228
+   ],
+   "case": "amos_0293"
+  },
+  {
+   "pred": "spleen",
+   "true": "bg",
+   "ml": 1.9,
+   "err_ml": 1.9,
+   "z": [
+    55,
+    57
+   ],
+   "case": "amos_0308"
+  },
+  {
+   "pred": "kidney_L",
+   "true": "bg",
+   "ml": 1.0,
+   "err_ml": 1.0,
+   "z": [
+    43,
+    45
+   ],
+   "case": "amos_0308"
+  },
+  {
+   "pred": "liver",
+   "true": "stomach",
+   "ml": 1.55,
+   "err_ml": 1.55,
+   "z": [
+    56,
+    60
+   ],
+   "case": "amos_0308"
+  },
+  {
+   "pred": "pancreas",
+   "true": "bg",
+   "ml": 2.45,
+   "err_ml": 2.45,
+   "z": [
+    49,
+    52
+   ],
+   "case": "amos_0308"
+  },
+  {
+   "pred": "duodenum",
+   "true": "bg",
+   "ml": 3.21,
+   "err_ml": 3.21,
+   "z": [
+    53,
+    56
+   ],
+   "case": "amos_0308"
+  },
+  {
+   "pred": "prostate_uterus",
+   "true": "bg",
+   "ml": 1.57,
+   "err_ml": 1.57,
+   "z": [
+    10,
+    11
+   ],
+   "case": "amos_0308"
+  },
+  {
+   "pred": "prostate_uterus",
+   "true": "bg",
+   "ml": 1.06,
+   "err_ml": 1.06,
+   "z": [
+    12,
+    13
+   ],
+   "case": "amos_0308"
+  },
+  {
+   "pred": "esophagus",
+   "true": "bg",
+   "ml": 2.97,
+   "err_ml": 2.96,
+   "z": [
+    214,
+    235
+   ],
+   "case": "amos_0309"
+  },
+  {
+   "pred": "liver",
+   "true": "bg",
+   "ml": 1.15,
+   "err_ml": 1.15,
+   "z": [
+    227,
+    230
+   ],
+   "case": "amos_0309"
+  },
+  {
+   "pred": "gallbladder",
+   "true": "bg",
+   "ml": 1.44,
+   "err_ml": 1.44,
+   "z": [
+    127,
+    130
+   ],
+   "case": "amos_0310"
+  },
+  {
+   "pred": "gallbladder",
+   "true": "liver",
+   "ml": 1.54,
+   "err_ml": 1.54,
+   "z": [
+    141,
+    145
+   ],
+   "case": "amos_0310"
+  },
+  {
+   "pred": "stomach",
+   "true": "duodenum",
+   "ml": 1.22,
+   "err_ml": 1.22,
+   "z": [
+    149,
+    156
+   ],
+   "case": "amos_0310"
+  },
+  {
+   "pred": "liver",
+   "true": "bg",
+   "ml": 1.25,
+   "err_ml": 1.25,
+   "z": [
+    149,
+    154
+   ],
+   "case": "amos_0311"
+  },
+  {
+   "pred": "stomach",
+   "true": "bg",
+   "ml": 1.41,
+   "err_ml": 1.41,
+   "z": [
+    104,
+    107
+   ],
+   "case": "amos_0311"
+  },
+  {
+   "pred": "stomach",
+   "true": "bg",
+   "ml": 1.52,
+   "err_ml": 1.52,
+   "z": [
+    113,
+    116
+   ],
+   "case": "amos_0311"
+  },
+  {
+   "pred": "stomach",
+   "true": "bg",
+   "ml": 82.49,
+   "err_ml": 82.49,
+   "z": [
+    127,
+    168
+   ],
+   "case": "amos_0311"
+  },
+  {
+   "pred": "stomach",
+   "true": "spleen",
+   "ml": 1.49,
+   "err_ml": 1.49,
+   "z": [
+    137,
+    143
+   ],
+   "case": "amos_0311"
+  },
+  {
+   "pred": "pancreas",
+   "true": "bg",
+   "ml": 1.79,
+   "err_ml": 1.79,
+   "z": [
+    148,
+    153
+   ],
+   "case": "amos_0311"
+  },
+  {
+   "pred": "duodenum",
+   "true": "bg",
+   "ml": 1.56,
+   "err_ml": 1.56,
+   "z": [
+    102,
+    108
+   ],
+   "case": "amos_0311"
+  },
+  {
+   "pred": "duodenum",
+   "true": "bg",
+   "ml": 3.42,
+   "err_ml": 3.42,
+   "z": [
+    130,
+    140
+   ],
+   "case": "amos_0311"
+  },
+  {
+   "pred": "prostate_uterus",
+   "true": "bg",
+   "ml": 1.15,
+   "err_ml": 1.15,
+   "z": [
+    32,
+    39
+   ],
+   "case": "amos_0311"
+  },
+  {
+   "pred": "gallbladder",
+   "true": "bg",
+   "ml": 2.05,
+   "err_ml": 2.05,
+   "z": [
+    149,
+    153
+   ],
+   "case": "amos_0313"
+  },
+  {
+   "pred": "stomach",
+   "true": "bg",
+   "ml": 3.83,
+   "err_ml": 3.83,
+   "z": [
+    203,
+    207
+   ],
+   "case": "amos_0313"
+  },
+  {
+   "pred": "adrenal_R",
+   "true": "liver",
+   "ml": 1.06,
+   "err_ml": 1.06,
+   "z": [
+    183,
+    192
+   ],
+   "case": "amos_0313"
+  },
+  {
+   "pred": "stomach",
+   "true": "bg",
+   "ml": 1.01,
+   "err_ml": 1.01,
+   "z": [
+    137,
+    142
+   ],
+   "case": "amos_0316"
+  },
+  {
+   "pred": "stomach",
+   "true": "bg",
+   "ml": 1.54,
+   "err_ml": 1.54,
+   "z": [
+    144,
+    148
+   ],
+   "case": "amos_0316"
+  },
+  {
+   "pred": "duodenum",
+   "true": "stomach",
+   "ml": 4.92,
+   "err_ml": 4.92,
+   "z": [
+    172,
+    180
+   ],
+   "case": "amos_0316"
+  },
+  {
+   "pred": "liver",
+   "true": "bg",
+   "ml": 4.48,
+   "err_ml": 4.48,
+   "z": [
+    85,
+    88
+   ],
+   "case": "amos_0318"
+  },
+  {
+   "pred": "stomach",
+   "true": "bg",
+   "ml": 50.97,
+   "err_ml": 50.97,
+   "z": [
+    57,
+    71
+   ],
+   "case": "amos_0318"
+  },
+  {
+   "pred": "stomach",
+   "true": "bg",
+   "ml": 2.33,
+   "err_ml": 2.33,
+   "z": [
+    58,
+    60
+   ],
+   "case": "amos_0318"
+  },
+  {
+   "pred": "stomach",
+   "true": "bg",
+   "ml": 5.73,
+   "err_ml": 5.73,
+   "z": [
+    63,
+    65
+   ],
+   "case": "amos_0318"
+  },
+  {
+   "pred": "pancreas",
+   "true": "bg",
+   "ml": 1.83,
+   "err_ml": 1.83,
+   "z": [
+    51,
+    55
+   ],
+   "case": "amos_0318"
+  },
+  {
+   "pred": "kidney_R",
+   "true": "bg",
+   "ml": 1.21,
+   "err_ml": 1.21,
+   "z": [
+    116,
+    118
+   ],
+   "case": "amos_0323"
+  },
+  {
+   "pred": "stomach",
+   "true": "duodenum",
+   "ml": 1.5,
+   "err_ml": 1.5,
+   "z": [
+    167,
+    170
+   ],
+   "case": "amos_0323"
+  },
+  {
+   "pred": "duodenum",
+   "true": "bg",
+   "ml": 1.64,
+   "err_ml": 1.64,
+   "z": [
+    165,
+    169
+   ],
+   "case": "amos_0323"
+  },
+  {
+   "pred": "spleen",
+   "true": "aorta",
+   "ml": 10.3,
+   "err_ml": 10.3,
+   "z": [
+    60,
+    69
+   ],
+   "case": "amos_0326"
+  },
+  {
+   "pred": "spleen",
+   "true": "aorta",
+   "ml": 3.38,
+   "err_ml": 3.38,
+   "z": [
+    74,
+    78
+   ],
+   "case": "amos_0326"
+  },
+  {
+   "pred": "kidney_L",
+   "true": "aorta",
+   "ml": 11.39,
+   "err_ml": 11.39,
+   "z": [
+    52,
+    61
+   ],
+   "case": "amos_0326"
+  },
+  {
+   "pred": "kidney_L",
+   "true": "aorta",
+   "ml": 5.5,
+   "err_ml": 5.5,
+   "z": [
+    60,
+    66
+   ],
+   "case": "amos_0326"
+  },
+  {
+   "pred": "kidney_L",
+   "true": "aorta",
+   "ml": 19.04,
+   "err_ml": 19.04,
+   "z": [
+    67,
+    76
+   ],
+   "case": "amos_0326"
+  },
+  {
+   "pred": "kidney_L",
+   "true": "aorta",
+   "ml": 5.7,
+   "err_ml": 5.7,
+   "z": [
+    77,
+    83
+   ],
+   "case": "amos_0326"
+  },
+  {
+   "pred": "kidney_L",
+   "true": "aorta",
+   "ml": 2.41,
+   "err_ml": 2.41,
+   "z": [
+    86,
+    88
+   ],
+   "case": "amos_0326"
+  },
+  {
+   "pred": "kidney_L",
+   "true": "aorta",
+   "ml": 1.85,
+   "err_ml": 1.85,
+   "z": [
+    90,
+    92
+   ],
+   "case": "amos_0326"
+  },
+  {
+   "pred": "liver",
+   "true": "stomach",
+   "ml": 2.5,
+   "err_ml": 2.5,
+   "z": [
+    50,
+    52
+   ],
+   "case": "amos_0326"
+  },
+  {
+   "pred": "liver",
+   "true": "aorta",
+   "ml": 2.99,
+   "err_ml": 2.99,
+   "z": [
+    64,
+    68
+   ],
+   "case": "amos_0326"
+  },
+  {
+   "pred": "liver",
+   "true": "stomach",
+   "ml": 1.2,
+   "err_ml": 1.2,
+   "z": [
+    65,
+    67
+   ],
+   "case": "amos_0326"
+  },
+  {
+   "pred": "liver",
+   "true": "bg",
+   "ml": 2.46,
+   "err_ml": 2.46,
+   "z": [
+    81,
+    84
+   ],
+   "case": "amos_0326"
+  },
+  {
+   "pred": "aorta",
+   "true": "bg",
+   "ml": 1.65,
+   "err_ml": 1.65,
+   "z": [
+    88,
+    90
+   ],
+   "case": "amos_0326"
+  },
+  {
+   "pred": "aorta",
+   "true": "esophagus",
+   "ml": 1.8,
+   "err_ml": 1.8,
+   "z": [
+    98,
+    101
+   ],
+   "case": "amos_0326"
+  },
+  {
+   "pred": "prostate_uterus",
+   "true": "bladder",
+   "ml": 4.39,
+   "err_ml": 4.39,
+   "z": [
+    6,
+    7
+   ],
+   "case": "amos_0326"
+  },
+  {
+   "pred": "kidney_L",
+   "true": "bg",
+   "ml": 2.76,
+   "err_ml": 2.76,
+   "z": [
+    46,
+    48
+   ],
+   "case": "amos_0328"
+  },
+  {
+   "pred": "kidney_L",
+   "true": "bg",
+   "ml": 1.87,
+   "err_ml": 1.87,
+   "z": [
+    120,
+    126
+   ],
+   "case": "amos_0333"
+  },
+  {
+   "pred": "stomach",
+   "true": "bg",
+   "ml": 17.15,
+   "err_ml": 17.15,
+   "z": [
+    153,
+    165
+   ],
+   "case": "amos_0339"
+  },
+  {
+   "pred": "stomach",
+   "true": "bg",
+   "ml": 1.78,
+   "err_ml": 1.78,
+   "z": [
+    161,
+    165
+   ],
+   "case": "amos_0339"
+  },
+  {
+   "pred": "duodenum",
+   "true": "bg",
+   "ml": 1.41,
+   "err_ml": 1.41,
+   "z": [
+    147,
+    155
+   ],
+   "case": "amos_0339"
+  },
+  {
+   "pred": "bladder",
+   "true": "bg",
+   "ml": 1.27,
+   "err_ml": 1.27,
+   "z": [
+    100,
+    102
+   ],
+   "case": "amos_0339"
+  },
+  {
+   "pred": "liver",
+   "true": "bg",
+   "ml": 2.23,
+   "err_ml": 2.23,
+   "z": [
+    46,
+    51
+   ],
+   "case": "amos_0342"
+  },
+  {
+   "pred": "stomach",
+   "true": "spleen",
+   "ml": 1.06,
+   "err_ml": 1.06,
+   "z": [
+    70,
+    72
+   ],
+   "case": "amos_0342"
+  },
+  {
+   "pred": "kidney_R",
+   "true": "bg",
+   "ml": 2.2,
+   "err_ml": 2.2,
+   "z": [
+    114,
+    117
+   ],
+   "case": "amos_0344"
+  },
+  {
+   "pred": "liver",
+   "true": "bg",
+   "ml": 1.61,
+   "err_ml": 1.61,
+   "z": [
+    197,
+    202
+   ],
+   "case": "amos_0344"
+  },
+  {
+   "pred": "stomach",
+   "true": "bg",
+   "ml": 3.84,
+   "err_ml": 3.84,
+   "z": [
+    123,
+    127
+   ],
+   "case": "amos_0344"
+  },
+  {
+   "pred": "stomach",
+   "true": "bg",
+   "ml": 1.32,
+   "err_ml": 1.32,
+   "z": [
+    129,
+    132
+   ],
+   "case": "amos_0344"
+  },
+  {
+   "pred": "stomach",
+   "true": "bg",
+   "ml": 2.44,
+   "err_ml": 2.44,
+   "z": [
+    132,
+    134
+   ],
+   "case": "amos_0344"
+  },
+  {
+   "pred": "stomach",
+   "true": "bg",
+   "ml": 14.11,
+   "err_ml": 14.11,
+   "z": [
+    138,
+    144
+   ],
+   "case": "amos_0344"
+  },
+  {
+   "pred": "stomach",
+   "true": "bg",
+   "ml": 1.14,
+   "err_ml": 1.14,
+   "z": [
+    140,
+    143
+   ],
+   "case": "amos_0344"
+  },
+  {
+   "pred": "stomach",
+   "true": "bg",
+   "ml": 1.95,
+   "err_ml": 1.95,
+   "z": [
+    152,
+    155
+   ],
+   "case": "amos_0344"
+  },
+  {
+   "pred": "pancreas",
+   "true": "spleen",
+   "ml": 1.39,
+   "err_ml": 1.39,
+   "z": [
+    157,
+    160
+   ],
+   "case": "amos_0344"
+  },
+  {
+   "pred": "duodenum",
+   "true": "bg",
+   "ml": 2.05,
+   "err_ml": 2.05,
+   "z": [
+    105,
+    111
+   ],
+   "case": "amos_0344"
+  },
+  {
+   "pred": "prostate_uterus",
+   "true": "bg",
+   "ml": 1.13,
+   "err_ml": 1.13,
+   "z": [
+    49,
+    50
+   ],
+   "case": "amos_0344"
+  },
+  {
+   "pred": "kidney_L",
+   "true": "spleen",
+   "ml": 5.71,
+   "err_ml": 5.71,
+   "z": [
+    44,
+    48
+   ],
+   "case": "amos_0346"
+  },
+  {
+   "pred": "kidney_L",
+   "true": "spleen",
+   "ml": 6.96,
+   "err_ml": 6.96,
+   "z": [
+    51,
+    55
+   ],
+   "case": "amos_0346"
+  },
+  {
+   "pred": "gallbladder",
+   "true": "liver",
+   "ml": 1.48,
+   "err_ml": 1.48,
+   "z": [
+    62,
+    65
+   ],
+   "case": "amos_0346"
+  },
+  {
+   "pred": "liver",
+   "true": "ivc",
+   "ml": 1.11,
+   "err_ml": 1.11,
+   "z": [
+    60,
+    64
+   ],
+   "case": "amos_0352"
+  },
+  {
+   "pred": "spleen",
+   "true": "stomach",
+   "ml": 1.1,
+   "err_ml": 1.1,
+   "z": [
+    86,
+    90
+   ],
+   "case": "amos_0356"
+  },
+  {
+   "pred": "kidney_L",
+   "true": "prostate_uterus",
+   "ml": 4.4,
+   "err_ml": 4.4,
+   "z": [
+    24,
+    33
+   ],
+   "case": "amos_0356"
+  },
+  {
+   "pred": "gallbladder",
+   "true": "duodenum",
+   "ml": 5.19,
+   "err_ml": 5.19,
+   "z": [
+    91,
+    100
+   ],
+   "case": "amos_0356"
+  },
+  {
+   "pred": "liver",
+   "true": "stomach",
+   "ml": 5.7,
+   "err_ml": 5.7,
+   "z": [
+    95,
+    101
+   ],
+   "case": "amos_0356"
+  },
+  {
+   "pred": "liver",
+   "true": "pancreas",
+   "ml": 1.19,
+   "err_ml": 1.19,
+   "z": [
+    96,
+    98
+   ],
+   "case": "amos_0356"
+  },
+  {
+   "pred": "ivc",
+   "true": "bg",
+   "ml": 1.31,
+   "err_ml": 1.31,
+   "z": [
+    66,
+    71
+   ],
+   "case": "amos_0356"
+  },
+  {
+   "pred": "pancreas",
+   "true": "stomach",
+   "ml": 2.68,
+   "err_ml": 2.68,
+   "z": [
+    83,
+    90
+   ],
+   "case": "amos_0356"
+  },
+  {
+   "pred": "pancreas",
+   "true": "stomach",
+   "ml": 1.04,
+   "err_ml": 1.04,
+   "z": [
+    86,
+    89
+   ],
+   "case": "amos_0356"
+  },
+  {
+   "pred": "duodenum",
+   "true": "pancreas",
+   "ml": 3.11,
+   "err_ml": 3.11,
+   "z": [
+    101,
+    107
+   ],
+   "case": "amos_0356"
+  },
+  {
+   "pred": "spleen",
+   "true": "bg",
+   "ml": 2.04,
+   "err_ml": 2.04,
+   "z": [
+    147,
+    153
+   ],
+   "case": "amos_0357"
+  },
+  {
+   "pred": "stomach",
+   "true": "bg",
+   "ml": 13.07,
+   "err_ml": 13.07,
+   "z": [
+    113,
+    123
+   ],
+   "case": "amos_0357"
+  },
+  {
+   "pred": "stomach",
+   "true": "bg",
+   "ml": 15.52,
+   "err_ml": 15.52,
+   "z": [
+    136,
+    147
+   ],
+   "case": "amos_0357"
+  },
+  {
+   "pred": "stomach",
+   "true": "bg",
+   "ml": 27.5,
+   "err_ml": 27.5,
+   "z": [
+    147,
+    155
+   ],
+   "case": "amos_0357"
+  },
+  {
+   "pred": "stomach",
+   "true": "bg",
+   "ml": 1.05,
+   "err_ml": 1.05,
+   "z": [
+    180,
+    183
+   ],
+   "case": "amos_0357"
+  },
+  {
+   "pred": "ivc",
+   "true": "esophagus",
+   "ml": 1.43,
+   "err_ml": 1.43,
+   "z": [
+    212,
+    219
+   ],
+   "case": "amos_0357"
+  },
+  {
+   "pred": "liver",
+   "true": "bg",
+   "ml": 2.29,
+   "err_ml": 2.29,
+   "z": [
+    2,
+    3
+   ],
+   "case": "amos_0364"
+  },
+  {
+   "pred": "liver",
+   "true": "bg",
+   "ml": 3.3,
+   "err_ml": 3.3,
+   "z": [
+    4,
+    7
+   ],
+   "case": "amos_0364"
+  },
+  {
+   "pred": "liver",
+   "true": "bg",
+   "ml": 4.47,
+   "err_ml": 4.47,
+   "z": [
+    29,
+    36
+   ],
+   "case": "amos_0364"
+  },
+  {
+   "pred": "liver",
+   "true": "bg",
+   "ml": 6.47,
+   "err_ml": 6.47,
+   "z": [
+    43,
+    47
+   ],
+   "case": "amos_0364"
+  },
+  {
+   "pred": "stomach",
+   "true": "bladder",
+   "ml": 1.2,
+   "err_ml": 1.2,
+   "z": [
+    21,
+    22
+   ],
+   "case": "amos_0364"
+  },
+  {
+   "pred": "stomach",
+   "true": "bg",
+   "ml": 2.96,
+   "err_ml": 2.96,
+   "z": [
+    88,
+    89
+   ],
+   "case": "amos_0364"
+  },
+  {
+   "pred": "duodenum",
+   "true": "ivc",
+   "ml": 1.16,
+   "err_ml": 1.16,
+   "z": [
+    55,
+    59
+   ],
+   "case": "amos_0364"
+  },
+  {
+   "pred": "bladder",
+   "true": "bg",
+   "ml": 1.48,
+   "err_ml": 1.48,
+   "z": [
+    13,
+    14
+   ],
+   "case": "amos_0364"
+  },
+  {
+   "pred": "prostate_uterus",
+   "true": "bg",
+   "ml": 1.65,
+   "err_ml": 1.65,
+   "z": [
+    9,
+    11
+   ],
+   "case": "amos_0364"
+  },
+  {
+   "pred": "kidney_R",
+   "true": "bg",
+   "ml": 1.39,
+   "err_ml": 1.39,
+   "z": [
+    66,
+    67
+   ],
+   "case": "amos_0368"
+  },
+  {
+   "pred": "prostate_uterus",
+   "true": "bladder",
+   "ml": 2.24,
+   "err_ml": 2.24,
+   "z": [
+    9,
+    10
+   ],
+   "case": "amos_0368"
+  },
+  {
+   "pred": "stomach",
+   "true": "bg",
+   "ml": 1.89,
+   "err_ml": 1.89,
+   "z": [
+    59,
+    60
+   ],
+   "case": "amos_0372"
+  },
+  {
+   "pred": "stomach",
+   "true": "bg",
+   "ml": 1.41,
+   "err_ml": 1.41,
+   "z": [
+    72,
+    75
+   ],
+   "case": "amos_0372"
+  },
+  {
+   "pred": "spleen",
+   "true": "stomach",
+   "ml": 1.56,
+   "err_ml": 1.56,
+   "z": [
+    51,
+    52
+   ],
+   "case": "amos_0373"
+  },
+  {
+   "pred": "spleen",
+   "true": "stomach",
+   "ml": 2.79,
+   "err_ml": 2.79,
+   "z": [
+    53,
+    56
+   ],
+   "case": "amos_0373"
+  },
+  {
+   "pred": "spleen",
+   "true": "stomach",
+   "ml": 3.19,
+   "err_ml": 3.19,
+   "z": [
+    58,
+    61
+   ],
+   "case": "amos_0373"
+  },
+  {
+   "pred": "spleen",
+   "true": "stomach",
+   "ml": 1.26,
+   "err_ml": 1.26,
+   "z": [
+    63,
+    65
+   ],
+   "case": "amos_0373"
+  },
+  {
+   "pred": "spleen",
+   "true": "stomach",
+   "ml": 7.43,
+   "err_ml": 7.43,
+   "z": [
+    63,
+    67
+   ],
+   "case": "amos_0373"
+  },
+  {
+   "pred": "liver",
+   "true": "bg",
+   "ml": 1.87,
+   "err_ml": 1.87,
+   "z": [
+    40,
+    42
+   ],
+   "case": "amos_0373"
+  },
+  {
+   "pred": "liver",
+   "true": "stomach",
+   "ml": 2.02,
+   "err_ml": 2.02,
+   "z": [
+    49,
+    52
+   ],
+   "case": "amos_0373"
+  },
+  {
+   "pred": "liver",
+   "true": "stomach",
+   "ml": 183.4,
+   "err_ml": 183.4,
+   "z": [
+    53,
+    69
+   ],
+   "case": "amos_0373"
+  },
+  {
+   "pred": "liver",
+   "true": "bg",
+   "ml": 2.51,
+   "err_ml": 2.51,
+   "z": [
+    80,
+    82
+   ],
+   "case": "amos_0373"
+  },
+  {
+   "pred": "stomach",
+   "true": "bg",
+   "ml": 2.86,
+   "err_ml": 2.86,
+   "z": [
+    61,
+    64
+   ],
+   "case": "amos_0373"
+  },
+  {
+   "pred": "aorta",
+   "true": "bg",
+   "ml": 1.34,
+   "err_ml": 1.34,
+   "z": [
+    40,
+    42
+   ],
+   "case": "amos_0373"
+  },
+  {
+   "pred": "aorta",
+   "true": "bg",
+   "ml": 4.49,
+   "err_ml": 4.49,
+   "z": [
+    91,
+    92
+   ],
+   "case": "amos_0373"
+  },
+  {
+   "pred": "pancreas",
+   "true": "stomach",
+   "ml": 1.25,
+   "err_ml": 1.25,
+   "z": [
+    51,
+    52
+   ],
+   "case": "amos_0373"
+  },
+  {
+   "pred": "duodenum",
+   "true": "bg",
+   "ml": 1.13,
+   "err_ml": 1.13,
+   "z": [
+    43,
+    45
+   ],
+   "case": "amos_0373"
+  },
+  {
+   "pred": "duodenum",
+   "true": "stomach",
+   "ml": 1.15,
+   "err_ml": 1.15,
+   "z": [
+    63,
+    66
+   ],
+   "case": "amos_0373"
+  },
+  {
+   "pred": "prostate_uterus",
+   "true": "bg",
+   "ml": 6.0,
+   "err_ml": 6.0,
+   "z": [
+    8,
+    11
+   ],
+   "case": "amos_0373"
+  },
+  {
+   "pred": "aorta",
+   "true": "bg",
+   "ml": 2.93,
+   "err_ml": 2.93,
+   "z": [
+    83,
+    86
+   ],
+   "case": "amos_0377"
+  },
+  {
+   "pred": "pancreas",
+   "true": "bg",
+   "ml": 1.21,
+   "err_ml": 1.21,
+   "z": [
+    69,
+    71
+   ],
+   "case": "amos_0377"
+  },
+  {
+   "pred": "bladder",
+   "true": "bg",
+   "ml": 2.62,
+   "err_ml": 2.62,
+   "z": [
+    19,
+    20
+   ],
+   "case": "amos_0377"
+  },
+  {
+   "pred": "bladder",
+   "true": "bg",
+   "ml": 1.34,
+   "err_ml": 1.34,
+   "z": [
+    23,
+    24
+   ],
+   "case": "amos_0377"
+  },
+  {
+   "pred": "prostate_uterus",
+   "true": "bg",
+   "ml": 10.48,
+   "err_ml": 10.48,
+   "z": [
+    22,
+    25
+   ],
+   "case": "amos_0377"
+  },
+  {
+   "pred": "spleen",
+   "true": "bg",
+   "ml": 4.06,
+   "err_ml": 4.06,
+   "z": [
+    64,
+    67
+   ],
+   "case": "amos_0385"
+  },
+  {
+   "pred": "spleen",
+   "true": "bg",
+   "ml": 1.37,
+   "err_ml": 1.37,
+   "z": [
+    74,
+    76
+   ],
+   "case": "amos_0385"
+  },
+  {
+   "pred": "stomach",
+   "true": "bg",
+   "ml": 13.18,
+   "err_ml": 13.18,
+   "z": [
+    59,
+    64
+   ],
+   "case": "amos_0385"
+  },
+  {
+   "pred": "stomach",
+   "true": "bg",
+   "ml": 3.46,
+   "err_ml": 3.46,
+   "z": [
+    66,
+    70
+   ],
+   "case": "amos_0385"
+  },
+  {
+   "pred": "stomach",
+   "true": "bg",
+   "ml": 10.52,
+   "err_ml": 10.52,
+   "z": [
+    72,
+    78
+   ],
+   "case": "amos_0385"
+  },
+  {
+   "pred": "spleen",
+   "true": "bg",
+   "ml": 1.2,
+   "err_ml": 1.2,
+   "z": [
+    15,
+    17
+   ],
+   "case": "amos_0397"
+  },
+  {
+   "pred": "gallbladder",
+   "true": "duodenum",
+   "ml": 1.06,
+   "err_ml": 1.06,
+   "z": [
+    54,
+    55
+   ],
+   "case": "amos_0397"
+  },
+  {
+   "pred": "liver",
+   "true": "bg",
+   "ml": 1.09,
+   "err_ml": 1.09,
+   "z": [
+    60,
+    62
+   ],
+   "case": "amos_0397"
+  },
+  {
+   "pred": "spleen",
+   "true": "stomach",
+   "ml": 4.94,
+   "err_ml": 4.94,
+   "z": [
+    77,
+    82
+   ],
+   "case": "amos_0399"
+  },
+  {
+   "pred": "stomach",
+   "true": "bg",
+   "ml": 29.03,
+   "err_ml": 29.03,
+   "z": [
+    48,
+    54
+   ],
+   "case": "amos_0399"
+  },
+  {
+   "pred": "stomach",
+   "true": "bg",
+   "ml": 1.21,
+   "err_ml": 1.21,
+   "z": [
+    48,
+    49
+   ],
+   "case": "amos_0399"
+  },
+  {
+   "pred": "stomach",
+   "true": "bg",
+   "ml": 1.53,
+   "err_ml": 1.53,
+   "z": [
+    61,
+    63
+   ],
+   "case": "amos_0399"
+  },
+  {
+   "pred": "stomach",
+   "true": "bg",
+   "ml": 14.0,
+   "err_ml": 14.0,
+   "z": [
+    63,
+    69
+   ],
+   "case": "amos_0399"
+  },
+  {
+   "pred": "pancreas",
+   "true": "bg",
+   "ml": 2.42,
+   "err_ml": 2.42,
+   "z": [
+    56,
+    58
+   ],
+   "case": "amos_0399"
+  },
+  {
+   "pred": "bladder",
+   "true": "bg",
+   "ml": 4.16,
+   "err_ml": 4.16,
+   "z": [
+    16,
+    18
+   ],
+   "case": "amos_0399"
+  },
+  {
+   "pred": "stomach",
+   "true": "bg",
+   "ml": 5.4,
+   "err_ml": 5.4,
+   "z": [
+    62,
+    65
+   ],
+   "case": "amos_0409"
+  },
+  {
+   "pred": "stomach",
+   "true": "bg",
+   "ml": 20.03,
+   "err_ml": 20.03,
+   "z": [
+    66,
+    69
+   ],
+   "case": "amos_0409"
+  }
+ ],
+ "missed_components": [
+  {
+   "true": "aorta",
+   "pred": "bg",
+   "ml": 28.38,
+   "z": [
+    95,
+    100
+   ],
+   "case": "amos_0040"
+  },
+  {
+   "true": "kidney_L",
+   "pred": "aorta",
+   "ml": 6.24,
+   "z": [
+    51,
+    60
+   ],
+   "case": "amos_0041"
+  },
+  {
+   "true": "gallbladder",
+   "pred": "bg",
+   "ml": 12.42,
+   "z": [
+    45,
+    55
+   ],
+   "case": "amos_0041"
+  },
+  {
+   "true": "gallbladder",
+   "pred": "bg",
+   "ml": 9.22,
+   "z": [
+    47,
+    56
+   ],
+   "case": "amos_0132"
+  },
+  {
+   "true": "adrenal_L",
+   "pred": "bg",
+   "ml": 2.26,
+   "z": [
+    62,
+    68
+   ],
+   "case": "amos_0132"
+  },
+  {
+   "true": "gallbladder",
+   "pred": "bg",
+   "ml": 172.5,
+   "z": [
+    122,
+    185
+   ],
+   "case": "amos_0203"
+  },
+  {
+   "true": "prostate_uterus",
+   "pred": "bg",
+   "ml": 1.76,
+   "z": [
+    7,
+    8
+   ],
+   "case": "amos_0223"
+  },
+  {
+   "true": "aorta",
+   "pred": "bg",
+   "ml": 6.04,
+   "z": [
+    100,
+    101
+   ],
+   "case": "amos_0257"
+  },
+  {
+   "true": "prostate_uterus",
+   "pred": "bladder",
+   "ml": 15.29,
+   "z": [
+    24,
+    45
+   ],
+   "case": "amos_0287"
+  },
+  {
+   "true": "gallbladder",
+   "pred": "liver",
+   "ml": 78.21,
+   "z": [
+    169,
+    191
+   ],
+   "case": "amos_0293"
+  },
+  {
+   "true": "aorta",
+   "pred": "bg",
+   "ml": 6.19,
+   "z": [
+    232,
+    235
+   ],
+   "case": "amos_0309"
+  },
+  {
+   "true": "aorta",
+   "pred": "bg",
+   "ml": 1.33,
+   "z": [
+    204,
+    205
+   ],
+   "case": "amos_0310"
+  },
+  {
+   "true": "aorta",
+   "pred": "bg",
+   "ml": 9.86,
+   "z": [
+    193,
+    198
+   ],
+   "case": "amos_0311"
+  },
+  {
+   "true": "aorta",
+   "pred": "bg",
+   "ml": 1.12,
+   "z": [
+    0,
+    1
+   ],
+   "case": "amos_0326"
+  },
+  {
+   "true": "liver",
+   "pred": "bg",
+   "ml": 1.84,
+   "z": [
+    177,
+    179
+   ],
+   "case": "amos_0344"
+  },
+  {
+   "true": "bladder",
+   "pred": "bg",
+   "ml": 76.5,
+   "z": [
+    15,
+    31
+   ],
+   "case": "amos_0364"
+  },
+  {
+   "true": "prostate_uterus",
+   "pred": "bg",
+   "ml": 19.78,
+   "z": [
+    10,
+    16
+   ],
+   "case": "amos_0364"
+  },
+  {
+   "true": "prostate_uterus",
+   "pred": "bg",
+   "ml": 13.2,
+   "z": [
+    0,
+    5
+   ],
+   "case": "amos_0399"
+  }
+ ]
+}

@@ -1,0 +1,34 @@
+/home/jiawei/venvs/torch/lib/python3.14/site-packages/torch/jit/_script.py:1485: FutureWarning: `torch.jit.script` is not supported in Python 3.14+ and may break. Please switch to `torch.compile` or `torch.export`.
+  warnings.warn(
+Not saving results.
+Namespace(volume_path='../data/Synapse/test_vol_h5', dataset='Synapse', num_classes=9, list_dir='./lists/lists_Synapse', max_iterations=20000, max_epochs=300, batch_size=24, img_size=224, is_savenii=False, n_skip=3, vit_name='R50-ViT-B_16', test_save_dir='../predictions', deterministic=1, base_lr=0.01, seed=1234, vit_patches_size=16, window_size=28, rank=0, groups=8, gate_mode='pam', block_version='c16', optimizer='sgd', checkpoint='last', split='test', Dataset=<class 'datasets.dataset_synapse.Synapse_dataset'>, z_spacing=1, is_pretrain=True, exp='ApproxDA_Synapse224')
+ApproxDA_pretrain_R50-ViT-B_16_skip3_epo300_bs24_224_M28_r0_pam_c16
+12 test iterations per epoch
+Model parameters: 105.89 M
+GFLOPs (single 224x224 slice, fvcore, includes attention bmm): 29.7
+/home/jiawei/venvs/torch/lib/python3.14/site-packages/torch/jit/_script.py:1485: FutureWarning: `torch.jit.script` is not supported in Python 3.14+ and may break. Please switch to `torch.compile` or `torch.export`.
+  warnings.warn(
+0it [00:00, ?it/s]idx 0 case case0008 mean_dice 0.697681 mean_hd95 9.528244
+1it [00:56, 56.12s/it]idx 1 case case0022 mean_dice 0.904478 mean_hd95 20.176533
+2it [01:27, 41.83s/it]idx 2 case case0038 mean_dice 0.788811 mean_hd95 13.729007
+3it [02:03, 38.99s/it]idx 3 case case0036 mean_dice 0.846666 mean_hd95 8.973568
+4it [03:17, 52.89s/it]idx 4 case case0032 mean_dice 0.803856 mean_hd95 13.102022
+5it [04:12, 53.55s/it]idx 5 case case0002 mean_dice 0.873676 mean_hd95 3.041836
+6it [05:03, 52.85s/it]idx 6 case case0029 mean_dice 0.612383 mean_hd95 55.599239
+7it [05:38, 46.86s/it]idx 7 case case0003 mean_dice 0.648890 mean_hd95 85.832177
+8it [06:57, 56.97s/it]idx 8 case case0001 mean_dice 0.727342 mean_hd95 22.646297
+9it [07:54, 57.12s/it]idx 9 case case0004 mean_dice 0.776480 mean_hd95 9.572044
+10it [08:46, 55.37s/it]idx 10 case case0025 mean_dice 0.862761 mean_hd95 5.230382
+11it [09:16, 47.63s/it]idx 11 case case0035 mean_dice 0.901298 mean_hd95 2.585593
+12it [09:44, 41.86s/it]12it [09:44, 48.73s/it]
+Inference total: 585.6s  avg per case: 48798.7ms
+Inference peak VRAM: 917 MB (0.9 GB)
+Mean class 1 mean_dice 0.877076 mean_hd95 5.517296 mean_iou 0.782552
+Mean class 2 mean_dice 0.640603 mean_hd95 9.159635 mean_iou 0.541138
+Mean class 3 mean_dice 0.819291 mean_hd95 30.588313 mean_iou 0.727880
+Mean class 4 mean_dice 0.768968 mean_hd95 39.936054 mean_iou 0.692088
+Mean class 5 mean_dice 0.951950 mean_hd95 15.588458 mean_iou 0.908993
+Mean class 6 mean_dice 0.580538 mean_hd95 12.765781 mean_iou 0.439300
+Mean class 7 mean_dice 0.884044 mean_hd95 38.045272 mean_iou 0.806744
+Mean class 8 mean_dice 0.773745 mean_hd95 15.077152 mean_iou 0.646396
+Testing performance (split=test, checkpoint=last): mean_dice : 0.787027 mean_hd95 : 20.834745 mean_iou : 0.693136

@@ -1,0 +1,36 @@
+/home/jiawei/venvs/torch/lib/python3.14/site-packages/torch/jit/_script.py:1485: FutureWarning: `torch.jit.script` is not supported in Python 3.14+ and may break. Please switch to `torch.compile` or `torch.export`.
+  warnings.warn(
+/home/jiawei/venvs/torch/lib/python3.14/site-packages/torch/functional.py:504: UserWarning: torch.meshgrid: in an upcoming release, it will be required to pass the indexing argument. (Triggered internally at /__w/pytorch/pytorch/aten/src/ATen/native/TensorShape.cpp:4221.)
+  return _VF.meshgrid(tensors, **kwargs)  # type: ignore[attr-defined]
+Not saving results.
+Namespace(volume_path='../data/Synapse/test_vol_h5', dataset='Synapse', num_classes=9, list_dir='./lists/lists_Synapse', max_iterations=20000, max_epochs=300, batch_size=24, img_size=224, is_savenii=False, n_skip=3, vit_name='R50-ViT-B_16', test_save_dir='../predictions', deterministic=1, base_lr=0.01, seed=1, vit_patches_size=16, window_size=112, rank=32, groups=8, gate_mode='fixed', block_version='c16', alpha_init=0.0, ablate_attn=False, ablate_attn_at='all', lr_post=False, upsample='nearest', ablate_third=False, ablate_slice='', ablate_cam='', backbone='lightvit_t', lightvit_dir='/data/checkpoints/LightViT', no_vit=False, dec_channels=64, dec_stop112=False, pam_style='danet', pam_fusion='residual', attn_off=False, attn_opt='same', attn_lr=0.001, attn_scope='pamcam', attn_wd=0.01, attn_off_at='all', no_block=False, aug='default', pam_relpos=False, pam_abspos=False, coord_gate=False, bn_order='post', hr_skip=0, final_channels=16, point_loss=False, ptl_balanced=False, ptl_class_share=0.25, point_refine=False, pr_residual=False, pr_balanced=False, slice_attn=-1, third_branch='none', organ_aux=0.4, pam_affinity=0.0, refine_mode='plain', block_type='approxda', mednext_k=5, mednext_exp=2, skip_ratio=16, pam_no_identity=False, attn_norm=False, run_tag='', drop_last=False, num_workers=4, rgb=False, optimizer='sgd', precise_bn=False, eval_epoch=0, checkpoint='last', split='test', Dataset=<class 'datasets.dataset_synapse.Synapse_dataset'>, z_spacing=1, is_pretrain=True, exp='ApproxDA_Synapse224')
+ApproxDA_pretrain_R50-ViT-B_16_skip3_epo300_bs24_224_s1_M112_fixed_c16_lvt_dec64
+12 test iterations per epoch
+Model parameters: 12.25 M
+GFLOPs (single 224x224 slice, fvcore, includes attention bmm): 6.9
+/home/jiawei/venvs/torch/lib/python3.14/site-packages/torch/jit/_script.py:1485: FutureWarning: `torch.jit.script` is not supported in Python 3.14+ and may break. Please switch to `torch.compile` or `torch.export`.
+  warnings.warn(
+0it [00:00, ?it/s]idx 0 case case0008 mean_dice 0.654756 mean_hd95 19.316632
+1it [01:16, 76.16s/it]idx 1 case case0022 mean_dice 0.888604 mean_hd95 28.192075
+2it [01:49, 50.75s/it]idx 2 case case0038 mean_dice 0.808836 mean_hd95 19.580418
+3it [02:27, 45.10s/it]idx 3 case case0036 mean_dice 0.797507 mean_hd95 49.483486
+4it [04:14, 69.43s/it]idx 4 case case0032 mean_dice 0.832579 mean_hd95 31.232307
+5it [05:24, 69.87s/it]idx 5 case case0002 mean_dice 0.884690 mean_hd95 18.551929
+6it [06:43, 72.82s/it]idx 6 case case0029 mean_dice 0.758473 mean_hd95 49.999694
+7it [07:21, 61.30s/it]idx 7 case case0003 mean_dice 0.782478 mean_hd95 78.630200
+8it [09:09, 76.31s/it]idx 8 case case0001 mean_dice 0.781637 mean_hd95 39.486570
+9it [10:23, 75.45s/it]idx 9 case case0004 mean_dice 0.772121 mean_hd95 13.146694
+10it [11:27, 72.21s/it]idx 10 case case0025 mean_dice 0.885615 mean_hd95 24.306663
+11it [11:59, 59.63s/it]idx 11 case case0035 mean_dice 0.897281 mean_hd95 2.176777
+12it [12:37, 53.28s/it]12it [12:37, 63.15s/it]
+Inference total: 759.4s  avg per case: 63283.2ms
+Inference peak VRAM: 205 MB (0.2 GB)
+Mean class 1 mean_dice 0.887738 mean_hd95 5.928461 mean_iou 0.799318
+Mean class 2 mean_dice 0.629549 mean_hd95 40.888908 mean_iou 0.517226
+Mean class 3 mean_dice 0.847378 mean_hd95 70.065266 mean_iou 0.761900
+Mean class 4 mean_dice 0.827176 mean_hd95 57.049493 mean_iou 0.754583
+Mean class 5 mean_dice 0.951567 mean_hd95 20.851448 mean_iou 0.908151
+Mean class 6 mean_dice 0.617187 mean_hd95 12.242751 mean_iou 0.459390
+Mean class 7 mean_dice 0.904402 mean_hd95 24.567632 mean_iou 0.831349
+Mean class 8 mean_dice 0.831387 mean_hd95 17.808337 mean_iou 0.718349
+Testing performance (split=test, checkpoint=last): mean_dice : 0.812048 mean_hd95 : 31.175287 mean_iou : 0.718783

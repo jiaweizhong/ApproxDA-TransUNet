@@ -1,0 +1,170 @@
+/home/jiawei/venvs/torch/lib/python3.14/site-packages/torch/jit/_script.py:1485: FutureWarning: `torch.jit.script` is not supported in Python 3.14+ and may break. Please switch to `torch.compile` or `torch.export`.
+  warnings.warn(
+/home/jiawei/venvs/torch/lib/python3.14/site-packages/torch/nn/modules/conv.py:196: UserWarning: Initializing zero-element tensors is a no-op
+  init.kaiming_uniform_(self.weight, a=math.sqrt(5))
+Not saving results.
+Namespace(volume_path='../data/CVC-ClinicDB', dataset='CVC', num_classes=2, list_dir='./lists/lists_CVC', max_iterations=20000, max_epochs=500, batch_size=24, img_size=256, is_savenii=False, n_skip=3, vit_name='R50-ViT-B_16', test_save_dir='../predictions', deterministic=1, base_lr=0.001, seed=1234, vit_patches_size=16, drop_last=True, num_workers=4, rgb=True, optimizer='adam', precise_bn=False, eval_epoch=0, checkpoint='last', split='test', Dataset=<class 'datasets.dataset_cvc.CVC_dataset'>, z_spacing=1, is_pretrain=True, exp='TU_CVC256')
+TU_pretrain_R50-ViT-B_16_skip3_epo500_bs24_lr0.001_256_adam_rgb_dl
+153 test iterations per epoch
+Model parameters: 108.00 M
+GFLOPs (single 224x224 slice, fvcore, includes attention bmm): 39.8
+/home/jiawei/venvs/torch/lib/python3.14/site-packages/torch/jit/_script.py:1485: FutureWarning: `torch.jit.script` is not supported in Python 3.14+ and may break. Please switch to `torch.compile` or `torch.export`.
+  warnings.warn(
+0it [00:00, ?it/s]idx 0 case 455 mean_dice 0.948617 mean_hd95 7.000000
+idx 1 case 454 mean_dice 0.960956 mean_hd95 5.385165
+2it [00:00, 13.32it/s]idx 2 case 361 mean_dice 0.944894 mean_hd95 6.403124
+idx 3 case 100 mean_dice 0.966099 mean_hd95 3.605551
+4it [00:00, 14.89it/s]idx 4 case 204 mean_dice 0.892330 mean_hd95 8.949845
+idx 5 case 52 mean_dice 0.000000 mean_hd95 0.000000
+6it [00:00, 15.73it/s]idx 6 case 104 mean_dice 0.948016 mean_hd95 7.296893
+idx 7 case 219 mean_dice 0.929420 mean_hd95 41.961553
+8it [00:00, 15.89it/s]idx 8 case 353 mean_dice 0.952417 mean_hd95 12.550000
+idx 9 case 38 mean_dice 0.976893 mean_hd95 2.000000
+10it [00:00, 16.00it/s]idx 10 case 439 mean_dice 0.954572 mean_hd95 5.709084
+idx 11 case 132 mean_dice 0.958015 mean_hd95 5.932381
+12it [00:00, 16.08it/s]idx 12 case 300 mean_dice 0.940101 mean_hd95 10.926029
+idx 13 case 34 mean_dice 0.968889 mean_hd95 2.828427
+14it [00:00, 16.11it/s]idx 14 case 236 mean_dice 0.952757 mean_hd95 7.000000
+idx 15 case 157 mean_dice 0.944513 mean_hd95 7.071068
+16it [00:01, 16.15it/s]idx 16 case 163 mean_dice 0.970269 mean_hd95 2.914214
+idx 17 case 510 mean_dice 0.960462 mean_hd95 6.525156
+18it [00:01, 16.18it/s]idx 18 case 586 mean_dice 0.933966 mean_hd95 5.656854
+idx 19 case 406 mean_dice 0.965684 mean_hd95 6.000000
+20it [00:01, 16.23it/s]idx 20 case 45 mean_dice 0.968301 mean_hd95 3.000000
+idx 21 case 425 mean_dice 0.673669 mean_hd95 94.047860
+22it [00:01, 16.38it/s]idx 22 case 260 mean_dice 0.974867 mean_hd95 6.210961
+idx 23 case 113 mean_dice 0.986936 mean_hd95 2.236068
+24it [00:01, 16.41it/s]idx 24 case 580 mean_dice 0.965118 mean_hd95 27.043469
+idx 25 case 412 mean_dice 0.949426 mean_hd95 5.000000
+26it [00:01, 16.30it/s]idx 26 case 147 mean_dice 0.981139 mean_hd95 3.000000
+idx 27 case 459 mean_dice 0.960939 mean_hd95 4.000000
+28it [00:01, 16.35it/s]idx 28 case 25 mean_dice 0.333873 mean_hd95 122.850000
+idx 29 case 110 mean_dice 0.978438 mean_hd95 4.242641
+30it [00:01, 16.25it/s]idx 30 case 203 mean_dice 0.909881 mean_hd95 8.062258
+idx 31 case 547 mean_dice 0.922648 mean_hd95 7.971537
+32it [00:01, 16.24it/s]idx 32 case 37 mean_dice 0.971817 mean_hd95 3.000000
+idx 33 case 502 mean_dice 0.984526 mean_hd95 3.000000
+34it [00:02, 16.28it/s]idx 34 case 229 mean_dice 0.935962 mean_hd95 6.324555
+idx 35 case 403 mean_dice 0.977913 mean_hd95 3.032456
+36it [00:02, 16.28it/s]idx 36 case 407 mean_dice 0.911752 mean_hd95 22.803509
+idx 37 case 166 mean_dice 0.969043 mean_hd95 3.605551
+38it [00:02, 16.25it/s]idx 38 case 369 mean_dice 0.930938 mean_hd95 4.123106
+idx 39 case 431 mean_dice 0.961517 mean_hd95 3.162278
+40it [00:02, 16.29it/s]idx 40 case 435 mean_dice 0.981231 mean_hd95 2.000000
+idx 41 case 80 mean_dice 0.872741 mean_hd95 6.403124
+42it [00:02, 16.28it/s]idx 42 case 498 mean_dice 0.979087 mean_hd95 8.544004
+idx 43 case 138 mean_dice 0.985822 mean_hd95 2.236068
+44it [00:02, 16.17it/s]idx 44 case 529 mean_dice 0.913465 mean_hd95 6.479394
+idx 45 case 572 mean_dice 0.921496 mean_hd95 7.615773
+46it [00:02, 16.28it/s]idx 46 case 298 mean_dice 0.953911 mean_hd95 5.385165
+idx 47 case 81 mean_dice 0.878562 mean_hd95 12.041595
+48it [00:02, 16.34it/s]idx 48 case 494 mean_dice 0.982617 mean_hd95 3.000000
+idx 49 case 415 mean_dice 0.977485 mean_hd95 4.000000
+50it [00:03, 16.34it/s]idx 50 case 359 mean_dice 0.911033 mean_hd95 33.588680
+idx 51 case 360 mean_dice 0.930269 mean_hd95 20.918252
+52it [00:03, 16.33it/s]idx 52 case 111 mean_dice 0.979552 mean_hd95 4.123106
+idx 53 case 354 mean_dice 0.955706 mean_hd95 7.948854
+54it [00:03, 16.33it/s]idx 54 case 197 mean_dice 0.962010 mean_hd95 3.000000
+idx 55 case 262 mean_dice 0.950614 mean_hd95 15.800357
+56it [00:03, 16.34it/s]idx 56 case 386 mean_dice 0.944966 mean_hd95 13.416408
+idx 57 case 497 mean_dice 0.960968 mean_hd95 23.370883
+58it [00:03, 16.29it/s]idx 58 case 106 mean_dice 0.731270 mean_hd95 40.874228
+idx 59 case 123 mean_dice 0.973822 mean_hd95 3.273096
+60it [00:03, 16.32it/s]idx 60 case 447 mean_dice 0.956089 mean_hd95 3.129822
+idx 61 case 546 mean_dice 0.959322 mean_hd95 4.000000
+62it [00:03, 16.37it/s]idx 62 case 191 mean_dice 0.895636 mean_hd95 4.472136
+idx 63 case 127 mean_dice 0.960544 mean_hd95 4.242641
+64it [00:03, 16.36it/s]idx 64 case 282 mean_dice 0.975404 mean_hd95 2.000000
+idx 65 case 303 mean_dice 0.943482 mean_hd95 47.434165
+66it [00:04, 16.36it/s]idx 66 case 449 mean_dice 0.941624 mean_hd95 9.848858
+idx 67 case 451 mean_dice 0.980203 mean_hd95 1.414214
+68it [00:04, 16.33it/s]idx 68 case 175 mean_dice 0.868176 mean_hd95 31.000000
+idx 69 case 483 mean_dice 0.977946 mean_hd95 9.187894
+70it [00:04, 16.38it/s]idx 70 case 47 mean_dice 0.972454 mean_hd95 3.000000
+idx 71 case 488 mean_dice 0.975132 mean_hd95 5.000000
+72it [00:04, 16.28it/s]idx 72 case 480 mean_dice 0.953427 mean_hd95 12.727922
+idx 73 case 350 mean_dice 0.925199 mean_hd95 31.587067
+74it [00:04, 16.21it/s]idx 74 case 508 mean_dice 0.821241 mean_hd95 69.566392
+idx 75 case 358 mean_dice 0.936037 mean_hd95 8.988854
+76it [00:04, 16.15it/s]idx 76 case 396 mean_dice 0.973857 mean_hd95 3.162278
+idx 77 case 43 mean_dice 0.966302 mean_hd95 3.162278
+78it [00:04, 16.14it/s]idx 78 case 476 mean_dice 0.963216 mean_hd95 4.472136
+idx 79 case 541 mean_dice 0.953391 mean_hd95 3.605551
+80it [00:04, 16.13it/s]idx 80 case 308 mean_dice 0.929140 mean_hd95 19.460619
+idx 81 case 159 mean_dice 0.960657 mean_hd95 2.000000
+82it [00:05, 16.16it/s]idx 82 case 279 mean_dice 0.958899 mean_hd95 3.000000
+idx 83 case 182 mean_dice 0.968021 mean_hd95 2.236068
+84it [00:05, 16.25it/s]idx 84 case 42 mean_dice 0.975588 mean_hd95 2.828427
+idx 85 case 284 mean_dice 0.796562 mean_hd95 17.262677
+86it [00:05, 16.33it/s]idx 86 case 427 mean_dice 0.925406 mean_hd95 20.203921
+idx 87 case 41 mean_dice 0.974045 mean_hd95 2.828427
+88it [00:05, 16.30it/s]idx 88 case 466 mean_dice 0.969547 mean_hd95 6.000000
+idx 89 case 313 mean_dice 0.914959 mean_hd95 17.302991
+90it [00:05, 16.29it/s]idx 90 case 145 mean_dice 0.985933 mean_hd95 2.828427
+idx 91 case 571 mean_dice 0.910774 mean_hd95 5.830952
+92it [00:05, 16.24it/s]idx 92 case 114 mean_dice 0.887460 mean_hd95 31.361801
+idx 93 case 599 mean_dice 0.941321 mean_hd95 5.099020
+94it [00:05, 16.21it/s]idx 94 case 28 mean_dice 0.956476 mean_hd95 6.000000
+idx 95 case 565 mean_dice 0.423998 mean_hd95 69.433414
+96it [00:05, 16.23it/s]idx 96 case 221 mean_dice 0.930523 mean_hd95 22.755012
+idx 97 case 78 mean_dice 0.752209 mean_hd95 141.896883
+98it [00:06, 16.25it/s]idx 98 case 168 mean_dice 0.968174 mean_hd95 2.862742
+idx 99 case 509 mean_dice 0.974614 mean_hd95 5.000000
+100it [00:06, 16.25it/s]idx 100 case 79 mean_dice 0.887698 mean_hd95 5.385165
+idx 101 case 56 mean_dice 0.955398 mean_hd95 4.000000
+102it [00:06, 16.27it/s]idx 102 case 172 mean_dice 0.963060 mean_hd95 2.828427
+idx 103 case 387 mean_dice 0.927715 mean_hd95 16.594707
+104it [00:06, 16.22it/s]idx 104 case 485 mean_dice 0.927176 mean_hd95 19.104973
+idx 105 case 148 mean_dice 0.978879 mean_hd95 4.000000
+106it [00:06, 16.21it/s]idx 106 case 342 mean_dice 0.976349 mean_hd95 3.980278
+idx 107 case 6 mean_dice 0.980508 mean_hd95 5.000000
+108it [00:06, 16.15it/s]idx 108 case 73 mean_dice 0.709500 mean_hd95 36.142114
+idx 109 case 521 mean_dice 0.971867 mean_hd95 3.000000
+110it [00:06, 16.17it/s]idx 110 case 20 mean_dice 0.984616 mean_hd95 3.162278
+idx 111 case 543 mean_dice 0.943249 mean_hd95 8.000000
+112it [00:06, 16.14it/s]idx 112 case 465 mean_dice 0.964418 mean_hd95 5.000000
+idx 113 case 205 mean_dice 0.874729 mean_hd95 10.285871
+114it [00:07, 16.17it/s]idx 114 case 589 mean_dice 0.955941 mean_hd95 3.000000
+idx 115 case 273 mean_dice 0.937741 mean_hd95 19.612323
+116it [00:07, 16.09it/s]idx 116 case 604 mean_dice 0.968887 mean_hd95 3.605551
+idx 117 case 493 mean_dice 0.981233 mean_hd95 3.162278
+118it [00:07, 16.06it/s]idx 118 case 310 mean_dice 0.955112 mean_hd95 3.000000
+idx 119 case 65 mean_dice 0.918226 mean_hd95 5.000000
+120it [00:07, 16.33it/s]idx 120 case 570 mean_dice 0.889177 mean_hd95 6.000000
+idx 121 case 277 mean_dice 0.909675 mean_hd95 29.544034
+122it [00:07, 16.27it/s]idx 122 case 48 mean_dice 0.965348 mean_hd95 3.162278
+idx 123 case 528 mean_dice 0.971752 mean_hd95 3.605551
+124it [00:07, 16.26it/s]idx 124 case 92 mean_dice 0.936440 mean_hd95 5.000000
+idx 125 case 71 mean_dice 0.409850 mean_hd95 47.466196
+126it [00:07, 16.29it/s]idx 126 case 478 mean_dice 0.976842 mean_hd95 3.605551
+idx 127 case 555 mean_dice 0.951191 mean_hd95 4.123106
+128it [00:07, 16.25it/s]idx 128 case 67 mean_dice 0.942645 mean_hd95 3.000000
+idx 129 case 256 mean_dice 0.971790 mean_hd95 5.000000
+130it [00:08, 16.31it/s]idx 130 case 499 mean_dice 0.982043 mean_hd95 5.830952
+idx 131 case 516 mean_dice 0.966150 mean_hd95 5.385165
+132it [00:08, 16.33it/s]idx 132 case 15 mean_dice 0.948649 mean_hd95 36.100000
+idx 133 case 118 mean_dice 0.963375 mean_hd95 3.162278
+134it [00:08, 16.25it/s]idx 134 case 188 mean_dice 0.958165 mean_hd95 8.000000
+idx 135 case 94 mean_dice 0.956445 mean_hd95 5.154066
+136it [00:08, 16.50it/s]idx 136 case 153 mean_dice 0.943815 mean_hd95 6.000000
+idx 137 case 475 mean_dice 0.930828 mean_hd95 22.444324
+138it [00:08, 16.52it/s]idx 138 case 496 mean_dice 0.977061 mean_hd95 5.000000
+idx 139 case 355 mean_dice 0.964643 mean_hd95 3.000000
+140it [00:08, 16.46it/s]idx 140 case 17 mean_dice 0.801165 mean_hd95 21.867270
+idx 141 case 32 mean_dice 0.971494 mean_hd95 4.472136
+142it [00:08, 16.42it/s]idx 142 case 18 mean_dice 0.966256 mean_hd95 5.385165
+idx 143 case 243 mean_dice 0.947426 mean_hd95 7.000000
+144it [00:08, 16.42it/s]idx 144 case 364 mean_dice 0.948944 mean_hd95 2.828427
+idx 145 case 101 mean_dice 0.967137 mean_hd95 3.842221
+146it [00:08, 16.41it/s]idx 146 case 86 mean_dice 0.959966 mean_hd95 5.099020
+idx 147 case 36 mean_dice 0.956174 mean_hd95 3.162278
+148it [00:09, 16.45it/s]idx 148 case 597 mean_dice 0.788455 mean_hd95 10.770330
+idx 149 case 93 mean_dice 0.875576 mean_hd95 15.607570
+150it [00:09, 16.38it/s]idx 150 case 8 mean_dice 0.904438 mean_hd95 32.015621
+idx 151 case 120 mean_dice 0.964521 mean_hd95 5.656854
+152it [00:09, 16.37it/s]idx 152 case 452 mean_dice 0.965490 mean_hd95 3.000000
+153it [00:09, 16.23it/s]
+Inference total: 10.4s  avg per case: 67.6ms
+Inference peak VRAM: 1005 MB (1.0 GB)
+Mean class 1 mean_dice 0.923937 mean_hd95 12.155546 mean_iou 0.873857
+Testing performance (split=test, checkpoint=last): mean_dice : 0.923937 mean_hd95 : 12.155546 mean_iou : 0.873857

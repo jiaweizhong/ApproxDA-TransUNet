@@ -18,19 +18,51 @@ from torch.nn.modules.utils import _pair
 from scipy import ndimage
 from . import configs as configs
 from .block import ResNetV2
-from .block import ApproxDABlock, ApproxDABlockLegacy
+from .block import ApproxDABlock, ApproxDABlockLegacy, MedNeXtBlock, RefineBlock
+from .lightvit import lightvit_tiny, lightvit_small, lightvit_base, ResidualMergePatch
 
 
-def make_approx_block(channels, config):
-    """Build the attention block selected by config.block_version ('c16' | 'legacy')."""
+def make_approx_block(channels, config, skip=False):
+    """Build the attention block selected by config.block_version ('c16' | 'legacy').
+
+    skip=True for the blocks on the skip connections: their C/r width follows config.skip_ratio (default 16).
+    """
     version = getattr(config, "block_version", "c16")
+    if getattr(config, "no_block", False):  # journal diagnostic: no attention blocks at all (TransUNet-style)
+        return nn.Identity()
+    if getattr(config, "block_type", "approxda") == "refine":  # attention-free DANetHead conv path (RefineBlock)
+        mode = getattr(config, "refine_mode", "plain")
+        if mode == "guided" and not skip:
+            mode = "plain"  # the bottleneck block has no decoder feature to be guided by
+        if mode == "guided" and getattr(config, "dec_channels", 0) <= 0:
+            raise SystemExit("--refine_mode guided requires the slim decoder (--dec_channels > 0)")
+        return RefineBlock(channels, ratio=getattr(config, "skip_ratio", 16) if skip else 16, refine_mode=mode,
+                           guide_channels=config.dec_channels if mode == "guided" else 0)
+    if getattr(config, "block_type", "approxda") == "mednext":  # attention-free conv block instead of ApproxDA
+        return MedNeXtBlock(channels, kernel_size=getattr(config, "mednext_k", 5), exp=getattr(config, "mednext_exp", 2))
     cls = {"c16": ApproxDABlock, "legacy": ApproxDABlockLegacy}[version]
+    extra = {}
+    if version == "c16":  # PAM scale options (defaults reproduce the reported runs)
+        extra = dict(alpha_init=getattr(config, "alpha_init", 0.0), attn_norm=getattr(config, "attn_norm", False),
+                     pam_identity=not getattr(config, "pam_no_identity", False),
+                     pam_style=getattr(config, "pam_style", "danet"), pam_fusion=getattr(config, "pam_fusion", "residual"),
+                     attn_off=getattr(config, "attn_off", False)
+                     and getattr(config, "attn_off_at", "all") in ("all", "skip" if skip else "bottleneck"),
+                     ratio=getattr(config, "skip_ratio", 16) if skip else 16,
+                     pam_relpos=getattr(config, "pam_relpos", False), pam_abspos=getattr(config, "pam_abspos", False),
+                     coord_gate=getattr(config, "coord_gate", False),
+                     # --pam_affinity: Context Prior affinity supervision on the bottleneck PAM only (global window)
+                     pam_affinity=getattr(config, "pam_affinity", 0) > 0 and not skip,
+                     # --third_branch organ|triplet: third branch of the bottleneck block only
+                     third_branch="none" if skip else getattr(config, "third_branch", "none"),
+                     num_classes=getattr(config, "n_classes", 9))
     return cls(
         channels,
         window_size=config.window_size,
         rank=config.rank,
         groups=config.groups,
         gate_mode=config.gate_mode,
+        **extra,
     )
 
 
@@ -391,7 +423,7 @@ class DecoderBlock(nn.Module):
         # built in every DecoderBlock, leaving 9 never-called blocks).
         self.block_name = _SKIP_BLOCK_NAMES.get(skip_channels)
         if self.block_name is not None:
-            setattr(self, self.block_name, make_approx_block(skip_channels, config))
+            setattr(self, self.block_name, make_approx_block(skip_channels, config, skip=True))
 
     def forward(self, x, skip=None):
         x = self.up(x)
@@ -474,6 +506,207 @@ class DecoderCup(nn.Module):
         return x
 
 
+# ---------------------------------------------------------------------------
+# Journal experiments (opt-in; defaults build the original model unchanged)
+# ---------------------------------------------------------------------------
+
+_LIGHTVIT = {"lightvit_t": lightvit_tiny, "lightvit_s": lightvit_small, "lightvit_b": lightvit_base}
+
+
+class LightViTBottleneck(nn.Module):
+    """--backbone lightvit_{t,s,b}: replaces R50 block3 and the 12-layer ViT-B.
+
+    R50's 1/8 feature map is projected to LightViT's stage-1 width and passed through LightViT's three stages
+    (strides 8/16/32 of the input, ImageNet-1k weights incl. patch merging and global tokens); the stage-2 map
+    (1/16) and the upsampled stage-3 map (1/32) are fused into the 1/16 bottleneck map used by the decoder.
+    """
+
+    def __init__(self, name, in_channels):
+        super().__init__()
+        lv = _LIGHTVIT[name]()
+        self.num_tokens = lv.num_tokens
+        d1, d2, d3 = lv.embed_dims
+        self.in_proj = nn.Conv2d(in_channels, d1, kernel_size=1)
+        self.in_norm = nn.LayerNorm(d1)
+        self.global_token = lv.global_token
+        self.stages = lv.stages
+        self.norm2 = nn.LayerNorm(d2)
+        self.norm3 = nn.LayerNorm(d3)
+        self.fuse = nn.Conv2d(d3, d2, kernel_size=1)
+        self.out_channels = d2
+
+    def load_pretrained(self, path):
+        sd = torch.load(path, map_location="cpu", weights_only=True)["state_dict"]
+        own = {k: v for k, v in sd.items() if k == "global_token" or k.startswith("stages.")}
+        missing, unexpected = self.load_state_dict(own, strict=False)
+        missing = [k for k in missing if k == "global_token" or k.startswith("stages.")]
+        if missing or unexpected:
+            raise RuntimeError(f"LightViT weights mismatch: missing {missing[:5]} unexpected {unexpected[:5]}")
+        return len(own)
+
+    def forward(self, f):
+        B, _, H, W = f.shape
+        x = self.in_norm(self.in_proj(f).flatten(2).transpose(1, 2))
+        x = torch.cat([self.global_token.expand(B, -1, -1), x], dim=1)
+        outs = []
+        for stage in self.stages:
+            for block in stage:
+                if isinstance(block, ResidualMergePatch):
+                    x, (H, W) = block(x, H, W)
+                else:
+                    x = block(x, H, W)
+            outs.append((x[:, self.num_tokens:], H, W))
+        (x2, H2, W2), (x3, H3, W3) = outs[1], outs[2]
+        m2 = self.norm2(x2).transpose(1, 2).reshape(B, -1, H2, W2)
+        m3 = self.norm3(x3).transpose(1, 2).reshape(B, -1, H3, W3)
+        return m2 + F.interpolate(self.fuse(m3), size=(H2, W2), mode="bilinear", align_corners=False)
+
+
+class ConvBottleneck(nn.Module):
+    """--backbone conv (additive-ablation baseline): the transformer-free stand-in for LightViTBottleneck, with the same
+    input (R50's 1/8 map) and output (the 1/16 map at LightViT-T's width 128): one 3x3 stride-2 conv-BN-ReLU."""
+
+    def __init__(self, in_channels, out_channels=128):
+        super().__init__()
+        self.body = nn.Sequential(nn.Conv2d(in_channels, out_channels, 3, stride=2, padding=1, bias=False),
+                                  nn.BatchNorm2d(out_channels), nn.ReLU(inplace=True))
+        self.out_channels = out_channels
+
+    def forward(self, f):
+        return self.body(f)
+
+
+class LightViTTransformer(nn.Module):
+    """Encoder for --backbone lightvit_*: R50 root/block1/block2 (skips at 1/2, 1/4, 1/8) + LightViTBottleneck.
+    Returns the same (tokens, attn, features) triple as Transformer; config.hidden_size becomes the LightViT width."""
+
+    def __init__(self, config):
+        super().__init__()
+        self.hybrid_model = ResNetV2(block_units=config.resnet.num_layers, width_factor=config.resnet.width_factor)
+        del self.hybrid_model.body.block3  # the 1/16 stage is replaced by LightViT
+        self.lightvit = (ConvBottleneck(self.hybrid_model.width * 8) if config.backbone == "conv"
+                         else LightViTBottleneck(config.backbone, self.hybrid_model.width * 8))
+        config.hidden_size = self.lightvit.out_channels
+        # bn_order (opt-in --bn_order pre): "post" (default, all reported light-tier runs) applies the bottleneck
+        # ApproxDA block to the LightViT output (14^2 x 128); "pre" applies it to R50's 1/8 map (28^2 x 512) before
+        # LightViT, the order of the ViT-B model (patch embedding -> ApproxDA block -> ViT, as DA-TransUNet)
+        self.bn_order = getattr(config, "bn_order", "post")
+        self.approx_block = make_approx_block(self.hybrid_model.width * 8 if self.bn_order == "pre" else config.hidden_size, config)
+
+    def forward(self, x):
+        r = self.hybrid_model
+        b, _, in_size, _ = x.size()
+        features = []
+        x = r.root(x)
+        features.append(x)
+        x = nn.MaxPool2d(kernel_size=3, stride=2, padding=0)(x)
+        for i in range(len(r.body)):  # block1 (1/4), block2 (1/8); same padding rule as ResNetV2.forward
+            x = r.body[i](x)
+            right_size = int(in_size / 4 / (i + 1))
+            if x.size()[2] != right_size:
+                feat = torch.zeros((b, x.size()[1], right_size, right_size), device=x.device)
+                feat[:, :, 0 : x.size()[2], 0 : x.size()[3]] = x[:]
+            else:
+                feat = x
+            features.append(feat)
+        if self.bn_order == "pre":
+            y = self.lightvit(self.approx_block(features[-1]))
+        else:
+            y = self.approx_block(self.lightvit(features[-1]))
+        return y.flatten(2).transpose(1, 2), None, features[::-1]
+
+
+class ReduceBlock(nn.Module):
+    """EffiDec-style channel-reduction residual block (2-D, BatchNorm): two 3x3 conv-BN(-ReLU) + 1x1 shortcut."""
+
+    def __init__(self, cin, cout):
+        super().__init__()
+        self.conv = nn.Sequential(
+            nn.Conv2d(cin, cout, 3, padding=1, bias=False), nn.BatchNorm2d(cout), nn.ReLU(inplace=True),
+            nn.Conv2d(cout, cout, 3, padding=1, bias=False), nn.BatchNorm2d(cout),
+        )
+        self.res = (nn.Sequential(nn.Conv2d(cin, cout, 1, bias=False), nn.BatchNorm2d(cout))
+                    if cin != cout else nn.Identity())
+        self.act = nn.ReLU(inplace=True)
+
+    def forward(self, x):
+        return self.act(self.conv(x) + self.res(x))
+
+
+class SlimDecoderBlock(nn.Module):
+    """Upsample, add the ApproxDA-processed skip reduced to `channels`, refine."""
+
+    def __init__(self, channels, skip_channels, config):
+        super().__init__()
+        self.up = nn.UpsamplingBilinear2d(scale_factor=2)
+        self.block_name = _SKIP_BLOCK_NAMES.get(skip_channels)
+        if self.block_name is not None:
+            setattr(self, self.block_name, make_approx_block(skip_channels, config, skip=True))
+        self.reduce = ReduceBlock(skip_channels, channels) if skip_channels else None
+        self.refine = ReduceBlock(channels, channels)
+
+    def forward(self, x, skip=None):
+        x = self.up(x)
+        if skip is not None:
+            if self.block_name is not None:
+                blk = getattr(self, self.block_name)
+                if getattr(blk, "refine_mode", None) == "guided":
+                    skip = blk(skip.contiguous(), guide=x)
+                else:
+                    skip = blk(skip.contiguous())
+            x = x + self.reduce(skip)
+        return self.refine(x)
+
+
+class SlimDecoderCup(nn.Module):
+    """--dec_channels C (EffiDec3D, adapted to 2-D): every skip stage at C channels with additive fusion.
+    The full-resolution stage keeps the original 16 channels (at C channels it would cost more than the original),
+    or is removed with --dec_stop112 (prediction at 1/2 resolution, upsampled x2 by the segmentation head)."""
+
+    def __init__(self, config):
+        super().__init__()
+        self.config = config
+        C = config.dec_channels
+        self.conv_more = Conv2dReLU(config.hidden_size, C, kernel_size=3, padding=1, use_batchnorm=True)
+        skip_channels = list(config.skip_channels[:3])
+        for i in range(3 - config.n_skip):
+            skip_channels[2 - i] = 0
+        self.blocks = nn.ModuleList([SlimDecoderBlock(C, sk, config) for sk in skip_channels])
+        # --final_channels F (default 16) and --hr_skip H (default 0, opt-in): the full-resolution stage concatenates the
+        # upsampled decoder map with an H-channel feature computed from the input image at full resolution (as the top
+        # skip of U-Net). The default path builds exactly the original modules (same parameter names).
+        F_out = getattr(config, "final_channels", 16)
+        hr = getattr(config, "hr_skip", 0)
+        self.final_hr = None
+        if hr > 0:
+            if config.dec_stop112:
+                raise ValueError("--hr_skip needs the full-resolution decoder stage (no --dec_stop112)")
+            self.final = None
+            self.final_up = nn.UpsamplingBilinear2d(scale_factor=2)
+            self.final_hr = nn.Sequential(
+                Conv2dReLU(C + hr, F_out, kernel_size=3, padding=1, use_batchnorm=True),
+                Conv2dReLU(F_out, F_out, kernel_size=3, padding=1, use_batchnorm=True),
+            )
+        else:
+            self.final = None if config.dec_stop112 else nn.Sequential(
+                nn.UpsamplingBilinear2d(scale_factor=2),
+                Conv2dReLU(C, F_out, kernel_size=3, padding=1, use_batchnorm=True),
+                Conv2dReLU(F_out, F_out, kernel_size=3, padding=1, use_batchnorm=True),
+            )
+        self.out_channels = C if config.dec_stop112 else F_out
+
+    def forward(self, hidden_states, features=None, hr_feat=None):
+        B, n_patch, hidden = hidden_states.size()
+        h = w = int(np.sqrt(n_patch))
+        x = self.conv_more(hidden_states.permute(0, 2, 1).contiguous().view(B, hidden, h, w))
+        for i, block in enumerate(self.blocks):
+            skip = features[i] if (features is not None and i < self.config.n_skip) else None
+            x = block(x, skip=skip)
+        if self.final_hr is not None:
+            return self.final_hr(torch.cat([self.final_up(x), hr_feat], dim=1))
+        return x if self.final is None else self.final(x)
+
+
 class ApproxDATransUNet(nn.Module):
     def __init__(
         self, config, img_size=224, num_classes=21843, zero_head=False, vis=False
@@ -482,24 +715,85 @@ class ApproxDATransUNet(nn.Module):
         self.num_classes = num_classes
         self.zero_head = zero_head
         self.classifier = config.classifier
-        self.transformer = Transformer(config, img_size, vis)
-        self.decoder = DecoderCup(config)
-        self.segmentation_head = SegmentationHead(
-            in_channels=config["decoder_channels"][-1],
-            out_channels=config["n_classes"],
-            kernel_size=3,
-        )
+        self.backbone = getattr(config, "backbone", "vit")
+        if self.backbone != "vit":  # LightViTTransformer changes hidden_size: work on a copy of the shared config
+            config = copy.deepcopy(config)
+            self.transformer = LightViTTransformer(config)
+        else:
+            self.transformer = Transformer(config, img_size, vis)
+        if getattr(config, "dec_channels", 0) > 0:
+            self.decoder = SlimDecoderCup(config)
+            self.segmentation_head = SegmentationHead(
+                in_channels=self.decoder.out_channels,
+                out_channels=config["n_classes"],
+                kernel_size=3,
+                upsampling=2 if config.dec_stop112 else 1,
+            )
+        else:
+            self.decoder = DecoderCup(config)
+            self.segmentation_head = SegmentationHead(
+                in_channels=config["decoder_channels"][-1],
+                out_channels=config["n_classes"],
+                kernel_size=3,
+            )
         self.config = config
+        # --slice_attn K >= 0 (opt-in): inter-slice attention over the bottleneck tokens of 2K+1 adjacent slices
+        K = getattr(config, "slice_attn", -1)
+        self.slice_attn = None
+        if K >= 0:
+            from .block import SliceAttention
+
+            self.slice_attn = SliceAttention(config.hidden_size, 2 * K + 1, (img_size // 16) ** 2)
+        # --point_refine (opt-in): PointRend-style native-resolution boundary refinement head; forward keeps the
+        # decoder output in self.last_dec_feat for it
+        self.point_head = None
+        if getattr(config, "point_refine", False):
+            if K >= 0:
+                raise ValueError("--point_refine is not implemented together with --slice_attn")
+            from .block import PointRefineHead
+
+            feat_ch = self.decoder.out_channels if getattr(config, "dec_channels", 0) > 0 else config["decoder_channels"][-1]
+            self.point_head = PointRefineHead(config["n_classes"], feat_ch, residual=getattr(config, "pr_residual", False),
+                                              balanced=getattr(config, "pr_balanced", False))
+            self.last_dec_feat = None
+        # --hr_skip H (opt-in, slim decoder only): two 3x3 conv-BN-ReLU on the (3-channel) input at full resolution,
+        # fed to the decoder's full-resolution stage
+        self.hr_stem = None
+        if getattr(config, "hr_skip", 0) > 0:
+            if getattr(config, "dec_channels", 0) <= 0 or K >= 0:
+                raise ValueError("--hr_skip needs --dec_channels (slim decoder) and no --slice_attn")
+            H = config.hr_skip
+            self.hr_stem = nn.Sequential(Conv2dReLU(3, H, kernel_size=3, padding=1, use_batchnorm=True),
+                                         Conv2dReLU(H, H, kernel_size=3, padding=1, use_batchnorm=True))
 
     def forward(self, x):
+        if self.slice_attn is not None:
+            return self._forward_slices(x)
         if x.size()[1] == 1:
             x = x.repeat(1, 3, 1, 1)
+        hr_feat = self.hr_stem(x) if self.hr_stem is not None else None
         x, attn_weights, features = self.transformer(x)  # (B, n_patch, hidden)
-        x = self.decoder(x, features)
+        x = self.decoder(x, features, hr_feat) if hr_feat is not None else self.decoder(x, features)
+        if self.point_head is not None:
+            self.last_dec_feat = x
         logits = self.segmentation_head(x)
         return logits
 
+    def _forward_slices(self, x):
+        """--slice_attn: x (B, S, H, W) holds the 2K+1 adjacent grayscale slices, the centre one in the middle. All
+        slices go through the shared encoder; the centre slice's bottleneck tokens attend to all of them; the decoder
+        uses the centre slice's tokens and skips."""
+        B, S = x.shape[:2]
+        if S == 1 and self.slice_attn.num_slices > 1:  # single-slice dummy input (FLOP profiling)
+            x, S = x.repeat(1, self.slice_attn.num_slices, 1, 1), self.slice_attn.num_slices
+        tokens, _, features = self.transformer(x.reshape(B * S, 1, *x.shape[2:]).repeat(1, 3, 1, 1))
+        tokens = self.slice_attn(tokens.view(B, S, *tokens.shape[1:]))
+        features = [f.view(B, S, *f.shape[1:])[:, S // 2] for f in features]
+        return self.segmentation_head(self.decoder(tokens, features))
+
     def load_from(self, weights):
+        if self.backbone != "vit":
+            return self._load_from_lightvit(weights)
         with torch.no_grad():
 
             res_weight = weights
@@ -563,6 +857,22 @@ class ApproxDATransUNet(nn.Module):
                 ) in self.transformer.embeddings.hybrid_model.body.named_children():
                     for uname, unit in block.named_children():
                         unit.load_from(res_weight, n_block=bname, n_unit=uname)
+
+    def _load_from_lightvit(self, weights):
+        """R50 root/block1/block2 from the R50+ViT-B_16 ImageNet-21k checkpoint, LightViT stages from ImageNet-1k."""
+        r = self.transformer.hybrid_model
+        with torch.no_grad():
+            r.root.conv.weight.copy_(np2th(weights["conv_root/kernel"], conv=True))
+            r.root.gn.weight.copy_(np2th(weights["gn_root/scale"]).view(-1))
+            r.root.gn.bias.copy_(np2th(weights["gn_root/bias"]).view(-1))
+            for bname, block in r.body.named_children():
+                for uname, unit in block.named_children():
+                    unit.load_from(weights, n_block=bname, n_unit=uname)
+        if self.backbone == "conv":  # transformer-free baseline: R50 weights only, the stand-in conv starts random
+            print("loaded R50 root/block1/block2 (no LightViT; --backbone conv)")
+            return
+        n = self.transformer.lightvit.load_pretrained(self.config.lightvit_ckpt)
+        print(f"loaded R50 root/block1/block2 and {n} LightViT tensors from {self.config.lightvit_ckpt}")
 
 
 CONFIGS = {

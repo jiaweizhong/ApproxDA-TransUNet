@@ -1,0 +1,36 @@
+/home/jiawei/venvs/torch/lib/python3.14/site-packages/torch/jit/_script.py:1485: FutureWarning: `torch.jit.script` is not supported in Python 3.14+ and may break. Please switch to `torch.compile` or `torch.export`.
+  warnings.warn(
+/home/jiawei/venvs/torch/lib/python3.14/site-packages/torch/functional.py:504: UserWarning: torch.meshgrid: in an upcoming release, it will be required to pass the indexing argument. (Triggered internally at /__w/pytorch/pytorch/aten/src/ATen/native/TensorShape.cpp:4221.)
+  return _VF.meshgrid(tensors, **kwargs)  # type: ignore[attr-defined]
+Not saving results.
+Namespace(volume_path='../data/Synapse/test_vol_h5', dataset='Synapse', num_classes=9, list_dir='./lists/lists_Synapse', max_iterations=20000, max_epochs=300, batch_size=24, img_size=224, is_savenii=False, n_skip=3, vit_name='R50-ViT-B_16', test_save_dir='../predictions', deterministic=1, base_lr=0.01, seed=1234, vit_patches_size=16, window_size=28, rank=32, groups=8, gate_mode='pam', block_version='c16', alpha_init=0.0, ablate_attn=False, ablate_attn_at='all', lr_post=False, ablate_cam='', backbone='lightvit_t', lightvit_dir='/data/checkpoints/LightViT', no_vit=False, dec_channels=64, dec_stop112=False, pam_style='danet', pam_fusion='max', attn_off=False, attn_opt='same', attn_lr=0.001, attn_wd=0.01, attn_off_at='all', no_block=False, aug='small_rot', pam_relpos=False, pam_abspos=False, coord_gate=False, refine_mode='plain', block_type='approxda', mednext_k=5, mednext_exp=2, skip_ratio=16, pam_no_identity=False, attn_norm=False, run_tag='', drop_last=False, num_workers=4, rgb=False, optimizer='sgd', precise_bn=False, eval_epoch=0, checkpoint='last', split='test', Dataset=<class 'datasets.dataset_synapse.Synapse_dataset'>, z_spacing=1, is_pretrain=True, exp='ApproxDA_Synapse224')
+ApproxDA_pretrain_R50-ViT-B_16_skip3_epo300_bs24_224_M28_pam_c16_fmax_augsmall_lvt_dec64
+12 test iterations per epoch
+Model parameters: 10.54 M
+GFLOPs (single 224x224 slice, fvcore, includes attention bmm): 6.6
+/home/jiawei/venvs/torch/lib/python3.14/site-packages/torch/jit/_script.py:1485: FutureWarning: `torch.jit.script` is not supported in Python 3.14+ and may break. Please switch to `torch.compile` or `torch.export`.
+  warnings.warn(
+0it [00:00, ?it/s]idx 0 case case0008 mean_dice 0.647782 mean_hd95 12.516862
+1it [00:56, 56.47s/it]idx 1 case case0022 mean_dice 0.904264 mean_hd95 2.516124
+2it [01:28, 42.01s/it]idx 2 case case0038 mean_dice 0.809263 mean_hd95 5.136891
+3it [02:03, 39.09s/it]idx 3 case case0036 mean_dice 0.863746 mean_hd95 6.583603
+4it [03:20, 53.85s/it]idx 4 case case0032 mean_dice 0.844125 mean_hd95 14.902949
+5it [04:16, 54.68s/it]idx 5 case case0002 mean_dice 0.879524 mean_hd95 3.006319
+6it [05:08, 53.74s/it]idx 6 case case0029 mean_dice 0.777689 mean_hd95 15.740182
+7it [05:43, 47.49s/it]idx 7 case case0003 mean_dice 0.748888 mean_hd95 30.663171
+8it [07:02, 57.56s/it]idx 8 case case0001 mean_dice 0.776993 mean_hd95 11.370792
+9it [07:59, 57.53s/it]idx 9 case case0004 mean_dice 0.759817 mean_hd95 10.526946
+10it [08:51, 55.73s/it]idx 10 case case0025 mean_dice 0.870032 mean_hd95 5.765037
+11it [09:21, 47.88s/it]idx 11 case case0035 mean_dice 0.866753 mean_hd95 3.322048
+12it [09:50, 42.03s/it]12it [09:50, 49.18s/it]
+Inference total: 591.5s  avg per case: 49294.0ms
+Inference peak VRAM: 192 MB (0.2 GB)
+Mean class 1 mean_dice 0.883915 mean_hd95 5.849669 mean_iou 0.793565
+Mean class 2 mean_dice 0.643848 mean_hd95 7.270312 mean_iou 0.531171
+Mean class 3 mean_dice 0.864326 mean_hd95 6.161181 mean_iou 0.799592
+Mean class 4 mean_dice 0.832987 mean_hd95 7.875832 mean_iou 0.762427
+Mean class 5 mean_dice 0.947498 mean_hd95 7.781649 mean_iou 0.901409
+Mean class 6 mean_dice 0.625206 mean_hd95 14.549809 mean_iou 0.465603
+Mean class 7 mean_dice 0.894829 mean_hd95 14.638348 mean_iou 0.821593
+Mean class 8 mean_dice 0.806642 mean_hd95 17.240484 mean_iou 0.686071
+Testing performance (split=test, checkpoint=last): mean_dice : 0.812406 mean_hd95 : 10.170910 mean_iou : 0.720179

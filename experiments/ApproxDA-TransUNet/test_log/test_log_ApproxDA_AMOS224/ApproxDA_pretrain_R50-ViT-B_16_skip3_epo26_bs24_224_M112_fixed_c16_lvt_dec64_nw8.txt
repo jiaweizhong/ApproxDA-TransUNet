@@ -1,0 +1,126 @@
+[23:27:25.988] Namespace(volume_path='../data/AMOS_CT_2d/test_vol_h5', dataset='AMOS', num_classes=16, list_dir='./lists/lists_AMOS', max_iterations=20000, max_epochs=26, batch_size=24, img_size=224, is_savenii=False, n_skip=3, vit_name='R50-ViT-B_16', test_save_dir='../predictions', deterministic=1, base_lr=0.01, seed=1234, vit_patches_size=16, window_size=112, rank=32, groups=8, gate_mode='fixed', block_version='c16', alpha_init=0.0, ablate_attn=False, ablate_attn_at='all', lr_post=False, upsample='nearest', ablate_third=False, ablate_slice='', ablate_cam='', backbone='lightvit_t', lightvit_dir='/data/checkpoints/LightViT', no_vit=False, dec_channels=64, dec_stop112=False, pam_style='danet', pam_fusion='residual', attn_off=False, attn_opt='same', attn_lr=0.001, attn_scope='pamcam', attn_wd=0.01, attn_off_at='all', no_block=False, aug='default', pam_relpos=False, pam_abspos=False, coord_gate=False, bn_order='post', point_loss=False, ptl_balanced=False, point_refine=False, pr_residual=False, pr_balanced=False, slice_attn=-1, third_branch='none', organ_aux=0.4, pam_affinity=0.0, refine_mode='plain', block_type='approxda', mednext_k=5, mednext_exp=2, skip_ratio=16, pam_no_identity=False, attn_norm=False, run_tag='', drop_last=False, num_workers=8, rgb=False, optimizer='sgd', precise_bn=False, eval_epoch=0, checkpoint='last', split='test', Dataset=<class 'datasets.dataset_amos.AMOS_dataset'>, z_spacing=1, is_pretrain=True, exp='ApproxDA_AMOS224')
+[23:27:25.988] ApproxDA_pretrain_R50-ViT-B_16_skip3_epo26_bs24_224_M112_fixed_c16_lvt_dec64_nw8
+[23:27:25.997] 100 test iterations per epoch
+[23:27:25.998] Model parameters: 12.25 M
+[23:27:26.839] GFLOPs (single 224x224 slice, fvcore, includes attention bmm): 7.0
+[23:27:34.189] idx 0 case amos_0008 mean_dice 0.819025 mean_hd95 6.465565
+[23:27:36.912] idx 1 case amos_0013 mean_dice 0.769816 mean_hd95 7.072803
+[23:27:40.357] idx 2 case amos_0018 mean_dice 0.825168 mean_hd95 7.948250
+[23:27:46.110] idx 3 case amos_0022 mean_dice 0.846925 mean_hd95 4.407365
+[23:27:50.304] idx 4 case amos_0029 mean_dice 0.884452 mean_hd95 4.391538
+[23:27:54.155] idx 5 case amos_0032 mean_dice 0.865070 mean_hd95 4.479012
+[23:27:58.114] idx 6 case amos_0034 mean_dice 0.674442 mean_hd95 35.222317
+[23:28:01.663] idx 7 case amos_0040 mean_dice 0.790312 mean_hd95 21.728066
+[23:28:04.407] idx 8 case amos_0041 mean_dice 0.732076 mean_hd95 18.520734
+[23:28:07.384] idx 9 case amos_0051 mean_dice 0.777111 mean_hd95 8.865062
+[23:28:12.986] idx 10 case amos_0056 mean_dice 0.734222 mean_hd95 15.047152
+[23:28:15.684] idx 11 case amos_0061 mean_dice 0.819602 mean_hd95 11.555948
+[23:28:19.866] idx 12 case amos_0063 mean_dice 0.753997 mean_hd95 13.584710
+[23:28:26.036] idx 13 case amos_0070 mean_dice 0.773515 mean_hd95 12.747204
+[23:28:28.984] idx 14 case amos_0073 mean_dice 0.853155 mean_hd95 4.247560
+[23:28:33.265] idx 15 case amos_0085 mean_dice 0.694296 mean_hd95 29.680209
+[23:28:36.184] idx 16 case amos_0087 mean_dice 0.849611 mean_hd95 12.405447
+[23:28:39.219] idx 17 case amos_0090 mean_dice 0.859233 mean_hd95 3.941340
+[23:28:45.113] idx 18 case amos_0106 mean_dice 0.773321 mean_hd95 7.523321
+[23:28:48.859] idx 19 case amos_0108 mean_dice 0.770209 mean_hd95 9.388669
+[23:28:54.409] idx 20 case amos_0112 mean_dice 0.828245 mean_hd95 6.177787
+[23:29:00.362] idx 21 case amos_0117 mean_dice 0.804878 mean_hd95 8.455011
+[23:29:03.410] idx 22 case amos_0120 mean_dice 0.855312 mean_hd95 6.754893
+[23:29:07.152] idx 23 case amos_0123 mean_dice 0.877342 mean_hd95 5.610237
+[23:29:13.101] idx 24 case amos_0128 mean_dice 0.862792 mean_hd95 5.560395
+[23:29:17.093] idx 25 case amos_0132 mean_dice 0.634187 mean_hd95 15.869126
+[23:29:20.923] idx 26 case amos_0136 mean_dice 0.838736 mean_hd95 8.096772
+[23:29:27.007] idx 27 case amos_0140 mean_dice 0.777174 mean_hd95 17.742084
+[23:29:31.180] idx 28 case amos_0144 mean_dice 0.889937 mean_hd95 6.798857
+[23:29:36.732] idx 29 case amos_0150 mean_dice 0.827574 mean_hd95 7.068447
+[23:29:41.194] idx 30 case amos_0155 mean_dice 0.762191 mean_hd95 17.844034
+[23:29:44.254] idx 31 case amos_0157 mean_dice 0.850015 mean_hd95 4.299130
+[23:29:47.267] idx 32 case amos_0167 mean_dice 0.796973 mean_hd95 9.163793
+[23:29:51.325] idx 33 case amos_0174 mean_dice 0.866137 mean_hd95 4.672084
+[23:29:55.159] idx 34 case amos_0176 mean_dice 0.840260 mean_hd95 5.256823
+[23:30:00.666] idx 35 case amos_0189 mean_dice 0.717337 mean_hd95 10.581869
+[23:30:06.368] idx 36 case amos_0191 mean_dice 0.860651 mean_hd95 4.660173
+[23:30:10.515] idx 37 case amos_0194 mean_dice 0.770466 mean_hd95 5.603896
+[23:30:14.621] idx 38 case amos_0200 mean_dice 0.890484 mean_hd95 4.897616
+[23:30:17.692] idx 39 case amos_0202 mean_dice 0.872919 mean_hd95 13.015107
+[23:30:27.046] idx 40 case amos_0203 mean_dice 0.690500 mean_hd95 34.538228
+[23:30:35.776] idx 41 case amos_0204 mean_dice 0.596796 mean_hd95 48.625575
+[23:30:47.978] idx 42 case amos_0206 mean_dice 0.855977 mean_hd95 5.905807
+[23:31:00.309] idx 43 case amos_0207 mean_dice 0.838212 mean_hd95 6.090888
+[23:31:09.326] idx 44 case amos_0208 mean_dice 0.561558 mean_hd95 52.614511
+[23:31:17.977] idx 45 case amos_0216 mean_dice 0.844553 mean_hd95 5.102747
+[23:31:23.999] idx 46 case amos_0218 mean_dice 0.789738 mean_hd95 9.906419
+[23:31:32.119] idx 47 case amos_0219 mean_dice 0.856201 mean_hd95 7.382032
+[23:31:39.695] idx 48 case amos_0223 mean_dice 0.863090 mean_hd95 5.101978
+[23:31:51.995] idx 49 case amos_0228 mean_dice 0.828927 mean_hd95 25.957379
+[23:32:03.181] idx 50 case amos_0233 mean_dice 0.857826 mean_hd95 6.664656
+[23:32:12.533] idx 51 case amos_0238 mean_dice 0.762221 mean_hd95 13.994260
+[23:32:23.459] idx 52 case amos_0244 mean_dice 0.851555 mean_hd95 18.122556
+[23:32:34.380] idx 53 case amos_0247 mean_dice 0.885462 mean_hd95 4.273921
+[23:32:45.498] idx 54 case amos_0250 mean_dice 0.803832 mean_hd95 24.305236
+[23:32:55.570] idx 55 case amos_0255 mean_dice 0.859749 mean_hd95 6.117383
+[23:32:59.903] idx 56 case amos_0257 mean_dice 0.723931 mean_hd95 44.729744
+[23:33:04.398] idx 57 case amos_0258 mean_dice 0.785008 mean_hd95 9.424812
+[23:33:13.945] idx 58 case amos_0278 mean_dice 0.877315 mean_hd95 17.236350
+[23:33:20.146] idx 59 case amos_0280 mean_dice 0.846844 mean_hd95 4.894851
+[23:33:29.549] idx 60 case amos_0283 mean_dice 0.854400 mean_hd95 8.842602
+[23:33:36.486] idx 61 case amos_0284 mean_dice 0.819620 mean_hd95 12.819004
+[23:33:45.159] idx 62 case amos_0286 mean_dice 0.843683 mean_hd95 13.041522
+[23:33:57.284] idx 63 case amos_0287 mean_dice 0.689336 mean_hd95 21.427149
+[23:34:05.262] idx 64 case amos_0289 mean_dice 0.821551 mean_hd95 6.243718
+[23:34:12.901] idx 65 case amos_0290 mean_dice 0.837653 mean_hd95 5.050242
+[23:34:16.051] idx 66 case amos_0292 mean_dice 0.881670 mean_hd95 3.925335
+[23:34:27.264] idx 67 case amos_0293 mean_dice 0.742453 mean_hd95 13.582923
+[23:34:33.685] idx 68 case amos_0304 mean_dice 0.852113 mean_hd95 3.944559
+[23:34:37.008] idx 69 case amos_0308 mean_dice 0.755319 mean_hd95 15.573572
+[23:34:46.287] idx 70 case amos_0309 mean_dice 0.836252 mean_hd95 20.203315
+[23:34:56.869] idx 71 case amos_0310 mean_dice 0.838278 mean_hd95 19.259506
+[23:35:04.414] idx 72 case amos_0311 mean_dice 0.776015 mean_hd95 22.478994
+[23:35:13.439] idx 73 case amos_0313 mean_dice 0.803952 mean_hd95 16.790320
+[23:35:21.989] idx 74 case amos_0316 mean_dice 0.835769 mean_hd95 9.355240
+[23:35:25.206] idx 75 case amos_0318 mean_dice 0.843873 mean_hd95 11.678849
+[23:35:32.889] idx 76 case amos_0323 mean_dice 0.882950 mean_hd95 3.978472
+[23:35:40.890] idx 77 case amos_0325 mean_dice 0.885688 mean_hd95 3.120575
+[23:35:46.711] idx 78 case amos_0326 mean_dice 0.737078 mean_hd95 14.482890
+[23:35:51.245] idx 79 case amos_0328 mean_dice 0.880242 mean_hd95 4.639987
+[23:35:58.675] idx 80 case amos_0333 mean_dice 0.765738 mean_hd95 8.069041
+[23:36:02.894] idx 81 case amos_0334 mean_dice 0.801201 mean_hd95 6.953912
+[23:36:12.223] idx 82 case amos_0339 mean_dice 0.754738 mean_hd95 30.071992
+[23:36:16.584] idx 83 case amos_0342 mean_dice 0.809053 mean_hd95 15.543561
+[23:36:26.781] idx 84 case amos_0344 mean_dice 0.844021 mean_hd95 8.019113
+[23:36:30.339] idx 85 case amos_0346 mean_dice 0.559499 mean_hd95 45.268560
+[23:36:33.519] idx 86 case amos_0352 mean_dice 0.857308 mean_hd95 5.649947
+[23:36:38.627] idx 87 case amos_0356 mean_dice 0.668454 mean_hd95 19.315899
+[23:36:51.153] idx 88 case amos_0357 mean_dice 0.763100 mean_hd95 12.898785
+[23:36:55.621] idx 89 case amos_0363 mean_dice 0.793991 mean_hd95 5.764838
+[23:37:01.730] idx 90 case amos_0364 mean_dice 0.727864 mean_hd95 10.105780
+[23:37:06.878] idx 91 case amos_0365 mean_dice 0.856282 mean_hd95 4.225752
+[23:37:11.258] idx 92 case amos_0368 mean_dice 0.794116 mean_hd95 8.584096
+[23:37:16.831] idx 93 case amos_0372 mean_dice 0.845834 mean_hd95 5.863704
+[23:37:22.629] idx 94 case amos_0373 mean_dice 0.724983 mean_hd95 26.946184
+[23:37:28.188] idx 95 case amos_0377 mean_dice 0.837756 mean_hd95 10.962079
+[23:37:33.208] idx 96 case amos_0385 mean_dice 0.854602 mean_hd95 7.654716
+[23:37:37.922] idx 97 case amos_0397 mean_dice 0.790690 mean_hd95 6.412741
+[23:37:43.799] idx 98 case amos_0399 mean_dice 0.796446 mean_hd95 14.945613
+[23:37:48.347] idx 99 case amos_0409 mean_dice 0.862011 mean_hd95 4.210703
+[23:37:48.372] Inference total: 621.5s  avg per case: 6215.3ms
+[23:37:48.372] Inference peak VRAM: 207 MB (0.2 GB)
+[23:37:48.372] Mean class 1 spleen mean_dice 0.911952 mean_hd95 14.119464 mean_iou 0.854999 (cases 100, missed 0, hallucinated 0/0)
+[23:37:48.372] Mean class 2 kidney_R mean_dice 0.901798 mean_hd95 25.402925 mean_iou 0.837480 (cases 98, missed 0, hallucinated 2/2)
+[23:37:48.372] Mean class 3 kidney_L mean_dice 0.897534 mean_hd95 20.821990 mean_iou 0.834950 (cases 100, missed 0, hallucinated 0/0)
+[23:37:48.372] Mean class 4 gallbladder mean_dice 0.756179 mean_hd95 14.284996 mean_iou 0.651582 (cases 93, missed 0, hallucinated 7/7)
+[23:37:48.372] Mean class 5 esophagus mean_dice 0.769448 mean_hd95 5.699715 mean_iou 0.636987 (cases 100, missed 0, hallucinated 0/0)
+[23:37:48.372] Mean class 6 liver mean_dice 0.946732 mean_hd95 11.960334 mean_iou 0.903044 (cases 100, missed 0, hallucinated 0/0)
+[23:37:48.372] Mean class 7 stomach mean_dice 0.836302 mean_hd95 17.150742 mean_iou 0.736292 (cases 99, missed 0, hallucinated 1/1)
+[23:37:48.372] Mean class 8 aorta mean_dice 0.913256 mean_hd95 6.920827 mean_iou 0.844969 (cases 100, missed 0, hallucinated 0/0)
+[23:37:48.372] Mean class 9 ivc mean_dice 0.816079 mean_hd95 7.705686 mean_iou 0.695055 (cases 100, missed 0, hallucinated 0/0)
+[23:37:48.372] Mean class 10 pancreas mean_dice 0.726293 mean_hd95 10.412925 mean_iou 0.589437 (cases 100, missed 0, hallucinated 0/0)
+[23:37:48.372] Mean class 11 adrenal_R mean_dice 0.664382 mean_hd95 6.116216 mean_iou 0.507787 (cases 100, missed 0, hallucinated 0/0)
+[23:37:48.372] Mean class 12 adrenal_L mean_dice 0.653542 mean_hd95 5.857521 mean_iou 0.500570 (cases 100, missed 0, hallucinated 0/0)
+[23:37:48.372] Mean class 13 duodenum mean_dice 0.659678 mean_hd95 15.230604 mean_iou 0.509293 (cases 99, missed 0, hallucinated 1/1)
+[23:37:48.372] Mean class 14 bladder mean_dice 0.831174 mean_hd95 12.677165 mean_iou 0.743342 (cases 99, missed 0, hallucinated 0/1)
+[23:37:48.372] Mean class 15 prostate_uterus mean_dice 0.770876 mean_hd95 13.379271 mean_iou 0.655653 (cases 97, missed 0, hallucinated 2/3)
+[23:37:48.373] hallucinated organs (case, class, predicted voxels): [('amos_0029', 'prostate_uterus', 1018), ('amos_0056', 'gallbladder', 3290), ('amos_0056', 'duodenum', 22959), ('amos_0070', 'gallbladder', 224), ('amos_0112', 'kidney_R', 5586), ('amos_0120', 'gallbladder', 657), ('amos_0150', 'gallbladder', 3807), ('amos_0191', 'gallbladder', 587), ('amos_0247', 'prostate_uterus', 5931), ('amos_0311', 'stomach', 147208), ('amos_0313', 'gallbladder', 4088), ('amos_0323', 'kidney_R', 16465), ('amos_0356', 'gallbladder', 2327)]
+[23:37:48.373] missed organs (present, not predicted; Dice 0, excluded from HD95): 0 case-class pairs
+[23:37:48.373] Testing performance [synapse8] (split=test, checkpoint=last): mean_dice : 0.861256 mean_hd95 : 15.134275 mean_iou : 0.781594
+[23:37:48.373] Testing performance [all15] (split=test, checkpoint=last): mean_dice : 0.803682 mean_hd95 : 12.516025 mean_iou : 0.700096

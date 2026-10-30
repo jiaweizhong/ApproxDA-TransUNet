@@ -1,0 +1,28 @@
+[02:31:56.131] Namespace(volume_path='../data/Synapse/test_vol_h5', dataset='Synapse', num_classes=9, list_dir='./lists/lists_Synapse', max_iterations=20000, max_epochs=300, batch_size=24, img_size=224, is_savenii=False, n_skip=3, vit_name='R50-ViT-B_16', test_save_dir='../predictions', deterministic=1, base_lr=0.01, seed=1234, vit_patches_size=16, window_size=112, rank=64, groups=8, gate_mode='pam', block_version='c16', optimizer='sgd', checkpoint='last', split='test', Dataset=<class 'datasets.dataset_synapse.Synapse_dataset'>, z_spacing=1, is_pretrain=True, exp='ApproxDA_Synapse224')
+[02:31:56.131] ApproxDA_pretrain_R50-ViT-B_16_skip3_epo300_bs24_224_M112_r64_pam_c16
+[02:31:56.131] 12 test iterations per epoch
+[02:31:56.132] Model parameters: 109.10 M
+[02:31:56.848] GFLOPs (single 224x224 slice, fvcore, includes attention bmm): 29.7
+[02:32:54.303] idx 0 case case0008 mean_dice 0.664587 mean_hd95 17.869079
+[02:33:26.183] idx 1 case case0022 mean_dice 0.910258 mean_hd95 4.072969
+[02:34:01.746] idx 2 case case0038 mean_dice 0.830599 mean_hd95 9.678091
+[02:35:16.003] idx 3 case case0036 mean_dice 0.788158 mean_hd95 17.059972
+[02:36:10.594] idx 4 case case0032 mean_dice 0.852410 mean_hd95 33.981627
+[02:37:02.504] idx 5 case case0002 mean_dice 0.877125 mean_hd95 5.695064
+[02:37:36.951] idx 6 case case0029 mean_dice 0.674808 mean_hd95 43.089164
+[02:38:55.190] idx 7 case case0003 mean_dice 0.719128 mean_hd95 97.643496
+[02:39:52.540] idx 8 case case0001 mean_dice 0.760994 mean_hd95 18.007566
+[02:40:44.006] idx 9 case case0004 mean_dice 0.792126 mean_hd95 9.702061
+[02:41:14.267] idx 10 case case0025 mean_dice 0.826869 mean_hd95 22.562813
+[02:41:42.904] idx 11 case case0035 mean_dice 0.893711 mean_hd95 2.536627
+[02:41:42.920] Inference total: 586.1s  avg per case: 48839.3ms
+[02:41:42.920] Inference peak VRAM: 941 MB (0.9 GB)
+[02:41:42.920] Mean class 1 mean_dice 0.859488 mean_hd95 14.314192 mean_iou 0.755281
+[02:41:42.920] Mean class 2 mean_dice 0.633502 mean_hd95 28.928962 mean_iou 0.523317
+[02:41:42.920] Mean class 3 mean_dice 0.822436 mean_hd95 54.592766 mean_iou 0.730991
+[02:41:42.920] Mean class 4 mean_dice 0.802449 mean_hd95 29.990444 mean_iou 0.723727
+[02:41:42.920] Mean class 5 mean_dice 0.950165 mean_hd95 13.978157 mean_iou 0.905888
+[02:41:42.920] Mean class 6 mean_dice 0.622658 mean_hd95 11.488925 mean_iou 0.476991
+[02:41:42.920] Mean class 7 mean_dice 0.894020 mean_hd95 13.506481 mean_iou 0.821132
+[02:41:42.920] Mean class 8 mean_dice 0.809131 mean_hd95 21.132426 mean_iou 0.688634
+[02:41:42.920] Testing performance (split=test, checkpoint=last): mean_dice : 0.799231 mean_hd95 : 23.491544 mean_iou : 0.703245

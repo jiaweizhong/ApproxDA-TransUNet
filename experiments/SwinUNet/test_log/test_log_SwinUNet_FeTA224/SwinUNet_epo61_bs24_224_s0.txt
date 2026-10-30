@@ -1,0 +1,25 @@
+[08:11:38.707] Namespace(volume_path='../data/FeTA_2d/test_vol_h5', dataset='FeTA', num_classes=8, list_dir='./lists/lists_FeTA', max_iterations=20000, max_epochs=61, batch_size=24, img_size=224, is_savenii=False, n_skip=3, vit_name='R50-ViT-B_16', test_save_dir='../predictions', deterministic=1, base_lr=0.01, seed=0, vit_patches_size=16, drop_last=False, num_workers=4, rgb=False, optimizer='sgd', ablate_cam='', precise_bn=False, eval_epoch=0, checkpoint='last', split='test', Dataset=<class 'datasets.dataset_feta.FeTA_dataset'>, z_spacing=1, is_pretrain=True, exp='SwinUNet_FeTA224')
+[08:11:38.707] SwinUNet_epo61_bs24_224_s0
+[08:11:38.707] 8 test iterations per epoch
+[08:11:38.707] Model parameters: 27.17 M
+[08:11:39.045] GFLOPs (single 224x224 slice, fvcore, includes attention bmm): 6.2
+[08:11:41.739] idx 0 case sub-004 mean_dice 0.623525 mean_hd95 5.756057
+[08:11:44.593] idx 1 case sub-010 mean_dice 0.883851 mean_hd95 1.300450
+[08:11:46.131] idx 2 case sub-021 mean_dice 0.793554 mean_hd95 2.115695
+[08:11:49.852] idx 3 case sub-028 mean_dice 0.845139 mean_hd95 1.766545
+[08:11:51.596] idx 4 case sub-042 mean_dice 0.870134 mean_hd95 1.154448
+[08:11:53.321] idx 5 case sub-052 mean_dice 0.538975 mean_hd95 6.678843
+[08:11:56.842] idx 6 case sub-061 mean_dice 0.854445 mean_hd95 1.662592
+[08:11:58.500] idx 7 case sub-076 mean_dice 0.859606 mean_hd95 1.203804
+[08:11:58.513] Inference total: 19.5s  avg per case: 2433.6ms
+[08:11:58.514] Inference peak VRAM: 292 MB (0.3 GB)
+[08:11:58.514] Mean class 1 eCSF mean_dice 0.739622 mean_hd95 4.191816 mean_iou 0.631610 (cases 8, missed 0, hallucinated 0/0)
+[08:11:58.514] Mean class 2 GM mean_dice 0.679868 mean_hd95 1.628636 mean_iou 0.531487 (cases 8, missed 0, hallucinated 0/0)
+[08:11:58.514] Mean class 3 WM mean_dice 0.830803 mean_hd95 1.910327 mean_iou 0.749759 (cases 8, missed 0, hallucinated 0/0)
+[08:11:58.514] Mean class 4 LV mean_dice 0.832742 mean_hd95 2.066709 mean_iou 0.727100 (cases 8, missed 0, hallucinated 0/0)
+[08:11:58.514] Mean class 5 CBM mean_dice 0.815830 mean_hd95 2.483258 mean_iou 0.704707 (cases 8, missed 0, hallucinated 0/0)
+[08:11:58.514] Mean class 6 SGM mean_dice 0.836984 mean_hd95 2.204509 mean_iou 0.725936 (cases 8, missed 0, hallucinated 0/0)
+[08:11:58.514] Mean class 7 BS mean_dice 0.749727 mean_hd95 4.448375 mean_iou 0.622763 (cases 8, missed 0, hallucinated 0/0)
+[08:11:58.514] hallucinated organs (case, class, predicted voxels): []
+[08:11:58.514] missed organs (present, not predicted; Dice 0, excluded from HD95): 0 case-class pairs
+[08:11:58.514] Testing performance [all7] (split=test, checkpoint=last): mean_dice : 0.783654 mean_hd95 : 2.704804 mean_iou : 0.670480

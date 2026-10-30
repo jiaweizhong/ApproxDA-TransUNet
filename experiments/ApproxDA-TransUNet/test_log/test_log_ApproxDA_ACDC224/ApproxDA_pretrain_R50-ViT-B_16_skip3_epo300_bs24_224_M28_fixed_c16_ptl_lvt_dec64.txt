@@ -1,0 +1,51 @@
+[07:48:38.338] Namespace(volume_path='../data/ACDC_MTUNet', dataset='ACDC', num_classes=4, list_dir='./lists/lists_ACDC', max_iterations=20000, max_epochs=300, batch_size=24, img_size=224, is_savenii=False, n_skip=3, vit_name='R50-ViT-B_16', test_save_dir='../predictions', deterministic=1, base_lr=0.01, seed=1234, vit_patches_size=16, window_size=28, rank=32, groups=8, gate_mode='fixed', block_version='c16', alpha_init=0.0, ablate_attn=False, ablate_attn_at='all', lr_post=False, upsample='nearest', ablate_third=False, ablate_slice='', ablate_cam='', backbone='lightvit_t', lightvit_dir='/data/checkpoints/LightViT', no_vit=False, dec_channels=64, dec_stop112=False, pam_style='danet', pam_fusion='residual', attn_off=False, attn_opt='same', attn_lr=0.001, attn_scope='pamcam', attn_wd=0.01, attn_off_at='all', no_block=False, aug='default', pam_relpos=False, pam_abspos=False, coord_gate=False, bn_order='post', point_loss=True, point_refine=False, pr_residual=False, pr_balanced=False, slice_attn=-1, third_branch='none', organ_aux=0.4, pam_affinity=0.0, refine_mode='plain', block_type='approxda', mednext_k=5, mednext_exp=2, skip_ratio=16, pam_no_identity=False, attn_norm=False, run_tag='', drop_last=False, num_workers=4, rgb=False, optimizer='sgd', precise_bn=False, eval_epoch=0, checkpoint='last', split='test', Dataset=<class 'datasets.dataset_acdc.ACDC_dataset'>, z_spacing=1, is_pretrain=True, exp='ApproxDA_ACDC224')
+[07:48:38.338] ApproxDA_pretrain_R50-ViT-B_16_skip3_epo300_bs24_224_M28_fixed_c16_ptl_lvt_dec64
+[07:48:38.346] 40 test iterations per epoch
+[07:48:38.347] Model parameters: 10.75 M
+[07:48:39.180] GFLOPs (single 224x224 slice, fvcore, includes attention bmm): 6.9
+[07:48:40.811] idx 0 case case_002_volume_ED mean_dice 0.932689 mean_hd95 1.000000
+[07:48:41.025] idx 1 case case_002_volume_ES mean_dice 0.889492 mean_hd95 1.138071
+[07:48:41.240] idx 2 case case_003_volume_ED mean_dice 0.939833 mean_hd95 1.000000
+[07:48:41.455] idx 3 case case_003_volume_ES mean_dice 0.929895 mean_hd95 1.000000
+[07:48:41.669] idx 4 case case_008_volume_ED mean_dice 0.935721 mean_hd95 1.000000
+[07:48:41.883] idx 5 case case_008_volume_ES mean_dice 0.917001 mean_hd95 1.000000
+[07:48:42.100] idx 6 case case_009_volume_ED mean_dice 0.881983 mean_hd95 20.426894
+[07:48:42.317] idx 7 case case_009_volume_ES mean_dice 0.826548 mean_hd95 19.555229
+[07:48:42.533] idx 8 case case_012_volume_ED mean_dice 0.920625 mean_hd95 1.000000
+[07:48:42.749] idx 9 case case_012_volume_ES mean_dice 0.824857 mean_hd95 1.863702
+[07:48:42.961] idx 10 case case_014_volume_ED mean_dice 0.914128 mean_hd95 1.000000
+[07:48:43.173] idx 11 case case_014_volume_ES mean_dice 0.938246 mean_hd95 1.000000
+[07:48:43.370] idx 12 case case_017_volume_ED mean_dice 0.928495 mean_hd95 1.000000
+[07:48:43.570] idx 13 case case_017_volume_ES mean_dice 0.933396 mean_hd95 1.000000
+[07:48:43.741] idx 14 case case_024_volume_ED mean_dice 0.930998 mean_hd95 1.000000
+[07:48:43.910] idx 15 case case_024_volume_ES mean_dice 0.915296 mean_hd95 1.000000
+[07:48:44.100] idx 16 case case_042_volume_ED mean_dice 0.933380 mean_hd95 1.000000
+[07:48:44.289] idx 17 case case_042_volume_ES mean_dice 0.898791 mean_hd95 1.000000
+[07:48:44.459] idx 18 case case_048_volume_ED mean_dice 0.924262 mean_hd95 1.000000
+[07:48:44.627] idx 19 case case_048_volume_ES mean_dice 0.881934 mean_hd95 1.138071
+[07:48:44.756] idx 20 case case_049_volume_ED mean_dice 0.867150 mean_hd95 1.913886
+[07:48:44.878] idx 21 case case_049_volume_ES mean_dice 0.848493 mean_hd95 1.902544
+[07:48:45.003] idx 22 case case_053_volume_ED mean_dice 0.943951 mean_hd95 1.000000
+[07:48:45.126] idx 23 case case_053_volume_ES mean_dice 0.931196 mean_hd95 1.000000
+[07:48:45.314] idx 24 case case_055_volume_ED mean_dice 0.920723 mean_hd95 1.000000
+[07:48:45.503] idx 25 case case_055_volume_ES mean_dice 0.878285 mean_hd95 1.408088
+[07:48:45.720] idx 26 case case_064_volume_ED mean_dice 0.950058 mean_hd95 1.000000
+[07:48:45.936] idx 27 case case_064_volume_ES mean_dice 0.935623 mean_hd95 1.000000
+[07:48:46.147] idx 28 case case_067_volume_ED mean_dice 0.925628 mean_hd95 1.000000
+[07:48:46.357] idx 29 case case_067_volume_ES mean_dice 0.924023 mean_hd95 1.000000
+[07:48:46.556] idx 30 case case_079_volume_ED mean_dice 0.950405 mean_hd95 1.000000
+[07:48:46.754] idx 31 case case_079_volume_ES mean_dice 0.910981 mean_hd95 1.000000
+[07:48:47.099] idx 32 case case_081_volume_ED mean_dice 0.920412 mean_hd95 5.846218
+[07:48:47.428] idx 33 case case_081_volume_ES mean_dice 0.908762 mean_hd95 7.634848
+[07:48:47.759] idx 34 case case_088_volume_ED mean_dice 0.929347 mean_hd95 1.000000
+[07:48:48.088] idx 35 case case_088_volume_ES mean_dice 0.898355 mean_hd95 1.000000
+[07:48:48.395] idx 36 case case_092_volume_ED mean_dice 0.932367 mean_hd95 1.138071
+[07:48:48.697] idx 37 case case_092_volume_ES mean_dice 0.920258 mean_hd95 1.412023
+[07:48:48.983] idx 38 case case_095_volume_ED mean_dice 0.936288 mean_hd95 1.000000
+[07:48:49.264] idx 39 case case_095_volume_ES mean_dice 0.889631 mean_hd95 1.471405
+[07:48:49.275] Inference total: 10.1s  avg per case: 252.4ms
+[07:48:49.275] Inference peak VRAM: 192 MB (0.2 GB)
+[07:48:49.275] Mean class 1 mean_dice 0.889118 mean_hd95 4.972422 mean_iou 0.809465
+[07:48:49.275] Mean class 2 mean_dice 0.892190 mean_hd95 1.010355 mean_iou 0.806304
+[07:48:49.275] Mean class 3 mean_dice 0.957654 mean_hd95 1.055902 mean_iou 0.919549
+[07:48:49.275] Testing performance (split=test, checkpoint=last): mean_dice : 0.912988 mean_hd95 : 2.346226 mean_iou : 0.845106

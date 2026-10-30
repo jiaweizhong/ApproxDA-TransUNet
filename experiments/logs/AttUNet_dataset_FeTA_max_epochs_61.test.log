@@ -1,0 +1,31 @@
+/home/jiawei/venvs/torch/lib/python3.14/site-packages/torch/jit/_script.py:1485: FutureWarning: `torch.jit.script` is not supported in Python 3.14+ and may break. Please switch to `torch.compile` or `torch.export`.
+  warnings.warn(
+Not saving results.
+Namespace(volume_path='../data/FeTA_2d/test_vol_h5', dataset='FeTA', num_classes=8, list_dir='./lists/lists_FeTA', max_iterations=20000, max_epochs=61, batch_size=24, img_size=224, is_savenii=False, n_skip=3, vit_name='R50-ViT-B_16', test_save_dir='../predictions', deterministic=1, base_lr=0.01, seed=1234, vit_patches_size=16, drop_last=False, num_workers=4, rgb=False, optimizer='sgd', ablate_cam='', precise_bn=False, eval_epoch=0, checkpoint='last', split='test', Dataset=<class 'datasets.dataset_feta.FeTA_dataset'>, z_spacing=1, is_pretrain=True, exp='AttUNet_FeTA224')
+AttUNet_epo61_bs24_224
+8 test iterations per epoch
+Model parameters: 31.39 M
+GFLOPs (single 224x224 slice, fvcore, includes attention bmm): 37.7
+/home/jiawei/venvs/torch/lib/python3.14/site-packages/torch/jit/_script.py:1485: FutureWarning: `torch.jit.script` is not supported in Python 3.14+ and may break. Please switch to `torch.compile` or `torch.export`.
+  warnings.warn(
+0it [00:00, ?it/s]idx 0 case sub-004 mean_dice 0.617374 mean_hd95 3.403764
+1it [00:01,  1.06s/it]idx 1 case sub-010 mean_dice 0.886590 mean_hd95 1.210689
+2it [00:03,  1.92s/it]idx 2 case sub-021 mean_dice 0.789946 mean_hd95 2.247658
+3it [00:04,  1.64s/it]idx 3 case sub-028 mean_dice 0.852412 mean_hd95 1.514248
+4it [00:08,  2.29s/it]idx 4 case sub-042 mean_dice 0.868760 mean_hd95 1.157442
+5it [00:09,  1.99s/it]idx 5 case sub-052 mean_dice 0.565703 mean_hd95 4.156935
+6it [00:11,  1.83s/it]idx 6 case sub-061 mean_dice 0.865830 mean_hd95 1.570437
+7it [00:14,  2.25s/it]idx 7 case sub-076 mean_dice 0.851821 mean_hd95 1.216626
+8it [00:15,  1.98s/it]8it [00:15,  1.96s/it]
+Inference total: 16.5s  avg per case: 2060.4ms
+Inference peak VRAM: 361 MB (0.4 GB)
+Mean class 1 eCSF mean_dice 0.731325 mean_hd95 2.418802 mean_iou 0.621262 (cases 8, missed 0, hallucinated 0/0)
+Mean class 2 GM mean_dice 0.668247 mean_hd95 1.668292 mean_iou 0.517694 (cases 8, missed 0, hallucinated 0/0)
+Mean class 3 WM mean_dice 0.842696 mean_hd95 1.945647 mean_iou 0.758563 (cases 8, missed 0, hallucinated 0/0)
+Mean class 4 LV mean_dice 0.841239 mean_hd95 1.707501 mean_iou 0.737110 (cases 8, missed 0, hallucinated 0/0)
+Mean class 5 CBM mean_dice 0.813834 mean_hd95 2.018171 mean_iou 0.702370 (cases 8, missed 0, hallucinated 0/0)
+Mean class 6 SGM mean_dice 0.830675 mean_hd95 2.346459 mean_iou 0.721237 (cases 8, missed 0, hallucinated 0/0)
+Mean class 7 BS mean_dice 0.783116 mean_hd95 2.313202 mean_iou 0.665171 (cases 8, missed 0, hallucinated 0/0)
+hallucinated organs (case, class, predicted voxels): []
+missed organs (present, not predicted; Dice 0, excluded from HD95): 0 case-class pairs
+Testing performance [all7] (split=test, checkpoint=last): mean_dice : 0.787304 mean_hd95 : 2.059725 mean_iou : 0.674772

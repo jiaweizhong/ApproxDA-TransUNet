@@ -1,0 +1,666 @@
+/home/jiawei/venvs/torch/lib/python3.14/site-packages/torch/jit/_script.py:1485: FutureWarning: `torch.jit.script` is not supported in Python 3.14+ and may break. Please switch to `torch.compile` or `torch.export`.
+  warnings.warn(
+/home/jiawei/venvs/torch/lib/python3.14/site-packages/torch/nn/modules/conv.py:196: UserWarning: Initializing zero-element tensors is a no-op
+  init.kaiming_uniform_(self.weight, a=math.sqrt(5))
+Not saving results.
+Namespace(volume_path='../data/ISIC2018', dataset='ISIC', num_classes=2, list_dir='./lists/lists_ISIC', max_iterations=20000, max_epochs=50, batch_size=24, img_size=256, is_savenii=False, n_skip=3, vit_name='R50-ViT-B_16', test_save_dir='../predictions', deterministic=1, base_lr=0.01, seed=3456, vit_patches_size=16, num_workers=4, rgb=True, optimizer='sgd', eval_epoch=0, checkpoint='last', split='test', Dataset=<class 'datasets.dataset_isic.ISIC_dataset'>, z_spacing=1, is_pretrain=True, exp='TU_ISIC256')
+TU_pretrain_R50-ViT-B_16_skip3_epo50_bs24_256_s3456_rgb
+649 test iterations per epoch
+Model parameters: 108.00 M
+GFLOPs (single 224x224 slice, fvcore, includes attention bmm): 39.8
+/home/jiawei/venvs/torch/lib/python3.14/site-packages/torch/jit/_script.py:1485: FutureWarning: `torch.jit.script` is not supported in Python 3.14+ and may break. Please switch to `torch.compile` or `torch.export`.
+  warnings.warn(
+0it [00:00, ?it/s]idx 0 case ISIC_0000213 mean_dice 0.975745 mean_hd95 4.000000
+idx 1 case ISIC_0013749 mean_dice 0.776093 mean_hd95 21.931712
+idx 2 case ISIC_0007141 mean_dice 0.794317 mean_hd95 13.038405
+idx 3 case ISIC_0012334 mean_dice 0.971438 mean_hd95 2.236068
+idx 4 case ISIC_0009939 mean_dice 0.968228 mean_hd95 5.830952
+5it [00:00, 49.46it/s]idx 5 case ISIC_0012510 mean_dice 0.967133 mean_hd95 17.000000
+idx 6 case ISIC_0010337 mean_dice 0.915139 mean_hd95 10.198039
+idx 7 case ISIC_0000387 mean_dice 0.959110 mean_hd95 3.605551
+idx 8 case ISIC_0014948 mean_dice 0.907175 mean_hd95 38.183766
+idx 9 case ISIC_0014438 mean_dice 0.959725 mean_hd95 4.472136
+idx 10 case ISIC_0014032 mean_dice 0.720843 mean_hd95 34.692928
+idx 11 case ISIC_0016044 mean_dice 0.826539 mean_hd95 7.615773
+idx 12 case ISIC_0012271 mean_dice 0.968986 mean_hd95 1.414214
+13it [00:00, 62.97it/s]idx 13 case ISIC_0013084 mean_dice 0.983955 mean_hd95 2.828427
+idx 14 case ISIC_0012384 mean_dice 0.885578 mean_hd95 7.615773
+idx 15 case ISIC_0009083 mean_dice 0.853171 mean_hd95 9.232909
+idx 16 case ISIC_0012539 mean_dice 0.965949 mean_hd95 1.414214
+idx 17 case ISIC_0000071 mean_dice 0.851445 mean_hd95 12.041595
+idx 18 case ISIC_0012876 mean_dice 0.056512 mean_hd95 112.535294
+idx 19 case ISIC_0000466 mean_dice 0.976521 mean_hd95 5.000000
+idx 20 case ISIC_0013982 mean_dice 0.259616 mean_hd95 44.955528
+21it [00:00, 69.18it/s]idx 21 case ISIC_0014855 mean_dice 0.955218 mean_hd95 7.810250
+idx 22 case ISIC_0015447 mean_dice 0.666490 mean_hd95 74.215218
+idx 23 case ISIC_0012382 mean_dice 0.989016 mean_hd95 2.236068
+idx 24 case ISIC_0014253 mean_dice 0.956853 mean_hd95 2.000000
+idx 25 case ISIC_0009901 mean_dice 0.973226 mean_hd95 6.540410
+idx 26 case ISIC_0014708 mean_dice 0.948004 mean_hd95 11.000000
+idx 27 case ISIC_0013568 mean_dice 0.936222 mean_hd95 2.236068
+idx 28 case ISIC_0014628 mean_dice 0.868480 mean_hd95 9.219544
+29it [00:00, 71.77it/s]idx 29 case ISIC_0013975 mean_dice 0.874085 mean_hd95 8.181828
+idx 30 case ISIC_0000022 mean_dice 0.910715 mean_hd95 13.453624
+idx 31 case ISIC_0013862 mean_dice 0.942170 mean_hd95 12.000000
+idx 32 case ISIC_0011162 mean_dice 0.940045 mean_hd95 9.131727
+idx 33 case ISIC_0009430 mean_dice 0.891130 mean_hd95 8.588225
+idx 34 case ISIC_0013096 mean_dice 0.930150 mean_hd95 12.000000
+idx 35 case ISIC_0012494 mean_dice 0.880660 mean_hd95 9.433981
+idx 36 case ISIC_0015102 mean_dice 0.223350 mean_hd95 91.402122
+37it [00:00, 73.15it/s]idx 37 case ISIC_0000385 mean_dice 0.980411 mean_hd95 2.621101
+idx 38 case ISIC_0002975 mean_dice 0.938751 mean_hd95 3.980278
+idx 39 case ISIC_0015355 mean_dice 0.914555 mean_hd95 7.060408
+idx 40 case ISIC_0010467 mean_dice 0.819271 mean_hd95 20.302422
+idx 41 case ISIC_0010370 mean_dice 0.937868 mean_hd95 9.055385
+idx 42 case ISIC_0001299 mean_dice 0.946015 mean_hd95 3.000000
+idx 43 case ISIC_0008207 mean_dice 0.889412 mean_hd95 5.000000
+idx 44 case ISIC_0015009 mean_dice 0.976314 mean_hd95 9.219544
+45it [00:00, 73.92it/s]idx 45 case ISIC_0016060 mean_dice 0.909783 mean_hd95 6.737384
+idx 46 case ISIC_0012118 mean_dice 0.977989 mean_hd95 1.414214
+idx 47 case ISIC_0014554 mean_dice 0.958523 mean_hd95 5.385165
+idx 48 case ISIC_0012356 mean_dice 0.785633 mean_hd95 61.733087
+idx 49 case ISIC_0013663 mean_dice 0.901027 mean_hd95 17.000000
+idx 50 case ISIC_0001134 mean_dice 0.812931 mean_hd95 20.525582
+idx 51 case ISIC_0016052 mean_dice 0.776971 mean_hd95 19.783808
+idx 52 case ISIC_0014825 mean_dice 0.979781 mean_hd95 4.000000
+53it [00:00, 74.54it/s]idx 53 case ISIC_0015997 mean_dice 0.962272 mean_hd95 2.236068
+idx 54 case ISIC_0013166 mean_dice 0.946460 mean_hd95 9.000000
+idx 55 case ISIC_0012902 mean_dice 0.778598 mean_hd95 45.112588
+idx 56 case ISIC_0000066 mean_dice 0.929486 mean_hd95 12.000000
+idx 57 case ISIC_0010592 mean_dice 0.949623 mean_hd95 2.000000
+idx 58 case ISIC_0014187 mean_dice 0.903896 mean_hd95 12.100000
+idx 59 case ISIC_0010220 mean_dice 0.961324 mean_hd95 3.000000
+idx 60 case ISIC_0000101 mean_dice 0.981177 mean_hd95 3.605551
+61it [00:00, 75.20it/s]idx 61 case ISIC_0014904 mean_dice 0.966871 mean_hd95 5.616101
+idx 62 case ISIC_0014784 mean_dice 0.823509 mean_hd95 59.000000
+idx 63 case ISIC_0011149 mean_dice 0.937547 mean_hd95 14.007107
+idx 64 case ISIC_0013045 mean_dice 0.954545 mean_hd95 2.236068
+idx 65 case ISIC_0005187 mean_dice 0.902561 mean_hd95 7.654668
+idx 66 case ISIC_0013395 mean_dice 0.959906 mean_hd95 2.000000
+idx 67 case ISIC_0014958 mean_dice 0.846320 mean_hd95 20.302422
+idx 68 case ISIC_0011118 mean_dice 0.951610 mean_hd95 5.000000
+69it [00:00, 75.38it/s]idx 69 case ISIC_0009951 mean_dice 0.801574 mean_hd95 28.448197
+idx 70 case ISIC_0000062 mean_dice 0.944092 mean_hd95 5.077033
+idx 71 case ISIC_0011097 mean_dice 0.963699 mean_hd95 4.736068
+idx 72 case ISIC_0012705 mean_dice 0.805711 mean_hd95 9.194921
+idx 73 case ISIC_0003582 mean_dice 0.932397 mean_hd95 8.944272
+idx 74 case ISIC_0000298 mean_dice 0.942897 mean_hd95 6.708204
+idx 75 case ISIC_0015018 mean_dice 0.914277 mean_hd95 11.661904
+idx 76 case ISIC_0010055 mean_dice 0.900921 mean_hd95 10.044888
+77it [00:01, 75.94it/s]idx 77 case ISIC_0011129 mean_dice 0.974098 mean_hd95 6.324555
+idx 78 case ISIC_0000142 mean_dice 0.936371 mean_hd95 8.944272
+idx 79 case ISIC_0013405 mean_dice 0.747315 mean_hd95 13.000000
+idx 80 case ISIC_0001131 mean_dice 0.969125 mean_hd95 5.385165
+idx 81 case ISIC_0013178 mean_dice 0.830326 mean_hd95 56.231407
+idx 82 case ISIC_0013134 mean_dice 0.837170 mean_hd95 11.180340
+idx 83 case ISIC_0000416 mean_dice 0.956542 mean_hd95 9.941005
+idx 84 case ISIC_0013320 mean_dice 0.979159 mean_hd95 2.000000
+85it [00:01, 75.88it/s]idx 85 case ISIC_0010017 mean_dice 0.889438 mean_hd95 17.165317
+idx 86 case ISIC_0012999 mean_dice 0.900550 mean_hd95 33.487898
+idx 87 case ISIC_0013315 mean_dice 0.631167 mean_hd95 31.244999
+idx 88 case ISIC_0013981 mean_dice 0.000000 mean_hd95 0.000000
+idx 89 case ISIC_0000163 mean_dice 0.917530 mean_hd95 9.219544
+idx 90 case ISIC_0012285 mean_dice 0.864153 mean_hd95 5.385165
+idx 91 case ISIC_0000426 mean_dice 0.949032 mean_hd95 10.198039
+idx 92 case ISIC_0014688 mean_dice 0.900019 mean_hd95 49.756960
+93it [00:01, 75.76it/s]idx 93 case ISIC_0016037 mean_dice 0.912367 mean_hd95 8.558584
+idx 94 case ISIC_0010226 mean_dice 0.905076 mean_hd95 13.000000
+idx 95 case ISIC_0014284 mean_dice 0.898926 mean_hd95 7.810250
+idx 96 case ISIC_0014796 mean_dice 0.968396 mean_hd95 4.426237
+idx 97 case ISIC_0010090 mean_dice 0.964524 mean_hd95 2.828427
+idx 98 case ISIC_0010329 mean_dice 0.963513 mean_hd95 25.585076
+idx 99 case ISIC_0000095 mean_dice 0.952046 mean_hd95 5.000000
+idx 100 case ISIC_0000524 mean_dice 0.969550 mean_hd95 5.656854
+101it [00:01, 75.70it/s]idx 101 case ISIC_0010240 mean_dice 0.910464 mean_hd95 11.000000
+idx 102 case ISIC_0015636 mean_dice 0.943360 mean_hd95 23.020642
+idx 103 case ISIC_0010850 mean_dice 0.844358 mean_hd95 13.989244
+idx 104 case ISIC_0013936 mean_dice 0.936455 mean_hd95 2.828427
+idx 105 case ISIC_0001427 mean_dice 0.926527 mean_hd95 5.453087
+idx 106 case ISIC_0012167 mean_dice 0.635026 mean_hd95 27.586228
+idx 107 case ISIC_0000091 mean_dice 0.762697 mean_hd95 24.698178
+idx 108 case ISIC_0000074 mean_dice 0.941720 mean_hd95 13.000000
+109it [00:01, 75.89it/s]idx 109 case ISIC_0014150 mean_dice 0.958884 mean_hd95 4.000000
+idx 110 case ISIC_0015582 mean_dice 0.970542 mean_hd95 3.605551
+idx 111 case ISIC_0014360 mean_dice 0.925902 mean_hd95 3.861943
+idx 112 case ISIC_0011085 mean_dice 0.774274 mean_hd95 35.504222
+idx 113 case ISIC_0015167 mean_dice 0.912357 mean_hd95 35.355339
+idx 114 case ISIC_0013603 mean_dice 0.933114 mean_hd95 2.931371
+idx 115 case ISIC_0014522 mean_dice 0.878687 mean_hd95 5.385165
+idx 116 case ISIC_0013610 mean_dice 0.957979 mean_hd95 2.236068
+117it [00:01, 76.09it/s]idx 117 case ISIC_0013529 mean_dice 0.970863 mean_hd95 2.000000
+idx 118 case ISIC_0000049 mean_dice 0.881315 mean_hd95 20.880613
+idx 119 case ISIC_0010567 mean_dice 0.970342 mean_hd95 3.162278
+idx 120 case ISIC_0013802 mean_dice 0.900265 mean_hd95 3.605551
+idx 121 case ISIC_0013027 mean_dice 0.907407 mean_hd95 1.853553
+idx 122 case ISIC_0014949 mean_dice 0.944902 mean_hd95 11.045361
+idx 123 case ISIC_0000072 mean_dice 0.970473 mean_hd95 4.000000
+idx 124 case ISIC_0010380 mean_dice 0.939654 mean_hd95 8.108246
+125it [00:01, 76.00it/s]idx 125 case ISIC_0010060 mean_dice 0.691157 mean_hd95 15.999265
+idx 126 case ISIC_0015995 mean_dice 0.830160 mean_hd95 14.642061
+idx 127 case ISIC_0000009 mean_dice 0.971378 mean_hd95 5.000000
+idx 128 case ISIC_0013518 mean_dice 0.767513 mean_hd95 44.766053
+idx 129 case ISIC_0012749 mean_dice 0.674971 mean_hd95 74.000000
+idx 130 case ISIC_0010257 mean_dice 0.783841 mean_hd95 55.974547
+idx 131 case ISIC_0007788 mean_dice 0.964956 mean_hd95 3.000000
+idx 132 case ISIC_0010185 mean_dice 0.927839 mean_hd95 6.403124
+133it [00:01, 75.83it/s]idx 133 case ISIC_0010340 mean_dice 0.981804 mean_hd95 3.000000
+idx 134 case ISIC_0013326 mean_dice 0.873151 mean_hd95 5.385165
+idx 135 case ISIC_0015390 mean_dice 0.683935 mean_hd95 66.392755
+idx 136 case ISIC_0015563 mean_dice 0.963848 mean_hd95 2.828427
+idx 137 case ISIC_0014778 mean_dice 0.962928 mean_hd95 3.000000
+idx 138 case ISIC_0011213 mean_dice 0.883578 mean_hd95 6.324555
+idx 139 case ISIC_0000317 mean_dice 0.909743 mean_hd95 6.000000
+idx 140 case ISIC_0011088 mean_dice 0.860142 mean_hd95 28.648734
+141it [00:01, 76.01it/s]idx 141 case ISIC_0013813 mean_dice 0.915423 mean_hd95 24.031223
+idx 142 case ISIC_0010474 mean_dice 0.965418 mean_hd95 3.454163
+idx 143 case ISIC_0013798 mean_dice 0.777018 mean_hd95 4.000000
+idx 144 case ISIC_0000314 mean_dice 0.973697 mean_hd95 7.615773
+idx 145 case ISIC_0009931 mean_dice 0.974320 mean_hd95 6.000000
+idx 146 case ISIC_0012400 mean_dice 0.921214 mean_hd95 8.437467
+idx 147 case ISIC_0011357 mean_dice 0.948628 mean_hd95 5.000000
+idx 148 case ISIC_0014174 mean_dice 0.906182 mean_hd95 3.000000
+149it [00:02, 76.15it/s]idx 149 case ISIC_0013702 mean_dice 0.847096 mean_hd95 21.358420
+idx 150 case ISIC_0011214 mean_dice 0.970895 mean_hd95 8.000000
+idx 151 case ISIC_0003539 mean_dice 0.826124 mean_hd95 8.317932
+idx 152 case ISIC_0014809 mean_dice 0.951768 mean_hd95 6.215749
+idx 153 case ISIC_0014422 mean_dice 0.776091 mean_hd95 66.724784
+idx 154 case ISIC_0000474 mean_dice 0.960813 mean_hd95 9.899495
+idx 155 case ISIC_0012258 mean_dice 0.783144 mean_hd95 14.000000
+idx 156 case ISIC_0004985 mean_dice 0.923769 mean_hd95 7.007107
+157it [00:02, 75.83it/s]idx 157 case ISIC_0009975 mean_dice 0.894343 mean_hd95 9.992443
+idx 158 case ISIC_0013676 mean_dice 0.977240 mean_hd95 2.236068
+idx 159 case ISIC_0015251 mean_dice 0.051876 mean_hd95 104.403065
+idx 160 case ISIC_0008116 mean_dice 0.927155 mean_hd95 4.472136
+idx 161 case ISIC_0006982 mean_dice 0.905983 mean_hd95 10.793492
+idx 162 case ISIC_0009994 mean_dice 0.943303 mean_hd95 5.385165
+idx 163 case ISIC_0014572 mean_dice 0.952634 mean_hd95 2.828427
+idx 164 case ISIC_0000117 mean_dice 0.937723 mean_hd95 6.082763
+165it [00:02, 76.03it/s]idx 165 case ISIC_0012268 mean_dice 0.934620 mean_hd95 2.828427
+idx 166 case ISIC_0000301 mean_dice 0.971615 mean_hd95 12.631239
+idx 167 case ISIC_0013935 mean_dice 0.957685 mean_hd95 2.000000
+idx 168 case ISIC_0012549 mean_dice 0.941126 mean_hd95 4.000000
+idx 169 case ISIC_0014685 mean_dice 0.931827 mean_hd95 4.000000
+idx 170 case ISIC_0012266 mean_dice 0.914512 mean_hd95 16.238761
+idx 171 case ISIC_0010571 mean_dice 0.983727 mean_hd95 2.828427
+idx 172 case ISIC_0014982 mean_dice 0.755352 mean_hd95 41.000000
+173it [00:02, 75.97it/s]idx 173 case ISIC_0015258 mean_dice 0.930021 mean_hd95 17.000000
+idx 174 case ISIC_0015309 mean_dice 0.971774 mean_hd95 3.605551
+idx 175 case ISIC_0010848 mean_dice 0.864998 mean_hd95 18.788294
+idx 176 case ISIC_0014839 mean_dice 0.937814 mean_hd95 12.127738
+idx 177 case ISIC_0016029 mean_dice 0.788779 mean_hd95 20.477810
+idx 178 case ISIC_0000328 mean_dice 0.834334 mean_hd95 29.196690
+idx 179 case ISIC_0013429 mean_dice 0.970679 mean_hd95 2.502630
+idx 180 case ISIC_0000109 mean_dice 0.954069 mean_hd95 10.418605
+181it [00:02, 75.74it/s]idx 181 case ISIC_0013832 mean_dice 0.790825 mean_hd95 32.000000
+idx 182 case ISIC_0013690 mean_dice 0.789050 mean_hd95 4.135059
+idx 183 case ISIC_0015200 mean_dice 0.931224 mean_hd95 32.942231
+idx 184 case ISIC_0016042 mean_dice 0.916793 mean_hd95 5.000000
+idx 185 case ISIC_0015232 mean_dice 0.842548 mean_hd95 18.677518
+idx 186 case ISIC_0000155 mean_dice 0.985781 mean_hd95 2.828427
+idx 187 case ISIC_0009800 mean_dice 0.943106 mean_hd95 4.000000
+idx 188 case ISIC_0013494 mean_dice 0.974003 mean_hd95 2.000000
+189it [00:02, 75.74it/s]idx 189 case ISIC_0016003 mean_dice 0.905774 mean_hd95 6.343738
+idx 190 case ISIC_0009860 mean_dice 0.812651 mean_hd95 13.000000
+idx 191 case ISIC_0015625 mean_dice 0.978798 mean_hd95 5.000000
+idx 192 case ISIC_0010863 mean_dice 0.918122 mean_hd95 18.936670
+idx 193 case ISIC_0012391 mean_dice 0.756320 mean_hd95 29.606895
+idx 194 case ISIC_0014486 mean_dice 0.840464 mean_hd95 19.467011
+idx 195 case ISIC_0011155 mean_dice 0.952381 mean_hd95 17.750816
+idx 196 case ISIC_0013304 mean_dice 0.831933 mean_hd95 10.295630
+197it [00:02, 75.82it/s]idx 197 case ISIC_0013762 mean_dice 0.837130 mean_hd95 13.038405
+idx 198 case ISIC_0011227 mean_dice 0.237451 mean_hd95 65.499996
+idx 199 case ISIC_0014763 mean_dice 0.965647 mean_hd95 9.848858
+idx 200 case ISIC_0012699 mean_dice 0.968278 mean_hd95 1.414214
+idx 201 case ISIC_0014944 mean_dice 0.966887 mean_hd95 3.605551
+idx 202 case ISIC_0013573 mean_dice 0.712124 mean_hd95 26.517821
+idx 203 case ISIC_0013836 mean_dice 0.856300 mean_hd95 3.605551
+idx 204 case ISIC_0013948 mean_dice 0.868714 mean_hd95 21.563071
+205it [00:02, 75.15it/s]idx 205 case ISIC_0010075 mean_dice 0.924697 mean_hd95 24.041631
+idx 206 case ISIC_0009504 mean_dice 0.966944 mean_hd95 2.224265
+idx 207 case ISIC_0011083 mean_dice 0.955368 mean_hd95 2.828427
+idx 208 case ISIC_0012417 mean_dice 0.824833 mean_hd95 47.169906
+idx 209 case ISIC_0011397 mean_dice 0.701038 mean_hd95 58.694122
+idx 210 case ISIC_0012136 mean_dice 0.401628 mean_hd95 70.844194
+idx 211 case ISIC_0000040 mean_dice 0.886576 mean_hd95 15.524175
+idx 212 case ISIC_0015110 mean_dice 0.891803 mean_hd95 22.000000
+213it [00:02, 74.55it/s]idx 213 case ISIC_0013159 mean_dice 0.005746 mean_hd95 84.489109
+idx 214 case ISIC_0009925 mean_dice 0.890968 mean_hd95 17.720045
+idx 215 case ISIC_0013739 mean_dice 0.855294 mean_hd95 80.414853
+idx 216 case ISIC_0015223 mean_dice 0.958742 mean_hd95 3.000000
+idx 217 case ISIC_0012722 mean_dice 0.902618 mean_hd95 4.000000
+idx 218 case ISIC_0012508 mean_dice 0.958908 mean_hd95 2.236068
+idx 219 case ISIC_0013635 mean_dice 0.845364 mean_hd95 12.020797
+idx 220 case ISIC_0015273 mean_dice 0.972133 mean_hd95 2.188854
+221it [00:02, 75.20it/s]idx 221 case ISIC_0000253 mean_dice 0.977869 mean_hd95 2.828427
+idx 222 case ISIC_0015965 mean_dice 0.955638 mean_hd95 2.236068
+idx 223 case ISIC_0000501 mean_dice 0.929962 mean_hd95 12.529964
+idx 224 case ISIC_0012413 mean_dice 0.967177 mean_hd95 2.000000
+idx 225 case ISIC_0009868 mean_dice 0.884901 mean_hd95 10.630146
+idx 226 case ISIC_0000133 mean_dice 0.914931 mean_hd95 25.495098
+idx 227 case ISIC_0011202 mean_dice 0.917514 mean_hd95 15.000000
+idx 228 case ISIC_0010177 mean_dice 0.964918 mean_hd95 2.236068
+229it [00:03, 75.50it/s]idx 229 case ISIC_0015982 mean_dice 0.914876 mean_hd95 5.656854
+idx 230 case ISIC_0013170 mean_dice 0.892609 mean_hd95 16.552945
+idx 231 case ISIC_0009953 mean_dice 0.932954 mean_hd95 11.180340
+idx 232 case ISIC_0012693 mean_dice 0.948315 mean_hd95 2.828427
+idx 233 case ISIC_0009970 mean_dice 0.975257 mean_hd95 6.000000
+idx 234 case ISIC_0010104 mean_dice 0.900260 mean_hd95 9.648795
+idx 235 case ISIC_0000361 mean_dice 0.950491 mean_hd95 8.000000
+idx 236 case ISIC_0000419 mean_dice 0.964300 mean_hd95 5.000000
+237it [00:03, 74.96it/s]idx 237 case ISIC_0014077 mean_dice 0.644247 mean_hd95 63.874442
+idx 238 case ISIC_0000538 mean_dice 0.975683 mean_hd95 2.828427
+idx 239 case ISIC_0014773 mean_dice 0.970349 mean_hd95 5.213478
+idx 240 case ISIC_0013807 mean_dice 0.851683 mean_hd95 3.605551
+idx 241 case ISIC_0012464 mean_dice 0.190928 mean_hd95 102.078401
+idx 242 case ISIC_0014108 mean_dice 0.912474 mean_hd95 7.810250
+idx 243 case ISIC_0014185 mean_dice 0.973712 mean_hd95 3.162278
+idx 244 case ISIC_0010042 mean_dice 0.882308 mean_hd95 12.806248
+245it [00:03, 75.00it/s]idx 245 case ISIC_0013434 mean_dice 0.946967 mean_hd95 3.162278
+idx 246 case ISIC_0012911 mean_dice 0.872061 mean_hd95 10.000000
+idx 247 case ISIC_0014754 mean_dice 0.982778 mean_hd95 4.000000
+idx 248 case ISIC_0012187 mean_dice 0.764175 mean_hd95 23.000000
+idx 249 case ISIC_0013310 mean_dice 0.000000 mean_hd95 0.000000
+idx 250 case ISIC_0012685 mean_dice 0.982765 mean_hd95 1.000000
+idx 251 case ISIC_0014994 mean_dice 0.948973 mean_hd95 5.000000
+idx 252 case ISIC_0010584 mean_dice 0.900719 mean_hd95 12.041595
+253it [00:03, 75.86it/s]idx 253 case ISIC_0011128 mean_dice 0.949307 mean_hd95 9.433981
+idx 254 case ISIC_0002976 mean_dice 0.943588 mean_hd95 2.828427
+idx 255 case ISIC_0000488 mean_dice 0.975820 mean_hd95 2.828427
+idx 256 case ISIC_0014419 mean_dice 0.436483 mean_hd95 90.012221
+idx 257 case ISIC_0014156 mean_dice 0.908166 mean_hd95 14.866069
+idx 258 case ISIC_0000531 mean_dice 0.956399 mean_hd95 5.099020
+idx 259 case ISIC_0002438 mean_dice 0.955795 mean_hd95 3.605551
+idx 260 case ISIC_0013403 mean_dice 0.971096 mean_hd95 2.000000
+261it [00:03, 75.94it/s]idx 261 case ISIC_0014797 mean_dice 0.941444 mean_hd95 3.162278
+idx 262 case ISIC_0000515 mean_dice 0.868064 mean_hd95 23.233575
+idx 263 case ISIC_0013124 mean_dice 0.798670 mean_hd95 8.062258
+idx 264 case ISIC_0013837 mean_dice 0.913525 mean_hd95 2.236068
+idx 265 case ISIC_0014694 mean_dice 0.981383 mean_hd95 3.000000
+idx 266 case ISIC_0015218 mean_dice 0.927992 mean_hd95 9.219544
+idx 267 case ISIC_0016027 mean_dice 0.624235 mean_hd95 5.385165
+idx 268 case ISIC_0014962 mean_dice 0.810194 mean_hd95 38.444548
+269it [00:03, 75.93it/s]idx 269 case ISIC_0016019 mean_dice 0.747871 mean_hd95 49.658836
+idx 270 case ISIC_0013488 mean_dice 0.795054 mean_hd95 13.601471
+idx 271 case ISIC_0012903 mean_dice 0.921663 mean_hd95 5.156249
+idx 272 case ISIC_0009961 mean_dice 0.930274 mean_hd95 10.770330
+idx 273 case ISIC_0011323 mean_dice 0.917858 mean_hd95 6.324555
+idx 274 case ISIC_0013830 mean_dice 0.951585 mean_hd95 2.141641
+idx 275 case ISIC_0010062 mean_dice 0.917478 mean_hd95 21.023796
+idx 276 case ISIC_0010585 mean_dice 0.928714 mean_hd95 4.000000
+277it [00:03, 75.79it/s]idx 277 case ISIC_0013474 mean_dice 0.868677 mean_hd95 24.128716
+idx 278 case ISIC_0000016 mean_dice 0.979040 mean_hd95 3.000000
+idx 279 case ISIC_0009938 mean_dice 0.867795 mean_hd95 16.465062
+idx 280 case ISIC_0013984 mean_dice 0.959433 mean_hd95 3.162278
+idx 281 case ISIC_0009972 mean_dice 0.880428 mean_hd95 8.958204
+idx 282 case ISIC_0011317 mean_dice 0.949044 mean_hd95 3.162278
+idx 283 case ISIC_0013026 mean_dice 0.851541 mean_hd95 3.605551
+idx 284 case ISIC_0012178 mean_dice 0.831140 mean_hd95 15.033186
+285it [00:03, 75.79it/s]idx 285 case ISIC_0012495 mean_dice 0.886008 mean_hd95 5.000000
+idx 286 case ISIC_0010016 mean_dice 0.945872 mean_hd95 3.605551
+idx 287 case ISIC_0014846 mean_dice 0.977162 mean_hd95 4.472136
+idx 288 case ISIC_0015202 mean_dice 0.888144 mean_hd95 12.214694
+idx 289 case ISIC_0015149 mean_dice 0.938884 mean_hd95 22.076353
+idx 290 case ISIC_0010344 mean_dice 0.930400 mean_hd95 8.000000
+idx 291 case ISIC_0000160 mean_dice 0.983754 mean_hd95 5.000000
+idx 292 case ISIC_0014911 mean_dice 0.950565 mean_hd95 11.000000
+293it [00:03, 75.01it/s]idx 293 case ISIC_0001267 mean_dice 0.894999 mean_hd95 12.727922
+idx 294 case ISIC_0011210 mean_dice 0.943168 mean_hd95 3.383914
+idx 295 case ISIC_0012372 mean_dice 0.867334 mean_hd95 8.544004
+idx 296 case ISIC_0000039 mean_dice 0.985010 mean_hd95 2.828427
+idx 297 case ISIC_0012092 mean_dice 0.909034 mean_hd95 8.544004
+idx 298 case ISIC_0010498 mean_dice 0.830741 mean_hd95 16.552945
+idx 299 case ISIC_0013071 mean_dice 0.965337 mean_hd95 2.000000
+idx 300 case ISIC_0013472 mean_dice 0.954694 mean_hd95 3.605551
+301it [00:04, 75.55it/s]idx 301 case ISIC_0015496 mean_dice 0.983458 mean_hd95 3.162278
+idx 302 case ISIC_0012127 mean_dice 0.721945 mean_hd95 14.296174
+idx 303 case ISIC_0015007 mean_dice 0.923776 mean_hd95 11.704700
+idx 304 case ISIC_0013010 mean_dice 0.933764 mean_hd95 2.828427
+idx 305 case ISIC_0015967 mean_dice 0.880656 mean_hd95 13.892444
+idx 306 case ISIC_0000223 mean_dice 0.968328 mean_hd95 7.071068
+idx 307 case ISIC_0011120 mean_dice 0.953102 mean_hd95 21.000000
+idx 308 case ISIC_0003056 mean_dice 0.799413 mean_hd95 10.630146
+309it [00:04, 75.16it/s]idx 309 case ISIC_0014576 mean_dice 0.709158 mean_hd95 18.784073
+idx 310 case ISIC_0006795 mean_dice 0.928954 mean_hd95 5.656854
+idx 311 case ISIC_0014929 mean_dice 0.965256 mean_hd95 2.236068
+idx 312 case ISIC_0010093 mean_dice 0.923418 mean_hd95 18.000000
+idx 313 case ISIC_0010262 mean_dice 0.938268 mean_hd95 7.211103
+idx 314 case ISIC_0000078 mean_dice 0.963721 mean_hd95 5.000000
+idx 315 case ISIC_0000354 mean_dice 0.968655 mean_hd95 8.000000
+idx 316 case ISIC_0009960 mean_dice 0.973084 mean_hd95 2.000000
+317it [00:04, 75.21it/s]idx 317 case ISIC_0013552 mean_dice 0.231156 mean_hd95 34.985711
+idx 318 case ISIC_0013109 mean_dice 0.962221 mean_hd95 1.414214
+idx 319 case ISIC_0012945 mean_dice 0.311166 mean_hd95 31.016125
+idx 320 case ISIC_0014974 mean_dice 0.981666 mean_hd95 2.828427
+idx 321 case ISIC_0010599 mean_dice 0.979073 mean_hd95 4.242641
+idx 322 case ISIC_0014385 mean_dice 0.921345 mean_hd95 19.000000
+idx 323 case ISIC_0008256 mean_dice 0.971348 mean_hd95 2.000000
+idx 324 case ISIC_0012725 mean_dice 0.949986 mean_hd95 3.000000
+325it [00:04, 75.45it/s]idx 325 case ISIC_0015537 mean_dice 0.922863 mean_hd95 17.720045
+idx 326 case ISIC_0012179 mean_dice 0.034324 mean_hd95 115.763761
+idx 327 case ISIC_0000383 mean_dice 0.954897 mean_hd95 6.708204
+idx 328 case ISIC_0013879 mean_dice 0.908656 mean_hd95 5.656854
+idx 329 case ISIC_0000135 mean_dice 0.973656 mean_hd95 2.236068
+idx 330 case ISIC_0000235 mean_dice 0.903197 mean_hd95 21.023796
+idx 331 case ISIC_0014476 mean_dice 0.839464 mean_hd95 14.821682
+idx 332 case ISIC_0013187 mean_dice 0.971789 mean_hd95 2.828427
+333it [00:04, 75.35it/s]idx 333 case ISIC_0014748 mean_dice 0.984526 mean_hd95 3.000000
+idx 334 case ISIC_0016058 mean_dice 0.877389 mean_hd95 5.099020
+idx 335 case ISIC_0010169 mean_dice 0.943636 mean_hd95 17.888544
+idx 336 case ISIC_0010459 mean_dice 0.980770 mean_hd95 5.830952
+idx 337 case ISIC_0012381 mean_dice 0.926008 mean_hd95 9.433981
+idx 338 case ISIC_0000338 mean_dice 0.975523 mean_hd95 3.000000
+idx 339 case ISIC_0000203 mean_dice 0.987302 mean_hd95 7.021320
+idx 340 case ISIC_0013473 mean_dice 0.669272 mean_hd95 68.365924
+341it [00:04, 74.32it/s]idx 341 case ISIC_0013082 mean_dice 0.953955 mean_hd95 2.000000
+idx 342 case ISIC_0000326 mean_dice 0.966511 mean_hd95 4.073863
+idx 343 case ISIC_0013112 mean_dice 0.941801 mean_hd95 5.000000
+idx 344 case ISIC_0000186 mean_dice 0.952052 mean_hd95 4.242641
+idx 345 case ISIC_0013844 mean_dice 0.960700 mean_hd95 2.828427
+idx 346 case ISIC_0014833 mean_dice 0.919037 mean_hd95 25.038953
+idx 347 case ISIC_0002616 mean_dice 0.821289 mean_hd95 8.944272
+idx 348 case ISIC_0012544 mean_dice 0.935622 mean_hd95 1.000000
+349it [00:04, 74.92it/s]idx 349 case ISIC_0013319 mean_dice 0.963094 mean_hd95 3.000000
+idx 350 case ISIC_0014605 mean_dice 0.970947 mean_hd95 7.000000
+idx 351 case ISIC_0014624 mean_dice 0.958355 mean_hd95 2.828427
+idx 352 case ISIC_0009910 mean_dice 0.894920 mean_hd95 18.384776
+idx 353 case ISIC_0010606 mean_dice 0.979128 mean_hd95 3.000000
+idx 354 case ISIC_0014808 mean_dice 0.980980 mean_hd95 3.605551
+idx 355 case ISIC_0007693 mean_dice 0.950506 mean_hd95 2.828427
+idx 356 case ISIC_0000324 mean_dice 0.867960 mean_hd95 27.182709
+357it [00:04, 74.71it/s]idx 357 case ISIC_0014815 mean_dice 0.900539 mean_hd95 14.142136
+idx 358 case ISIC_0015170 mean_dice 0.966996 mean_hd95 7.790802
+idx 359 case ISIC_0014546 mean_dice 0.917135 mean_hd95 23.112637
+idx 360 case ISIC_0015206 mean_dice 0.932405 mean_hd95 11.235693
+idx 361 case ISIC_0009898 mean_dice 0.887138 mean_hd95 18.234165
+idx 362 case ISIC_0010468 mean_dice 0.925306 mean_hd95 9.219544
+idx 363 case ISIC_0012666 mean_dice 0.679537 mean_hd95 34.693794
+idx 364 case ISIC_0000080 mean_dice 0.977048 mean_hd95 3.000000
+365it [00:04, 74.57it/s]idx 365 case ISIC_0000396 mean_dice 0.886771 mean_hd95 20.117154
+idx 366 case ISIC_0014600 mean_dice 0.943524 mean_hd95 3.605551
+idx 367 case ISIC_0012836 mean_dice 0.873272 mean_hd95 4.472136
+idx 368 case ISIC_0010349 mean_dice 0.948892 mean_hd95 14.212670
+idx 369 case ISIC_0014366 mean_dice 0.815006 mean_hd95 32.677201
+idx 370 case ISIC_0011163 mean_dice 0.922044 mean_hd95 6.647188
+idx 371 case ISIC_0012288 mean_dice 0.963563 mean_hd95 2.236068
+idx 372 case ISIC_0000327 mean_dice 0.920590 mean_hd95 10.873831
+373it [00:04, 74.76it/s]idx 373 case ISIC_0014702 mean_dice 0.965152 mean_hd95 3.162278
+idx 374 case ISIC_0013748 mean_dice 0.868522 mean_hd95 19.209373
+idx 375 case ISIC_0016026 mean_dice 0.906631 mean_hd95 3.162278
+idx 376 case ISIC_0014707 mean_dice 0.938281 mean_hd95 6.215749
+idx 377 case ISIC_0012374 mean_dice 0.973843 mean_hd95 1.414214
+idx 378 case ISIC_0015937 mean_dice 0.891143 mean_hd95 4.000000
+idx 379 case ISIC_0010236 mean_dice 0.910340 mean_hd95 6.433632
+idx 380 case ISIC_0000201 mean_dice 0.977886 mean_hd95 3.000000
+381it [00:05, 75.75it/s]idx 381 case ISIC_0000169 mean_dice 0.925656 mean_hd95 13.416408
+idx 382 case ISIC_0013330 mean_dice 0.865392 mean_hd95 3.605551
+idx 383 case ISIC_0000128 mean_dice 0.975416 mean_hd95 2.828427
+idx 384 case ISIC_0005000 mean_dice 0.948724 mean_hd95 2.236068
+idx 385 case ISIC_0013114 mean_dice 0.946089 mean_hd95 10.264820
+idx 386 case ISIC_0011135 mean_dice 0.962762 mean_hd95 5.830952
+idx 387 case ISIC_0010851 mean_dice 0.929236 mean_hd95 11.000000
+idx 388 case ISIC_0015950 mean_dice 0.946170 mean_hd95 2.828427
+389it [00:05, 76.00it/s]idx 389 case ISIC_0014932 mean_dice 0.641591 mean_hd95 83.866559
+idx 390 case ISIC_0014787 mean_dice 0.908478 mean_hd95 41.552087
+idx 391 case ISIC_0000413 mean_dice 0.885415 mean_hd95 42.426407
+idx 392 case ISIC_0011219 mean_dice 0.983194 mean_hd95 2.000000
+idx 393 case ISIC_0013996 mean_dice 0.889197 mean_hd95 8.485281
+idx 394 case ISIC_0012487 mean_dice 0.893069 mean_hd95 9.055385
+idx 395 case ISIC_0012681 mean_dice 0.948787 mean_hd95 1.414214
+idx 396 case ISIC_0014663 mean_dice 0.952643 mean_hd95 12.083046
+397it [00:05, 75.48it/s]idx 397 case ISIC_0012721 mean_dice 0.974449 mean_hd95 2.828427
+idx 398 case ISIC_0010206 mean_dice 0.934662 mean_hd95 4.472136
+idx 399 case ISIC_0014829 mean_dice 0.961929 mean_hd95 3.000000
+idx 400 case ISIC_0000344 mean_dice 0.929082 mean_hd95 16.096527
+idx 401 case ISIC_0011358 mean_dice 0.945874 mean_hd95 11.000000
+idx 402 case ISIC_0014651 mean_dice 0.948009 mean_hd95 3.000000
+idx 403 case ISIC_0010077 mean_dice 0.956135 mean_hd95 6.082763
+idx 404 case ISIC_0015034 mean_dice 0.982934 mean_hd95 2.236068
+405it [00:05, 75.62it/s]idx 405 case ISIC_0012191 mean_dice 0.871841 mean_hd95 8.544004
+idx 406 case ISIC_0015035 mean_dice 0.951994 mean_hd95 2.828427
+idx 407 case ISIC_0012664 mean_dice 0.962680 mean_hd95 3.000000
+idx 408 case ISIC_0012232 mean_dice 0.972454 mean_hd95 2.000000
+idx 409 case ISIC_0012143 mean_dice 0.598306 mean_hd95 44.418413
+idx 410 case ISIC_0012855 mean_dice 0.970852 mean_hd95 2.000000
+idx 411 case ISIC_0012670 mean_dice 0.931945 mean_hd95 3.605551
+idx 412 case ISIC_0006350 mean_dice 0.907977 mean_hd95 6.324555
+413it [00:05, 76.41it/s]idx 413 case ISIC_0000310 mean_dice 0.978672 mean_hd95 5.830952
+idx 414 case ISIC_0014222 mean_dice 0.673152 mean_hd95 38.302669
+idx 415 case ISIC_0013055 mean_dice 0.816803 mean_hd95 4.000000
+idx 416 case ISIC_0000122 mean_dice 0.952383 mean_hd95 13.000000
+idx 417 case ISIC_0000520 mean_dice 0.681183 mean_hd95 66.070947
+idx 418 case ISIC_0014136 mean_dice 0.928669 mean_hd95 4.000000
+idx 419 case ISIC_0000127 mean_dice 0.900075 mean_hd95 19.167613
+idx 420 case ISIC_0014197 mean_dice 0.983377 mean_hd95 2.236068
+421it [00:05, 75.89it/s]idx 421 case ISIC_0013987 mean_dice 0.781760 mean_hd95 14.142136
+idx 422 case ISIC_0015109 mean_dice 0.940151 mean_hd95 13.601471
+idx 423 case ISIC_0014729 mean_dice 0.880100 mean_hd95 24.736611
+idx 424 case ISIC_0009937 mean_dice 0.842331 mean_hd95 9.219544
+idx 425 case ISIC_0010225 mean_dice 0.960496 mean_hd95 6.000000
+idx 426 case ISIC_0012814 mean_dice 0.961503 mean_hd95 3.000000
+idx 427 case ISIC_0013086 mean_dice 0.984228 mean_hd95 1.000000
+idx 428 case ISIC_0011374 mean_dice 0.887476 mean_hd95 46.617383
+429it [00:05, 75.71it/s]idx 429 case ISIC_0015941 mean_dice 0.948074 mean_hd95 2.236068
+idx 430 case ISIC_0014263 mean_dice 0.951869 mean_hd95 3.000000
+idx 431 case ISIC_0013397 mean_dice 0.925314 mean_hd95 9.745139
+idx 432 case ISIC_0015953 mean_dice 0.794813 mean_hd95 16.388471
+idx 433 case ISIC_0014289 mean_dice 0.983294 mean_hd95 3.000000
+idx 434 case ISIC_0013680 mean_dice 0.492693 mean_hd95 45.137544
+idx 435 case ISIC_0012230 mean_dice 0.912766 mean_hd95 3.605551
+idx 436 case ISIC_0013333 mean_dice 0.956609 mean_hd95 2.236068
+437it [00:05, 76.16it/s]idx 437 case ISIC_0014291 mean_dice 0.878182 mean_hd95 11.000000
+idx 438 case ISIC_0000349 mean_dice 0.952079 mean_hd95 5.000000
+idx 439 case ISIC_0000013 mean_dice 0.954788 mean_hd95 5.385165
+idx 440 case ISIC_0012320 mean_dice 0.965444 mean_hd95 2.236068
+idx 441 case ISIC_0013191 mean_dice 0.279657 mean_hd95 37.273787
+idx 442 case ISIC_0009919 mean_dice 0.879847 mean_hd95 15.000000
+idx 443 case ISIC_0014441 mean_dice 0.955333 mean_hd95 3.000000
+idx 444 case ISIC_0010488 mean_dice 0.894150 mean_hd95 16.124515
+445it [00:05, 76.14it/s]idx 445 case ISIC_0013803 mean_dice 0.883502 mean_hd95 3.000000
+idx 446 case ISIC_0015972 mean_dice 0.973328 mean_hd95 2.236068
+idx 447 case ISIC_0000236 mean_dice 0.980339 mean_hd95 4.000000
+idx 448 case ISIC_0013371 mean_dice 0.897259 mean_hd95 6.403124
+idx 449 case ISIC_0012223 mean_dice 0.622786 mean_hd95 57.208741
+idx 450 case ISIC_0010319 mean_dice 0.929038 mean_hd95 13.000000
+idx 451 case ISIC_0011328 mean_dice 0.967909 mean_hd95 8.062258
+idx 452 case ISIC_0013150 mean_dice 0.898993 mean_hd95 10.770330
+453it [00:06, 75.89it/s]idx 453 case ISIC_0001106 mean_dice 0.970419 mean_hd95 5.000000
+idx 454 case ISIC_0014780 mean_dice 0.950959 mean_hd95 7.810250
+idx 455 case ISIC_0015985 mean_dice 0.900600 mean_hd95 5.024755
+idx 456 case ISIC_0015056 mean_dice 0.965709 mean_hd95 9.433981
+idx 457 case ISIC_0013394 mean_dice 0.957336 mean_hd95 2.000000
+idx 458 case ISIC_0013492 mean_dice 0.971108 mean_hd95 2.236068
+idx 459 case ISIC_0011352 mean_dice 0.971139 mean_hd95 7.211103
+idx 460 case ISIC_0011158 mean_dice 0.905572 mean_hd95 24.041631
+461it [00:06, 75.31it/s]idx 461 case ISIC_0000469 mean_dice 0.952841 mean_hd95 8.485281
+idx 462 case ISIC_0014818 mean_dice 0.988061 mean_hd95 2.236068
+idx 463 case ISIC_0008785 mean_dice 0.876411 mean_hd95 13.000000
+idx 464 case ISIC_0015185 mean_dice 0.855446 mean_hd95 28.170018
+idx 465 case ISIC_0012453 mean_dice 0.951688 mean_hd95 4.123106
+idx 466 case ISIC_0013606 mean_dice 0.943555 mean_hd95 2.118034
+idx 467 case ISIC_0012284 mean_dice 0.932523 mean_hd95 7.000000
+idx 468 case ISIC_0014848 mean_dice 0.979902 mean_hd95 2.000000
+469it [00:06, 75.25it/s]idx 469 case ISIC_0011363 mean_dice 0.945348 mean_hd95 15.626895
+idx 470 case ISIC_0013196 mean_dice 0.887139 mean_hd95 2.000000
+idx 471 case ISIC_0010229 mean_dice 0.975891 mean_hd95 4.000000
+idx 472 case ISIC_0012517 mean_dice 0.774113 mean_hd95 18.483408
+idx 473 case ISIC_0013302 mean_dice 0.933213 mean_hd95 2.000000
+idx 474 case ISIC_0013733 mean_dice 0.946910 mean_hd95 3.162278
+idx 475 case ISIC_0000182 mean_dice 0.987837 mean_hd95 2.000000
+idx 476 case ISIC_0010335 mean_dice 0.922096 mean_hd95 17.728490
+477it [00:06, 75.54it/s]idx 477 case ISIC_0008294 mean_dice 0.865208 mean_hd95 5.830952
+idx 478 case ISIC_0000431 mean_dice 0.896521 mean_hd95 8.596493
+idx 479 case ISIC_0000281 mean_dice 0.983419 mean_hd95 3.162278
+idx 480 case ISIC_0000008 mean_dice 0.978641 mean_hd95 3.605551
+idx 481 case ISIC_0009945 mean_dice 0.927802 mean_hd95 6.708204
+idx 482 case ISIC_0012523 mean_dice 0.799557 mean_hd95 5.000000
+idx 483 case ISIC_0000330 mean_dice 0.950106 mean_hd95 6.708204
+idx 484 case ISIC_0014922 mean_dice 0.964480 mean_hd95 9.848858
+485it [00:06, 75.67it/s]idx 485 case ISIC_0007475 mean_dice 0.808906 mean_hd95 14.142136
+idx 486 case ISIC_0009918 mean_dice 0.895692 mean_hd95 19.217176
+idx 487 case ISIC_0000217 mean_dice 0.965177 mean_hd95 8.602325
+idx 488 case ISIC_0002879 mean_dice 0.845571 mean_hd95 10.880825
+idx 489 case ISIC_0005666 mean_dice 0.915134 mean_hd95 5.830952
+idx 490 case ISIC_0012679 mean_dice 0.875206 mean_hd95 3.000000
+idx 491 case ISIC_0014181 mean_dice 0.815277 mean_hd95 40.904708
+idx 492 case ISIC_0014937 mean_dice 0.949783 mean_hd95 15.000000
+493it [00:06, 75.38it/s]idx 493 case ISIC_0014547 mean_dice 0.838596 mean_hd95 4.123106
+idx 494 case ISIC_0008998 mean_dice 0.969462 mean_hd95 5.385165
+idx 495 case ISIC_0014830 mean_dice 0.961487 mean_hd95 7.071068
+idx 496 case ISIC_0012889 mean_dice 0.833387 mean_hd95 12.206556
+idx 497 case ISIC_0000278 mean_dice 0.839289 mean_hd95 26.570661
+idx 498 case ISIC_0012260 mean_dice 0.946912 mean_hd95 2.000000
+idx 499 case ISIC_0010202 mean_dice 0.985919 mean_hd95 5.000000
+idx 500 case ISIC_0015244 mean_dice 0.944658 mean_hd95 11.180340
+501it [00:06, 75.21it/s]idx 501 case ISIC_0009964 mean_dice 0.957133 mean_hd95 2.862742
+idx 502 case ISIC_0013601 mean_dice 0.895947 mean_hd95 6.324555
+idx 503 case ISIC_0016036 mean_dice 0.126835 mean_hd95 85.440037
+idx 504 case ISIC_0010216 mean_dice 0.950469 mean_hd95 4.182873
+idx 505 case ISIC_0013007 mean_dice 0.972791 mean_hd95 3.000000
+idx 506 case ISIC_0010566 mean_dice 0.819126 mean_hd95 20.223748
+idx 507 case ISIC_0014559 mean_dice 0.710938 mean_hd95 35.642467
+idx 508 case ISIC_0014027 mean_dice 0.508869 mean_hd95 40.205507
+509it [00:06, 75.66it/s]idx 509 case ISIC_0010078 mean_dice 0.914930 mean_hd95 12.727922
+idx 510 case ISIC_0013355 mean_dice 0.762943 mean_hd95 4.472136
+idx 511 case ISIC_0000508 mean_dice 0.947325 mean_hd95 7.800526
+idx 512 case ISIC_0010189 mean_dice 0.992011 mean_hd95 8.000000
+idx 513 case ISIC_0013664 mean_dice 0.845324 mean_hd95 9.848858
+idx 514 case ISIC_0000348 mean_dice 0.963863 mean_hd95 5.761313
+idx 515 case ISIC_0011137 mean_dice 0.955395 mean_hd95 7.000000
+idx 516 case ISIC_0015250 mean_dice 0.978980 mean_hd95 2.828427
+517it [00:06, 75.44it/s]idx 517 case ISIC_0000315 mean_dice 0.963476 mean_hd95 4.123106
+idx 518 case ISIC_0014044 mean_dice 0.935880 mean_hd95 10.630146
+idx 519 case ISIC_0012298 mean_dice 0.949199 mean_hd95 3.605551
+idx 520 case ISIC_0012432 mean_dice 0.732572 mean_hd95 21.931712
+idx 521 case ISIC_0000433 mean_dice 0.882728 mean_hd95 41.000000
+idx 522 case ISIC_0014625 mean_dice 0.933812 mean_hd95 10.816654
+idx 523 case ISIC_0010348 mean_dice 0.672450 mean_hd95 49.406080
+idx 524 case ISIC_0000171 mean_dice 0.963233 mean_hd95 8.043580
+525it [00:06, 75.14it/s]idx 525 case ISIC_0012099 mean_dice 0.951801 mean_hd95 2.000000
+idx 526 case ISIC_0000216 mean_dice 0.989026 mean_hd95 2.828427
+idx 527 case ISIC_0010320 mean_dice 0.812164 mean_hd95 59.610342
+idx 528 case ISIC_0013334 mean_dice 0.893118 mean_hd95 17.117243
+idx 529 case ISIC_0000376 mean_dice 0.912376 mean_hd95 14.212670
+idx 530 case ISIC_0016015 mean_dice 0.875000 mean_hd95 8.485281
+idx 531 case ISIC_0013861 mean_dice 0.656172 mean_hd95 62.179976
+idx 532 case ISIC_0012511 mean_dice 0.946426 mean_hd95 4.000000
+533it [00:07, 75.17it/s]idx 533 case ISIC_0009252 mean_dice 0.888584 mean_hd95 5.385165
+idx 534 case ISIC_0011230 mean_dice 0.960083 mean_hd95 4.242641
+idx 535 case ISIC_0015208 mean_dice 0.962780 mean_hd95 10.770330
+idx 536 case ISIC_0009599 mean_dice 0.969186 mean_hd95 3.000000
+idx 537 case ISIC_0000540 mean_dice 0.981205 mean_hd95 4.472136
+idx 538 case ISIC_0012803 mean_dice 0.822171 mean_hd95 12.177834
+idx 539 case ISIC_0010061 mean_dice 0.957988 mean_hd95 4.123106
+idx 540 case ISIC_0011124 mean_dice 0.950594 mean_hd95 6.403124
+541it [00:07, 75.22it/s]idx 541 case ISIC_0013165 mean_dice 0.949339 mean_hd95 3.162278
+idx 542 case ISIC_0014365 mean_dice 0.921801 mean_hd95 17.262677
+idx 543 case ISIC_0000518 mean_dice 0.948067 mean_hd95 8.062258
+idx 544 case ISIC_0014802 mean_dice 0.968392 mean_hd95 3.605551
+idx 545 case ISIC_0001242 mean_dice 0.952680 mean_hd95 2.828427
+idx 546 case ISIC_0013772 mean_dice 0.926761 mean_hd95 2.236068
+idx 547 case ISIC_0013562 mean_dice 0.921961 mean_hd95 6.000000
+idx 548 case ISIC_0010023 mean_dice 0.943673 mean_hd95 7.071068
+549it [00:07, 75.58it/s]idx 549 case ISIC_0001449 mean_dice 0.954592 mean_hd95 4.123106
+idx 550 case ISIC_0011333 mean_dice 0.960262 mean_hd95 6.000000
+idx 551 case ISIC_0012210 mean_dice 0.748719 mean_hd95 34.655447
+idx 552 case ISIC_0013792 mean_dice 0.977821 mean_hd95 2.000000
+idx 553 case ISIC_0014730 mean_dice 0.949053 mean_hd95 7.000000
+idx 554 case ISIC_0013799 mean_dice 0.964780 mean_hd95 2.828427
+idx 555 case ISIC_0009941 mean_dice 0.964413 mean_hd95 5.099020
+idx 556 case ISIC_0015412 mean_dice 0.853454 mean_hd95 23.537205
+557it [00:07, 75.86it/s]idx 557 case ISIC_0014164 mean_dice 0.951899 mean_hd95 5.227785
+idx 558 case ISIC_0000206 mean_dice 0.940078 mean_hd95 13.903200
+idx 559 case ISIC_0014225 mean_dice 0.915855 mean_hd95 4.242641
+idx 560 case ISIC_0014139 mean_dice 0.967408 mean_hd95 3.000000
+idx 561 case ISIC_0015226 mean_dice 0.963208 mean_hd95 2.000000
+idx 562 case ISIC_0012741 mean_dice 0.974838 mean_hd95 1.414214
+idx 563 case ISIC_0014511 mean_dice 0.926209 mean_hd95 2.236068
+idx 564 case ISIC_0012865 mean_dice 0.964492 mean_hd95 2.236068
+565it [00:07, 76.73it/s]idx 565 case ISIC_0013227 mean_dice 0.844387 mean_hd95 5.039608
+idx 566 case ISIC_0015037 mean_dice 0.974204 mean_hd95 7.259408
+idx 567 case ISIC_0000187 mean_dice 0.894953 mean_hd95 22.620778
+idx 568 case ISIC_0014092 mean_dice 0.902998 mean_hd95 4.000000
+idx 569 case ISIC_0015981 mean_dice 0.973505 mean_hd95 1.414214
+idx 570 case ISIC_0012248 mean_dice 0.662777 mean_hd95 46.593976
+idx 571 case ISIC_0009201 mean_dice 0.880260 mean_hd95 8.000000
+idx 572 case ISIC_0011303 mean_dice 0.782686 mean_hd95 14.317821
+573it [00:07, 76.63it/s]idx 573 case ISIC_0009976 mean_dice 0.762621 mean_hd95 19.104973
+idx 574 case ISIC_0000183 mean_dice 0.973914 mean_hd95 5.099020
+idx 575 case ISIC_0011344 mean_dice 0.927335 mean_hd95 8.000000
+idx 576 case ISIC_0013561 mean_dice 0.923382 mean_hd95 5.656854
+idx 577 case ISIC_0000181 mean_dice 0.937496 mean_hd95 10.000000
+idx 578 case ISIC_0013966 mean_dice 0.120341 mean_hd95 86.150449
+idx 579 case ISIC_0012290 mean_dice 0.967449 mean_hd95 8.944272
+idx 580 case ISIC_0006776 mean_dice 0.834189 mean_hd95 11.661904
+581it [00:07, 76.35it/s]idx 581 case ISIC_0014800 mean_dice 0.973806 mean_hd95 4.000000
+idx 582 case ISIC_0000552 mean_dice 0.959428 mean_hd95 11.180340
+idx 583 case ISIC_0012813 mean_dice 0.936281 mean_hd95 15.642883
+idx 584 case ISIC_0000123 mean_dice 0.901893 mean_hd95 17.708709
+idx 585 case ISIC_0007322 mean_dice 0.888657 mean_hd95 6.509902
+idx 586 case ISIC_0010326 mean_dice 0.921971 mean_hd95 16.124515
+idx 587 case ISIC_0014992 mean_dice 0.980175 mean_hd95 3.162278
+idx 588 case ISIC_0000358 mean_dice 0.940292 mean_hd95 7.615773
+589it [00:07, 75.60it/s]idx 589 case ISIC_0009909 mean_dice 0.871636 mean_hd95 13.341664
+idx 590 case ISIC_0014518 mean_dice 0.745639 mean_hd95 72.189777
+idx 591 case ISIC_0015274 mean_dice 0.963774 mean_hd95 15.087994
+idx 592 case ISIC_0000363 mean_dice 0.937729 mean_hd95 6.403124
+idx 593 case ISIC_0000245 mean_dice 0.897782 mean_hd95 31.141390
+idx 594 case ISIC_0009929 mean_dice 0.960490 mean_hd95 2.000000
+idx 595 case ISIC_0013167 mean_dice 0.974512 mean_hd95 2.948528
+idx 596 case ISIC_0014183 mean_dice 0.676929 mean_hd95 77.123277
+597it [00:07, 75.17it/s]idx 597 case ISIC_0007156 mean_dice 0.876526 mean_hd95 6.324555
+idx 598 case ISIC_0012678 mean_dice 0.924156 mean_hd95 5.000000
+idx 599 case ISIC_0000026 mean_dice 0.814615 mean_hd95 25.624206
+idx 600 case ISIC_0000337 mean_dice 0.913239 mean_hd95 16.908310
+idx 601 case ISIC_0014639 mean_dice 0.631255 mean_hd95 29.060220
+idx 602 case ISIC_0000087 mean_dice 0.959450 mean_hd95 7.819737
+idx 603 case ISIC_0014803 mean_dice 0.975677 mean_hd95 6.000000
+idx 604 case ISIC_0013958 mean_dice 0.646112 mean_hd95 73.381364
+605it [00:08, 74.86it/s]idx 605 case ISIC_0010180 mean_dice 0.787129 mean_hd95 23.415805
+idx 606 case ISIC_0011084 mean_dice 0.885569 mean_hd95 28.529648
+idx 607 case ISIC_0011212 mean_dice 0.894444 mean_hd95 16.000000
+idx 608 case ISIC_0012932 mean_dice 0.625038 mean_hd95 41.065772
+idx 609 case ISIC_0014311 mean_dice 0.949374 mean_hd95 14.764823
+idx 610 case ISIC_0012263 mean_dice 0.871891 mean_hd95 10.839231
+idx 611 case ISIC_0000295 mean_dice 0.948790 mean_hd95 15.132746
+idx 612 case ISIC_0014985 mean_dice 0.851124 mean_hd95 36.821107
+613it [00:08, 74.46it/s]idx 613 case ISIC_0011292 mean_dice 0.946072 mean_hd95 8.401607
+idx 614 case ISIC_0000209 mean_dice 0.963790 mean_hd95 7.071068
+idx 615 case ISIC_0015201 mean_dice 0.976123 mean_hd95 3.605551
+idx 616 case ISIC_0014698 mean_dice 0.927102 mean_hd95 6.000000
+idx 617 case ISIC_0000443 mean_dice 0.893800 mean_hd95 7.280110
+idx 618 case ISIC_0015568 mean_dice 0.916647 mean_hd95 9.000000
+idx 619 case ISIC_0000325 mean_dice 0.981499 mean_hd95 3.605551
+idx 620 case ISIC_0014110 mean_dice 0.964951 mean_hd95 4.472136
+621it [00:08, 74.48it/s]idx 621 case ISIC_0014876 mean_dice 0.891993 mean_hd95 17.002939
+idx 622 case ISIC_0000303 mean_dice 0.839526 mean_hd95 41.307298
+idx 623 case ISIC_0011089 mean_dice 0.869596 mean_hd95 19.104973
+idx 624 case ISIC_0014392 mean_dice 0.913088 mean_hd95 9.695510
+idx 625 case ISIC_0014585 mean_dice 0.899931 mean_hd95 6.332412
+idx 626 case ISIC_0000063 mean_dice 0.921028 mean_hd95 13.776055
+idx 627 case ISIC_0001126 mean_dice 0.845342 mean_hd95 26.119525
+idx 628 case ISIC_0010011 mean_dice 0.878446 mean_hd95 18.027756
+629it [00:08, 74.46it/s]idx 629 case ISIC_0000457 mean_dice 0.955557 mean_hd95 8.062258
+idx 630 case ISIC_0008347 mean_dice 0.905900 mean_hd95 5.173324
+idx 631 case ISIC_0014080 mean_dice 0.697714 mean_hd95 22.162820
+idx 632 case ISIC_0015987 mean_dice 0.927988 mean_hd95 4.123106
+idx 633 case ISIC_0014353 mean_dice 0.947581 mean_hd95 2.236068
+idx 634 case ISIC_0016025 mean_dice 0.793719 mean_hd95 32.925385
+idx 635 case ISIC_0012810 mean_dice 0.626166 mean_hd95 34.580297
+idx 636 case ISIC_0000068 mean_dice 0.985390 mean_hd95 2.828427
+637it [00:08, 75.21it/s]idx 637 case ISIC_0000139 mean_dice 0.971640 mean_hd95 5.000000
+idx 638 case ISIC_0000077 mean_dice 0.869467 mean_hd95 21.213203
+idx 639 case ISIC_0010568 mean_dice 0.915929 mean_hd95 20.982969
+idx 640 case ISIC_0012907 mean_dice 0.968183 mean_hd95 2.000000
+idx 641 case ISIC_0000495 mean_dice 0.976772 mean_hd95 3.000000
+idx 642 case ISIC_0000408 mean_dice 0.973849 mean_hd95 10.000000
+idx 643 case ISIC_0000157 mean_dice 0.961112 mean_hd95 6.324555
+idx 644 case ISIC_0015220 mean_dice 0.926928 mean_hd95 35.693137
+645it [00:08, 74.60it/s]idx 645 case ISIC_0000455 mean_dice 0.970201 mean_hd95 5.000000
+idx 646 case ISIC_0000034 mean_dice 0.975603 mean_hd95 3.000000
+idx 647 case ISIC_0001181 mean_dice 0.907398 mean_hd95 5.000000
+idx 648 case ISIC_0013804 mean_dice 0.949702 mean_hd95 2.000000
+649it [00:08, 75.11it/s]
+Inference total: 9.5s  avg per case: 14.6ms
+Inference peak VRAM: 1005 MB (1.0 GB)
+Mean class 1 mean_dice 0.887706 mean_hd95 13.623977 mean_iou 0.819208
+Testing performance (split=test, checkpoint=last): mean_dice : 0.887706 mean_hd95 : 13.623977 mean_iou : 0.819208

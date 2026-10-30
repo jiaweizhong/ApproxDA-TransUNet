@@ -1,0 +1,408 @@
+# Attention-as-only-path window sweep (2026-10-18). Pilot: with alpha*E + x the network ignores attention (alpha -> 0 at
+# test changes <0.1% of pixels even when alpha is learned). Here PAM outputs only alpha*E (alpha_init 1), so the
+# low-rank windowed attention is the only route; does the window size M now matter? Synapse, r=32, pam, seed 1234.
+ApproxDA-TransUNet --dataset Synapse --max_epochs 300 --window_size 112 --rank 32 --gate_mode pam --pam_no_identity --alpha_init 1
+ApproxDA-TransUNet --dataset Synapse --max_epochs 300 --window_size 7 --rank 32 --gate_mode pam --pam_no_identity --alpha_init 1
+ApproxDA-TransUNet --dataset Synapse --max_epochs 300 --window_size 28 --rank 32 --gate_mode pam --pam_no_identity --alpha_init 1
+
+# Journal experiments 1-3 (2026-10-18, see JOURNAL_EXPERIMENTS.md). Synapse, 300 epochs, r=32, pam.
+# Pass 1: seed 1234 for every configuration; pass 2: seed 2345.
+# 1a conv-only head (PAM passes its input through)
+ApproxDA-TransUNet --dataset Synapse --max_epochs 300 --rank 32 --gate_mode pam --window_size 112 --attn_off
+# 1b no ApproxDABlocks (TransUNet-style skips)
+ApproxDA-TransUNet --dataset Synapse --max_epochs 300 --rank 32 --gate_mode pam --window_size 112 --no_block
+# 2  transformer-style PAM, LayerScale residual, M=112
+ApproxDA-TransUNet --dataset Synapse --max_epochs 300 --rank 32 --gate_mode pam --window_size 112 --pam_style tf
+# 2  transformer-style PAM, LayerScale residual, M=7
+ApproxDA-TransUNet --dataset Synapse --max_epochs 300 --rank 32 --gate_mode pam --window_size 7 --pam_style tf
+# 3  transformer-style PAM, per-pixel gate, M=112
+ApproxDA-TransUNet --dataset Synapse --max_epochs 300 --rank 32 --gate_mode pam --window_size 112 --pam_style tf --pam_fusion gate
+# 3  transformer-style PAM, per-pixel gate, M=7
+ApproxDA-TransUNet --dataset Synapse --max_epochs 300 --rank 32 --gate_mode pam --window_size 7 --pam_style tf --pam_fusion gate
+# Journal experiments 4-5 (efficiency), pass 1: seed 1234
+# 4a slim decoder C=64
+ApproxDA-TransUNet --dataset Synapse --max_epochs 300 --rank 32 --gate_mode pam --window_size 112 --dec_channels 64
+# 4b slim decoder C=64, no full-resolution stage
+ApproxDA-TransUNet --dataset Synapse --max_epochs 300 --rank 32 --gate_mode pam --window_size 112 --dec_channels 64 --dec_stop112
+# 5 LightViT-T bottleneck
+ApproxDA-TransUNet --dataset Synapse --max_epochs 300 --rank 32 --gate_mode pam --window_size 112 --backbone lightvit_t
+# 5 LightViT-S bottleneck
+ApproxDA-TransUNet --dataset Synapse --max_epochs 300 --rank 32 --gate_mode pam --window_size 112 --backbone lightvit_s
+# 5 LightViT-B bottleneck
+ApproxDA-TransUNet --dataset Synapse --max_epochs 300 --rank 32 --gate_mode pam --window_size 112 --backbone lightvit_b
+# 5+4 LightViT-S + slim decoder
+ApproxDA-TransUNet --dataset Synapse --max_epochs 300 --rank 32 --gate_mode pam --window_size 112 --backbone lightvit_s --dec_channels 64 --dec_stop112
+# 6 no ViT layers (R50 1/16 -> patch embedding -> decoder): global-context contribution of ViT-B
+ApproxDA-TransUNet --dataset Synapse --max_epochs 300 --rank 32 --gate_mode pam --window_size 112 --no_vit
+# Journal experiment 7 (2026-10-19): attention parameters (PAM/CAM) with AdamW lr 1e-3, the rest SGD as before.
+# Under SGD the attention weights only decay (JOURNAL_EXPERIMENTS.md 3.1). Pass 1: seed 1234.
+# 7a DANet-style PAM (alpha*E + x), M=112
+ApproxDA-TransUNet --dataset Synapse --max_epochs 300 --rank 32 --gate_mode pam --window_size 112 --attn_opt adamw
+# 7b transformer-style PAM, LayerScale residual, M=112
+ApproxDA-TransUNet --dataset Synapse --max_epochs 300 --rank 32 --gate_mode pam --window_size 112 --pam_style tf --attn_opt adamw
+# 7c transformer-style PAM, LayerScale residual, M=7
+ApproxDA-TransUNet --dataset Synapse --max_epochs 300 --rank 32 --gate_mode pam --window_size 7 --pam_style tf --attn_opt adamw
+# 7e (2026-10-19) learned transformer-style PAM on the skips only; bottleneck block conv-only during training.
+# 7b with the bottleneck PAM switched off at test time: 82.04 / HD95 13.66, L/R kidney confusion 8.7% -> 0.6%.
+ApproxDA-TransUNet --dataset Synapse --max_epochs 300 --rank 32 --gate_mode pam --window_size 112 --pam_style tf --attn_opt adamw --attn_off --attn_off_at bottleneck
+# 7d transformer-style PAM, LayerScale residual, M=28
+ApproxDA-TransUNet --dataset Synapse --max_epochs 300 --rank 32 --gate_mode pam --window_size 28 --pam_style tf --attn_opt adamw
+# Journal exploration 8 (2026-10-19, single seed): feasible light constructions. No ViT and LightViT match the
+# baseline; transformer-style PAM trained with AdamW (7b) is the first attention the network really uses.
+# 8a no ViT + learned transformer-style PAM: attention as the only global-context module
+ApproxDA-TransUNet --dataset Synapse --max_epochs 300 --rank 32 --gate_mode pam --window_size 112 --no_vit --pam_style tf --attn_opt adamw
+# 8b LightViT-T + learned transformer-style PAM
+ApproxDA-TransUNet --dataset Synapse --max_epochs 300 --rank 32 --gate_mode pam --window_size 112 --backbone lightvit_t --pam_style tf --attn_opt adamw
+# 8c no ViT + slim decoder C=64: cost floor of the plain R50 model
+ApproxDA-TransUNet --dataset Synapse --max_epochs 300 --rank 32 --gate_mode pam --window_size 112 --no_vit --dec_channels 64
+# Journal exploration 9 (2026-10-19, single seed): wider skip refinement. The skip blocks' convs are the only part with a
+# measurable contribution (1b), but DA's C/16 leaves 32/16/4 channels at the 28/56/112 skips.
+# 9a skip blocks C/4 (128/64/16 channels; +1.2 GFLOPs)
+ApproxDA-TransUNet --dataset Synapse --max_epochs 300 --rank 32 --gate_mode pam --window_size 112 --skip_ratio 4
+# Journal exploration 10 (2026-10-19, single seed): left/right kidney confusion. The default Synapse augmentation
+# mirrors ~half the training slices without swapping the kidney labels (JOURNAL_EXPERIMENTS.md 3c).
+# 10a rot90 without the flip (handedness kept)
+ApproxDA-TransUNet --dataset Synapse --max_epochs 300 --rank 32 --gate_mode pam --window_size 112 --aug rot_only
+# 10b only small +-20 deg rotations (orientation and handedness kept)
+ApproxDA-TransUNet --dataset Synapse --max_epochs 300 --rank 32 --gate_mode pam --window_size 112 --aug small_rot
+# 5+4a (moved ahead of 9b 2026-10-19: most promising light design) LightViT-T + slim decoder C=64 (full-resolution stage kept)
+ApproxDA-TransUNet --dataset Synapse --max_epochs 300 --rank 32 --gate_mode pam --window_size 112 --backbone lightvit_t --dec_channels 64
+# 9b skip blocks without compression (512/256/64 channels; +9.2 GFLOPs): upper bound
+ApproxDA-TransUNet --dataset Synapse --max_epochs 300 --rank 32 --gate_mode pam --window_size 112 --skip_ratio 1
+# Journal experiments 4+5 grid (2026-10-19): LightViT-T/S/B x slim decoder C=64 (4a), seed 1234
+# 5+4a LightViT-S + slim decoder C=64 (full-resolution stage kept)
+ApproxDA-TransUNet --dataset Synapse --max_epochs 300 --rank 32 --gate_mode pam --window_size 112 --backbone lightvit_s --dec_channels 64
+# 5+4a LightViT-B + slim decoder C=64 (full-resolution stage kept)
+ApproxDA-TransUNet --dataset Synapse --max_epochs 300 --rank 32 --gate_mode pam --window_size 112 --backbone lightvit_b --dec_channels 64
+
+# Seed-2345 runs parked 2026-10-19 (single-seed exploration first): see queue_seed2345_parked.txt
+# Journal light model family (2026-10-19, user decision): light tier = LightViT-T + slim decoder C=64.
+# Synapse seeds 0 and 1 (with 1234 -> 3 seeds; the accuracy tier is added once the LightViT-S/B x C=64 grid is in).
+ApproxDA-TransUNet --dataset Synapse --max_epochs 300 --rank 32 --gate_mode pam --window_size 112 --backbone lightvit_t --dec_channels 64 --seed 0
+ApproxDA-TransUNet --dataset Synapse --max_epochs 300 --rank 32 --gate_mode pam --window_size 112 --backbone lightvit_t --dec_channels 64 --seed 1
+# Attention ablation on the light tier (2026-10-19, user decision), seeds 1234 / 0 / 1:
+#   (1) default SGD (PAM present but untrained) = the light-tier runs above
+#   (2) PAM parameters with AdamW (attention actually trained)
+ApproxDA-TransUNet --dataset Synapse --max_epochs 300 --rank 32 --gate_mode pam --window_size 112 --backbone lightvit_t --dec_channels 64 --attn_opt adamw
+ApproxDA-TransUNet --dataset Synapse --max_epochs 300 --rank 32 --gate_mode pam --window_size 112 --backbone lightvit_t --dec_channels 64 --attn_opt adamw --seed 0
+ApproxDA-TransUNet --dataset Synapse --max_epochs 300 --rank 32 --gate_mode pam --window_size 112 --backbone lightvit_t --dec_channels 64 --attn_opt adamw --seed 1
+#   (3) conv-only head: no attention during training
+ApproxDA-TransUNet --dataset Synapse --max_epochs 300 --rank 32 --gate_mode pam --window_size 112 --backbone lightvit_t --dec_channels 64 --attn_off
+ApproxDA-TransUNet --dataset Synapse --max_epochs 300 --rank 32 --gate_mode pam --window_size 112 --backbone lightvit_t --dec_channels 64 --attn_off --seed 0
+ApproxDA-TransUNet --dataset Synapse --max_epochs 300 --rank 32 --gate_mode pam --window_size 112 --backbone lightvit_t --dec_channels 64 --attn_off --seed 1
+# MedNeXt-style conv block instead of every ApproxDABlock (2026-10-20, single seed): k=5, expansion 2, 11.6M / 8.2 GFLOPs
+ApproxDA-TransUNet --dataset Synapse --max_epochs 300 --rank 32 --gate_mode pam --window_size 112 --backbone lightvit_t --dec_channels 64 --block_type mednext
+# Accuracy-tier candidates, Synapse seeds 0 and 1 (queued 2026-10-19 so the GPU stays busy overnight; the tier is
+# chosen from LightViT-B vs LightViT-B + C=64 once the grid is in, the other one serves as an ablation)
+ApproxDA-TransUNet --dataset Synapse --max_epochs 300 --rank 32 --gate_mode pam --window_size 112 --backbone lightvit_b --seed 0
+ApproxDA-TransUNet --dataset Synapse --max_epochs 300 --rank 32 --gate_mode pam --window_size 112 --backbone lightvit_b --seed 1
+ApproxDA-TransUNet --dataset Synapse --max_epochs 300 --rank 32 --gate_mode pam --window_size 112 --backbone lightvit_b --dec_channels 64 --seed 0
+ApproxDA-TransUNet --dataset Synapse --max_epochs 300 --rank 32 --gate_mode pam --window_size 112 --backbone lightvit_b --dec_channels 64 --seed 1
+# CVC / ISIC light-tier runs parked 2026-10-20: run CVC and ISIC once the main architecture is fixed (see queue_seed2345_parked.txt)
+# Journal (2026-10-20 user decision, plan 1): workshop ApproxDA blocks kept, efficiency only. Light tier on CVC and ISIC
+# with the paper configs, seed 1234 (ahead of the RefineBlock runs, which belong to the follow-up empirical study)
+ApproxDA-TransUNet --dataset CVC --max_epochs 500 --optimizer adam --base_lr 0.001 --img_size 256 --drop_last --window_size 32 --rank 32 --groups 1 --gate_mode cam --backbone lightvit_t --dec_channels 64
+ApproxDA-TransUNet --dataset ISIC --max_epochs 50 --rgb --img_size 256 --drop_last --window_size 64 --rank 32 --gate_mode pam --backbone lightvit_t --dec_channels 64
+# RefineBlock (2026-10-20, single seed, light tier): attention-free single-branch DANetHead conv path, no residual
+#   plain with a stronger bottleneck (C/32) / dilated 1-2-4 middle conv / decoder-guided skip refinement
+ApproxDA-TransUNet --dataset Synapse --max_epochs 300 --rank 32 --gate_mode pam --window_size 112 --backbone lightvit_t --dec_channels 64 --block_type refine --skip_ratio 32
+ApproxDA-TransUNet --dataset Synapse --max_epochs 300 --rank 32 --gate_mode pam --window_size 112 --backbone lightvit_t --dec_channels 64 --block_type refine --refine_mode dilated
+ApproxDA-TransUNet --dataset Synapse --max_epochs 300 --rank 32 --gate_mode pam --window_size 112 --backbone lightvit_t --dec_channels 64 --block_type refine --refine_mode guided
+# Kvasir light-tier runs parked 2026-10-20 (4th dataset will be ACDC, set up later): see queue_seed2345_parked.txt
+# Journal, CVC and ISIC to 3 seeds (2026-10-20): light tier seeds 0 / 1, accuracy tier (LightViT-B + C64) seeds 1234 / 0 / 1
+ApproxDA-TransUNet --dataset CVC --max_epochs 500 --optimizer adam --base_lr 0.001 --img_size 256 --drop_last --window_size 32 --rank 32 --groups 1 --gate_mode cam --backbone lightvit_t --dec_channels 64 --seed 0
+ApproxDA-TransUNet --dataset CVC --max_epochs 500 --optimizer adam --base_lr 0.001 --img_size 256 --drop_last --window_size 32 --rank 32 --groups 1 --gate_mode cam --backbone lightvit_t --dec_channels 64 --seed 1
+ApproxDA-TransUNet --dataset ISIC --max_epochs 50 --rgb --img_size 256 --drop_last --window_size 64 --rank 32 --gate_mode pam --backbone lightvit_t --dec_channels 64 --seed 0
+ApproxDA-TransUNet --dataset ISIC --max_epochs 50 --rgb --img_size 256 --drop_last --window_size 64 --rank 32 --gate_mode pam --backbone lightvit_t --dec_channels 64 --seed 1
+ApproxDA-TransUNet --dataset CVC --max_epochs 500 --optimizer adam --base_lr 0.001 --img_size 256 --drop_last --window_size 32 --rank 32 --groups 1 --gate_mode cam --backbone lightvit_b --dec_channels 64
+ApproxDA-TransUNet --dataset CVC --max_epochs 500 --optimizer adam --base_lr 0.001 --img_size 256 --drop_last --window_size 32 --rank 32 --groups 1 --gate_mode cam --backbone lightvit_b --dec_channels 64 --seed 0
+ApproxDA-TransUNet --dataset CVC --max_epochs 500 --optimizer adam --base_lr 0.001 --img_size 256 --drop_last --window_size 32 --rank 32 --groups 1 --gate_mode cam --backbone lightvit_b --dec_channels 64 --seed 1
+ApproxDA-TransUNet --dataset ISIC --max_epochs 50 --rgb --img_size 256 --drop_last --window_size 64 --rank 32 --gate_mode pam --backbone lightvit_b --dec_channels 64
+ApproxDA-TransUNet --dataset ISIC --max_epochs 50 --rgb --img_size 256 --drop_last --window_size 64 --rank 32 --gate_mode pam --backbone lightvit_b --dec_channels 64 --seed 0
+ApproxDA-TransUNet --dataset ISIC --max_epochs 50 --rgb --img_size 256 --drop_last --window_size 64 --rank 32 --gate_mode pam --backbone lightvit_b --dec_channels 64 --seed 1
+# Journal main table (2026-10-20): reference models to seeds 1234 / 0 / 1 like the new models (ISIC, CVC first, Synapse last)
+DA-TransUNet --dataset ISIC --max_epochs 50 --rgb --img_size 256 --drop_last --seed 0
+DA-TransUNet --dataset ISIC --max_epochs 50 --rgb --img_size 256 --drop_last --seed 1
+ApproxDA-TransUNet --dataset ISIC --max_epochs 50 --rgb --img_size 256 --drop_last --window_size 64 --rank 32 --gate_mode pam --seed 0
+ApproxDA-TransUNet --dataset ISIC --max_epochs 50 --rgb --img_size 256 --drop_last --window_size 64 --rank 32 --gate_mode pam --seed 1
+DA-TransUNet --dataset CVC --max_epochs 500 --optimizer adam --base_lr 0.001 --img_size 256 --drop_last --seed 0
+DA-TransUNet --dataset CVC --max_epochs 500 --optimizer adam --base_lr 0.001 --img_size 256 --drop_last --seed 1
+ApproxDA-TransUNet --dataset CVC --max_epochs 500 --optimizer adam --base_lr 0.001 --img_size 256 --drop_last --window_size 32 --rank 32 --groups 1 --gate_mode cam --seed 0
+ApproxDA-TransUNet --dataset CVC --max_epochs 500 --optimizer adam --base_lr 0.001 --img_size 256 --drop_last --window_size 32 --rank 32 --groups 1 --gate_mode cam --seed 1
+DA-TransUNet --dataset Synapse --max_epochs 300 --seed 0
+DA-TransUNet --dataset Synapse --max_epochs 300 --seed 1
+ApproxDA-TransUNet --dataset Synapse --max_epochs 300 --rank 32 --gate_mode pam --window_size 112 --seed 0
+ApproxDA-TransUNet --dataset Synapse --max_epochs 300 --rank 32 --gate_mode pam --window_size 112 --seed 1
+# Journal 4th dataset (2026-10-20): ACDC, MT-UNet 70/10/20 release, Synapse protocol (SGD 0.01, bs 24, 224, 300 epochs,
+# final epoch, TransUNet augmentation); ApproxDA config = Synapse's (pam M=112 r=32). 4 models x seeds 1234 / 0 / 1
+DA-TransUNet --dataset ACDC --max_epochs 300
+DA-TransUNet --dataset ACDC --max_epochs 300 --seed 0
+DA-TransUNet --dataset ACDC --max_epochs 300 --seed 1
+ApproxDA-TransUNet --dataset ACDC --max_epochs 300 --rank 32 --gate_mode pam --window_size 112
+ApproxDA-TransUNet --dataset ACDC --max_epochs 300 --rank 32 --gate_mode pam --window_size 112 --seed 0
+ApproxDA-TransUNet --dataset ACDC --max_epochs 300 --rank 32 --gate_mode pam --window_size 112 --seed 1
+ApproxDA-TransUNet --dataset ACDC --max_epochs 300 --rank 32 --gate_mode pam --window_size 112 --backbone lightvit_t --dec_channels 64
+ApproxDA-TransUNet --dataset ACDC --max_epochs 300 --rank 32 --gate_mode pam --window_size 112 --backbone lightvit_t --dec_channels 64 --seed 0
+ApproxDA-TransUNet --dataset ACDC --max_epochs 300 --rank 32 --gate_mode pam --window_size 112 --backbone lightvit_t --dec_channels 64 --seed 1
+ApproxDA-TransUNet --dataset ACDC --max_epochs 300 --rank 32 --gate_mode pam --window_size 112 --backbone lightvit_b --dec_channels 64
+ApproxDA-TransUNet --dataset ACDC --max_epochs 300 --rank 32 --gate_mode pam --window_size 112 --backbone lightvit_b --dec_channels 64 --seed 0
+ApproxDA-TransUNet --dataset ACDC --max_epochs 300 --rank 32 --gate_mode pam --window_size 112 --backbone lightvit_b --dec_channels 64 --seed 1
+# Journal block ablation on the light tier (2026-10-20): why the ApproxDA block. Synapse, seeds 1234 / 0 / 1.
+#   DA-equivalent blocks: M=112 (map-wide at every block), r=0 (exact), G=1 (original CAM), fixed fusion = DANetHead
+ApproxDA-TransUNet --dataset Synapse --max_epochs 300 --window_size 112 --backbone lightvit_t --dec_channels 64 --rank 0 --groups 1 --gate_mode fixed
+ApproxDA-TransUNet --dataset Synapse --max_epochs 300 --window_size 112 --backbone lightvit_t --dec_channels 64 --rank 0 --groups 1 --gate_mode fixed --seed 0
+ApproxDA-TransUNet --dataset Synapse --max_epochs 300 --window_size 112 --backbone lightvit_t --dec_channels 64 --rank 0 --groups 1 --gate_mode fixed --seed 1
+#   no blocks: TransUNet-style skips
+ApproxDA-TransUNet --dataset Synapse --max_epochs 300 --window_size 112 --backbone lightvit_t --dec_channels 64 --rank 32 --gate_mode pam --no_block
+ApproxDA-TransUNet --dataset Synapse --max_epochs 300 --window_size 112 --backbone lightvit_t --dec_channels 64 --rank 32 --gate_mode pam --no_block --seed 0
+ApproxDA-TransUNet --dataset Synapse --max_epochs 300 --window_size 112 --backbone lightvit_t --dec_channels 64 --rank 32 --gate_mode pam --no_block --seed 1
+# Paper 2 (2026-10-21): OR-like PAM fusion with the identity as a floor (no alpha dead-lock), light tier, seed 1234.
+#   max under SGD: does the fusion alone get attention trained under the standard protocol?
+ApproxDA-TransUNet --dataset Synapse --max_epochs 300 --rank 32 --gate_mode pam --window_size 112 --backbone lightvit_t --dec_channels 64 --pam_fusion max
+#   with AdamW on the attention parameters: does a floor avoid the harm of additive fusion (78.12 +- 1.10)?
+ApproxDA-TransUNet --dataset Synapse --max_epochs 300 --rank 32 --gate_mode pam --window_size 112 --backbone lightvit_t --dec_channels 64 --pam_fusion max --attn_opt adamw
+ApproxDA-TransUNet --dataset Synapse --max_epochs 300 --rank 32 --gate_mode pam --window_size 112 --backbone lightvit_t --dec_channels 64 --pam_fusion relu_add --attn_opt adamw
+ApproxDA-TransUNet --dataset Synapse --max_epochs 300 --rank 32 --gate_mode pam --window_size 112 --backbone lightvit_t --dec_channels 64 --pam_fusion lse --attn_opt adamw
+# Paper 2 (2026-10-21): position-aware attention for whole-organ misidentification (stomach->spleen, L/R kidney; ~9% of
+# errors, 60% of it in case0003). Light tier, orientation-preserving augmentation (small_rot), M=28, seed 1234.
+#   P0 default block (attention untrained)   PM max fusion only   PA + relative position bias
+#   PB + absolute coordinates in Q/K         PC + relative bias + coordinate-attention residual gate (3 branches)
+ApproxDA-TransUNet --dataset Synapse --max_epochs 300 --rank 32 --gate_mode pam --window_size 28 --backbone lightvit_t --dec_channels 64 --aug small_rot
+ApproxDA-TransUNet --dataset Synapse --max_epochs 300 --rank 32 --gate_mode pam --window_size 28 --backbone lightvit_t --dec_channels 64 --aug small_rot --pam_fusion max
+ApproxDA-TransUNet --dataset Synapse --max_epochs 300 --rank 32 --gate_mode pam --window_size 28 --backbone lightvit_t --dec_channels 64 --aug small_rot --pam_fusion max --pam_relpos
+ApproxDA-TransUNet --dataset Synapse --max_epochs 300 --rank 32 --gate_mode pam --window_size 28 --backbone lightvit_t --dec_channels 64 --aug small_rot --pam_fusion max --pam_abspos
+ApproxDA-TransUNet --dataset Synapse --max_epochs 300 --rank 32 --gate_mode pam --window_size 28 --backbone lightvit_t --dec_channels 64 --aug small_rot --pam_fusion max --pam_relpos --coord_gate
+# AMOS premise check (2026-10-21): how common is whole-organ misidentification with 12x more CT training slices?
+# Light tier, AMOS CT Tr 200 -> Va 100 (datasets/prepare_amos.py), 26 epochs ~= the 27.9k iterations of Synapse 300 ep.
+# Standard augmentation vs small_rot separates mirror-induced L/R errors (kidneys, adrenals) from context errors.
+# Analyse with: python analyze_misidentification.py ../predictions/ApproxDA_AMOS224/<run>_npz
+ApproxDA-TransUNet --dataset AMOS --max_epochs 26 --rank 32 --gate_mode pam --window_size 112 --backbone lightvit_t --dec_channels 64 --num_workers 8
+ApproxDA-TransUNet --dataset AMOS --max_epochs 26 --rank 32 --gate_mode pam --window_size 112 --backbone lightvit_t --dec_channels 64 --num_workers 8 --aug small_rot
+# Context Prior affinity supervision (2026-10-21): the bottleneck PAM gets queries/keys from the 128-ch block input,
+# sigmoid affinity P = sigmoid(QK/sqrt(32)) supervised by the Context Prior affinity loss (weight 1) against the
+# label co-occurrence A = L L^T on the 14x14 grid; max fusion so the attention output is used without the alpha = 0
+# dead-lock. Control: max fusion alone. Compare both with the AMOS small_rot baseline above.
+ApproxDA-TransUNet --dataset AMOS --max_epochs 26 --rank 32 --gate_mode pam --window_size 112 --backbone lightvit_t --dec_channels 64 --num_workers 8 --aug small_rot --pam_fusion max --pam_affinity 1
+ApproxDA-TransUNet --dataset AMOS --max_epochs 26 --rank 32 --gate_mode pam --window_size 112 --backbone lightvit_t --dec_channels 64 --num_workers 8 --aug small_rot --third_branch organ
+ApproxDA-TransUNet --dataset AMOS --max_epochs 26 --rank 32 --gate_mode pam --window_size 112 --backbone lightvit_t --dec_channels 64 --num_workers 8 --aug small_rot --pam_fusion max
+# Triple attention (2026-10-21): third branch of the bottleneck block at full width. organ = organ-level attention
+# (auxiliary coarse segmentation, weight 0.4; class-centre prototypes + centroid/presence encoding; organ-organ and
+# pixel-organ attention); triplet = unsupervised triplet-attention control with the same placement and projection;
+# full = affinity-supervised PAM (max fusion) + organ branch.
+ApproxDA-TransUNet --dataset AMOS --max_epochs 26 --rank 32 --gate_mode pam --window_size 112 --backbone lightvit_t --dec_channels 64 --num_workers 8 --aug small_rot --third_branch triplet
+ApproxDA-TransUNet --dataset AMOS --max_epochs 26 --rank 32 --gate_mode pam --window_size 112 --backbone lightvit_t --dec_channels 64 --num_workers 8 --aug small_rot --pam_fusion max --pam_affinity 1 --third_branch organ
+# Slice attention (2026-10-21): the centre slice's 14x14 bottleneck tokens attend to the tokens of the 2K+1 adjacent
+# slices (shared 2-D encoder; pre-norm MHA + MLP, plain residuals). Targets organ-end slices (12% of the error volume)
+# and background->organ errors (bowel as stomach, ~7%). SA0 = the same layer on the centre slice only (control).
+ApproxDA-TransUNet --dataset AMOS --max_epochs 26 --rank 32 --gate_mode pam --window_size 112 --backbone lightvit_t --dec_channels 64 --num_workers 8 --aug small_rot --slice_attn 1
+ApproxDA-TransUNet --dataset AMOS --max_epochs 26 --rank 32 --gate_mode pam --window_size 112 --backbone lightvit_t --dec_channels 64 --num_workers 8 --aug small_rot --slice_attn 0
+# AMOS augmentation finding, seeds 0 / 1 (2026-10-21): standard TransUNet augmentation vs small_rot (no mirror).
+# Seed 1234: all15 80.52 -> 81.83, HD95 12.68 -> 8.81; far organ->organ errors 6.6% -> 2.5% of the error volume.
+ApproxDA-TransUNet --dataset AMOS --max_epochs 26 --rank 32 --gate_mode pam --window_size 112 --backbone lightvit_t --dec_channels 64 --num_workers 8 --seed 0
+ApproxDA-TransUNet --dataset AMOS --max_epochs 26 --rank 32 --gate_mode pam --window_size 112 --backbone lightvit_t --dec_channels 64 --num_workers 8 --seed 0 --aug small_rot
+ApproxDA-TransUNet --dataset AMOS --max_epochs 26 --rank 32 --gate_mode pam --window_size 112 --backbone lightvit_t --dec_channels 64 --num_workers 8 --seed 1
+ApproxDA-TransUNet --dataset AMOS --max_epochs 26 --rank 32 --gate_mode pam --window_size 112 --backbone lightvit_t --dec_channels 64 --num_workers 8 --seed 1 --aug small_rot
+# Standard (TransUNet) augmentation + forced learning of the added modules (2026-10-22): AdamW (lr 1e-3, wd 0.01) only
+# on the slice attention / third branch (--attn_scope added); PAM / CAM and the rest stay on SGD. ORG with SGD is the
+# standard-augmentation control for the organ branch; SA0 is the centre-slice-only control for SA1.
+ApproxDA-TransUNet --dataset AMOS --max_epochs 26 --rank 32 --gate_mode pam --window_size 112 --backbone lightvit_t --dec_channels 64 --num_workers 8 --third_branch organ
+ApproxDA-TransUNet --dataset AMOS --max_epochs 26 --rank 32 --gate_mode pam --window_size 112 --backbone lightvit_t --dec_channels 64 --num_workers 8 --third_branch organ --attn_opt adamw --attn_scope added
+ApproxDA-TransUNet --dataset AMOS --max_epochs 26 --rank 32 --gate_mode pam --window_size 112 --backbone lightvit_t --dec_channels 64 --num_workers 8 --slice_attn 1 --attn_opt adamw --attn_scope added
+ApproxDA-TransUNet --dataset AMOS --max_epochs 26 --rank 32 --gate_mode pam --window_size 112 --backbone lightvit_t --dec_channels 64 --num_workers 8 --slice_attn 0 --attn_opt adamw --attn_scope added
+# Native-resolution boundary refinement (2026-10-22, plan A): PointRend-style point head (13k params, ~0.2 GFLOPs per
+# 512^2 slice) re-labels the most uncertain native pixels from [coarse logits, decoder features, 5x5 native intensity
+# patch]; standard augmentation (main-table protocol). Compare with the standard-augmentation baseline evaluated with
+# --upsample bilinear as well (test-only), to separate the head from the bilinear upsampling of the logits.
+ApproxDA-TransUNet --dataset AMOS --max_epochs 26 --rank 32 --gate_mode pam --window_size 112 --backbone lightvit_t --dec_channels 64 --num_workers 8 --point_refine
+# Point head v2 for small organs (2026-10-22): v1 put 0.01-0.02% of its training points on the adrenal glands and,
+# with 65% of their pixels in the refined set, erased them (adrenal L -10.6). Residual head (coarse + zero-initialised
+# MLP correction) + 25% class-stratified training points + 0.5 CE + 0.5 Dice point loss.
+ApproxDA-TransUNet --dataset AMOS --max_epochs 26 --rank 32 --gate_mode pam --window_size 112 --backbone lightvit_t --dec_channels 64 --num_workers 8 --point_refine --pr_residual --pr_balanced
+# Bottleneck block order check (2026-10-23): every light-tier run applies the bottleneck ApproxDA block AFTER LightViT
+# (an unreported implementation choice of 2026-10-19); the ViT-B model applies it BEFORE the transformer. --bn_order pre
+# moves it onto R50's 1/8 map before LightViT. Same commands and seeds as the main-table light tier (79.40 / 80.55 / 80.40).
+ApproxDA-TransUNet --dataset Synapse --max_epochs 300 --rank 32 --gate_mode pam --window_size 112 --backbone lightvit_t --dec_channels 64 --bn_order pre
+ApproxDA-TransUNet --dataset Synapse --max_epochs 300 --rank 32 --gate_mode pam --window_size 112 --backbone lightvit_t --dec_channels 64 --bn_order pre --seed 0
+ApproxDA-TransUNet --dataset Synapse --max_epochs 300 --rank 32 --gate_mode pam --window_size 112 --backbone lightvit_t --dec_channels 64 --bn_order pre --seed 1
+# Point supervision (2026-10-23): v1's gain came from training (head off at inference: all15 81.84 vs baseline 81.15,
+# bilinear). (1) v1 seeds 0 / 1, evaluated with the head off; (2) the head-free version: training-only native-resolution
+# point supervision on the coarse logits (--point_loss), seeds 1234 / 0. Test-only bilinear / nearest evaluations follow
+# (scratchpad/ptl_evals.sh).
+ApproxDA-TransUNet --dataset AMOS --max_epochs 26 --rank 32 --gate_mode pam --window_size 112 --backbone lightvit_t --dec_channels 64 --num_workers 8 --point_refine --seed 0
+ApproxDA-TransUNet --dataset AMOS --max_epochs 26 --rank 32 --gate_mode pam --window_size 112 --backbone lightvit_t --dec_channels 64 --num_workers 8 --point_refine --seed 1
+ApproxDA-TransUNet --dataset AMOS --max_epochs 26 --rank 32 --gate_mode pam --window_size 112 --backbone lightvit_t --dec_channels 64 --num_workers 8 --point_loss
+ApproxDA-TransUNet --dataset AMOS --max_epochs 26 --rank 32 --gate_mode pam --window_size 112 --backbone lightvit_t --dec_channels 64 --num_workers 8 --point_loss --seed 0
+# ===== Final design (2026-10-23): light tier + training-only point supervision, one dataset-independent block config
+# (gate fixed g = 0.5, r = 32, G = 8). M: 'local' = side of the 1/8 map (28 at 224, 32 at 256), 'global' = side of
+# the 1/2 map (112 / 128). P1 final model, M local, 5 datasets x 3 seeds.
+ApproxDA-TransUNet --dataset Synapse --max_epochs 300 --rank 32 --groups 8 --gate_mode fixed --window_size 28 --backbone lightvit_t --dec_channels 64 --point_loss
+ApproxDA-TransUNet --dataset ACDC --max_epochs 300 --rank 32 --groups 8 --gate_mode fixed --window_size 28 --backbone lightvit_t --dec_channels 64 --point_loss
+ApproxDA-TransUNet --dataset CVC --max_epochs 500 --optimizer adam --base_lr 0.001 --img_size 256 --drop_last --rank 32 --groups 8 --gate_mode fixed --window_size 32 --backbone lightvit_t --dec_channels 64 --point_loss
+ApproxDA-TransUNet --dataset ISIC --max_epochs 50 --rgb --img_size 256 --drop_last --rank 32 --groups 8 --gate_mode fixed --window_size 32 --backbone lightvit_t --dec_channels 64 --point_loss
+ApproxDA-TransUNet --dataset AMOS --max_epochs 26 --rank 32 --groups 8 --gate_mode fixed --window_size 28 --backbone lightvit_t --dec_channels 64 --num_workers 8 --point_loss
+ApproxDA-TransUNet --dataset Synapse --max_epochs 300 --rank 32 --groups 8 --gate_mode fixed --window_size 28 --backbone lightvit_t --dec_channels 64 --point_loss --seed 0
+ApproxDA-TransUNet --dataset ACDC --max_epochs 300 --rank 32 --groups 8 --gate_mode fixed --window_size 28 --backbone lightvit_t --dec_channels 64 --point_loss --seed 0
+ApproxDA-TransUNet --dataset CVC --max_epochs 500 --optimizer adam --base_lr 0.001 --img_size 256 --drop_last --rank 32 --groups 8 --gate_mode fixed --window_size 32 --backbone lightvit_t --dec_channels 64 --point_loss --seed 0
+ApproxDA-TransUNet --dataset ISIC --max_epochs 50 --rgb --img_size 256 --drop_last --rank 32 --groups 8 --gate_mode fixed --window_size 32 --backbone lightvit_t --dec_channels 64 --point_loss --seed 0
+ApproxDA-TransUNet --dataset AMOS --max_epochs 26 --rank 32 --groups 8 --gate_mode fixed --window_size 28 --backbone lightvit_t --dec_channels 64 --num_workers 8 --point_loss --seed 0
+ApproxDA-TransUNet --dataset Synapse --max_epochs 300 --rank 32 --groups 8 --gate_mode fixed --window_size 28 --backbone lightvit_t --dec_channels 64 --point_loss --seed 1
+ApproxDA-TransUNet --dataset ACDC --max_epochs 300 --rank 32 --groups 8 --gate_mode fixed --window_size 28 --backbone lightvit_t --dec_channels 64 --point_loss --seed 1
+ApproxDA-TransUNet --dataset CVC --max_epochs 500 --optimizer adam --base_lr 0.001 --img_size 256 --drop_last --rank 32 --groups 8 --gate_mode fixed --window_size 32 --backbone lightvit_t --dec_channels 64 --point_loss --seed 1
+ApproxDA-TransUNet --dataset ISIC --max_epochs 50 --rgb --img_size 256 --drop_last --rank 32 --groups 8 --gate_mode fixed --window_size 32 --backbone lightvit_t --dec_channels 64 --point_loss --seed 1
+ApproxDA-TransUNet --dataset AMOS --max_epochs 26 --rank 32 --groups 8 --gate_mode fixed --window_size 28 --backbone lightvit_t --dec_channels 64 --num_workers 8 --point_loss --seed 1
+# P2 point-loss control: same config without the point loss (Synapse, AMOS)
+ApproxDA-TransUNet --dataset Synapse --max_epochs 300 --rank 32 --groups 8 --gate_mode fixed --window_size 28 --backbone lightvit_t --dec_channels 64
+ApproxDA-TransUNet --dataset AMOS --max_epochs 26 --rank 32 --groups 8 --gate_mode fixed --window_size 28 --backbone lightvit_t --dec_channels 64 --num_workers 8
+ApproxDA-TransUNet --dataset Synapse --max_epochs 300 --rank 32 --groups 8 --gate_mode fixed --window_size 28 --backbone lightvit_t --dec_channels 64 --seed 0
+ApproxDA-TransUNet --dataset AMOS --max_epochs 26 --rank 32 --groups 8 --gate_mode fixed --window_size 28 --backbone lightvit_t --dec_channels 64 --num_workers 8 --seed 0
+ApproxDA-TransUNet --dataset Synapse --max_epochs 300 --rank 32 --groups 8 --gate_mode fixed --window_size 28 --backbone lightvit_t --dec_channels 64 --seed 1
+ApproxDA-TransUNet --dataset AMOS --max_epochs 26 --rank 32 --groups 8 --gate_mode fixed --window_size 28 --backbone lightvit_t --dec_channels 64 --num_workers 8 --seed 1
+# P2b removed 2026-10-23 18:10 (user: ablations on AMOS only); point-loss controls were ACDC / CVC / ISIC x 3 seeds
+# P3 final model, M global
+ApproxDA-TransUNet --dataset AMOS --max_epochs 26 --rank 32 --groups 8 --gate_mode fixed --window_size 112 --backbone lightvit_t --dec_channels 64 --num_workers 8 --point_loss
+ApproxDA-TransUNet --dataset AMOS --max_epochs 26 --rank 32 --groups 8 --gate_mode fixed --window_size 112 --backbone lightvit_t --dec_channels 64 --num_workers 8 --point_loss --seed 0
+ApproxDA-TransUNet --dataset AMOS --max_epochs 26 --rank 32 --groups 8 --gate_mode fixed --window_size 112 --backbone lightvit_t --dec_channels 64 --num_workers 8 --point_loss --seed 1
+# P3b point-loss collapse check (user 2026-10-23 21:00): M112 + point loss erased both adrenal glands in 2 / 2 seeds.
+# Class-balanced point sampling (--ptl_balanced: 25 % of the points spread over the classes present) at M28 (3 seeds) and
+# M112 (1 seed), and M112 without the point loss (1 seed) to attribute the collapse.
+ApproxDA-TransUNet --dataset AMOS --max_epochs 26 --rank 32 --groups 8 --gate_mode fixed --window_size 28 --backbone lightvit_t --dec_channels 64 --num_workers 8 --point_loss --ptl_balanced
+ApproxDA-TransUNet --dataset AMOS --max_epochs 26 --rank 32 --groups 8 --gate_mode fixed --window_size 112 --backbone lightvit_t --dec_channels 64 --num_workers 8 --point_loss --ptl_balanced
+ApproxDA-TransUNet --dataset AMOS --max_epochs 26 --rank 32 --groups 8 --gate_mode fixed --window_size 112 --backbone lightvit_t --dec_channels 64 --num_workers 8
+ApproxDA-TransUNet --dataset AMOS --max_epochs 26 --rank 32 --groups 8 --gate_mode fixed --window_size 28 --backbone lightvit_t --dec_channels 64 --num_workers 8 --point_loss --ptl_balanced --seed 0
+ApproxDA-TransUNet --dataset AMOS --max_epochs 26 --rank 32 --groups 8 --gate_mode fixed --window_size 28 --backbone lightvit_t --dec_channels 64 --num_workers 8 --point_loss --ptl_balanced --seed 1
+# P3c option A (user 2026-10-24 00:40): 5 % class floor in the point loss (~10 points per class present). Adopt if it keeps
+# most of the M28 gain (>= ~+0.6 over no point loss, 80.52) and never erases an organ at M112 (3 seeds); otherwise keep the
+# original point loss (option B).
+ApproxDA-TransUNet --dataset AMOS --max_epochs 26 --rank 32 --groups 8 --gate_mode fixed --window_size 112 --backbone lightvit_t --dec_channels 64 --num_workers 8 --point_loss --ptl_balanced --ptl_class_share 0.05
+ApproxDA-TransUNet --dataset AMOS --max_epochs 26 --rank 32 --groups 8 --gate_mode fixed --window_size 28 --backbone lightvit_t --dec_channels 64 --num_workers 8 --point_loss --ptl_balanced --ptl_class_share 0.05
+ApproxDA-TransUNet --dataset AMOS --max_epochs 26 --rank 32 --groups 8 --gate_mode fixed --window_size 112 --backbone lightvit_t --dec_channels 64 --num_workers 8 --point_loss --ptl_balanced --ptl_class_share 0.05 --seed 0
+ApproxDA-TransUNet --dataset AMOS --max_epochs 26 --rank 32 --groups 8 --gate_mode fixed --window_size 28 --backbone lightvit_t --dec_channels 64 --num_workers 8 --point_loss --ptl_balanced --ptl_class_share 0.05 --seed 0
+ApproxDA-TransUNet --dataset AMOS --max_epochs 26 --rank 32 --groups 8 --gate_mode fixed --window_size 112 --backbone lightvit_t --dec_channels 64 --num_workers 8 --point_loss --ptl_balanced --ptl_class_share 0.05 --seed 1
+ApproxDA-TransUNet --dataset AMOS --max_epochs 26 --rank 32 --groups 8 --gate_mode fixed --window_size 28 --backbone lightvit_t --dec_channels 64 --num_workers 8 --point_loss --ptl_balanced --ptl_class_share 0.05 --seed 1
+# 2026-10-24 14:45 user: the final model is the final architecture; the 11 pending old-architecture runs (pam M112: ApproxDA ViT-B, LightViT-T / -B + C64) of P4 (AMOS seed 1) and P4b (FeTA) were removed. DA-TransUNet stays as the baseline.
+# P4 AMOS main-table rows (workshop / Synapse block config): DA-TransUNet, ApproxDA (ViT-B), LightViT-B + C64
+DA-TransUNet --dataset AMOS --max_epochs 26 --num_workers 8
+ApproxDA-TransUNet --dataset AMOS --max_epochs 26 --rank 32 --gate_mode pam --window_size 112 --num_workers 8
+ApproxDA-TransUNet --dataset AMOS --max_epochs 26 --rank 32 --gate_mode pam --window_size 112 --backbone lightvit_b --dec_channels 64 --num_workers 8
+DA-TransUNet --dataset AMOS --max_epochs 26 --num_workers 8 --seed 0
+ApproxDA-TransUNet --dataset AMOS --max_epochs 26 --rank 32 --gate_mode pam --window_size 112 --num_workers 8 --seed 0
+ApproxDA-TransUNet --dataset AMOS --max_epochs 26 --rank 32 --gate_mode pam --window_size 112 --backbone lightvit_b --dec_channels 64 --num_workers 8 --seed 0
+DA-TransUNet --dataset AMOS --max_epochs 26 --num_workers 8 --seed 1
+# P4c final model (point loss with the 5 % class floor, option A adopted 2026-10-24 09:30) on ACDC / CVC / ISIC for the main
+# table (P1 used the original point loss); AMOS final model = P3c M28, FeTA final model = P4b.
+ApproxDA-TransUNet --dataset ACDC --max_epochs 300 --rank 32 --groups 8 --gate_mode fixed --window_size 28 --backbone lightvit_t --dec_channels 64 --point_loss --ptl_balanced --ptl_class_share 0.05
+ApproxDA-TransUNet --dataset CVC --max_epochs 500 --optimizer adam --base_lr 0.001 --img_size 256 --drop_last --rank 32 --groups 8 --gate_mode fixed --window_size 32 --backbone lightvit_t --dec_channels 64 --point_loss --ptl_balanced --ptl_class_share 0.05
+ApproxDA-TransUNet --dataset ISIC --max_epochs 50 --rgb --img_size 256 --drop_last --rank 32 --groups 8 --gate_mode fixed --window_size 32 --backbone lightvit_t --dec_channels 64 --point_loss --ptl_balanced --ptl_class_share 0.05
+ApproxDA-TransUNet --dataset ACDC --max_epochs 300 --rank 32 --groups 8 --gate_mode fixed --window_size 28 --backbone lightvit_t --dec_channels 64 --point_loss --ptl_balanced --ptl_class_share 0.05 --seed 0
+ApproxDA-TransUNet --dataset CVC --max_epochs 500 --optimizer adam --base_lr 0.001 --img_size 256 --drop_last --rank 32 --groups 8 --gate_mode fixed --window_size 32 --backbone lightvit_t --dec_channels 64 --point_loss --ptl_balanced --ptl_class_share 0.05 --seed 0
+ApproxDA-TransUNet --dataset ISIC --max_epochs 50 --rgb --img_size 256 --drop_last --rank 32 --groups 8 --gate_mode fixed --window_size 32 --backbone lightvit_t --dec_channels 64 --point_loss --ptl_balanced --ptl_class_share 0.05 --seed 0
+ApproxDA-TransUNet --dataset ACDC --max_epochs 300 --rank 32 --groups 8 --gate_mode fixed --window_size 28 --backbone lightvit_t --dec_channels 64 --point_loss --ptl_balanced --ptl_class_share 0.05 --seed 1
+ApproxDA-TransUNet --dataset CVC --max_epochs 500 --optimizer adam --base_lr 0.001 --img_size 256 --drop_last --rank 32 --groups 8 --gate_mode fixed --window_size 32 --backbone lightvit_t --dec_channels 64 --point_loss --ptl_balanced --ptl_class_share 0.05 --seed 1
+ApproxDA-TransUNet --dataset ISIC --max_epochs 50 --rgb --img_size 256 --drop_last --rank 32 --groups 8 --gate_mode fixed --window_size 32 --backbone lightvit_t --dec_channels 64 --point_loss --ptl_balanced --ptl_class_share 0.05 --seed 1
+# P4b FeTA 2.4 main table (EffiDec3D 64/8/8 split, datasets/prepare_feta.py; 61 epochs x 457 = 27.9k iterations, as Synapse / AMOS).
+# Workshop / Synapse block config for the DA, ApproxDA ViT-B, light and LightViT-B rows; final model with and without point loss.
+DA-TransUNet --dataset FeTA --max_epochs 61
+ApproxDA-TransUNet --dataset FeTA --max_epochs 61 --rank 32 --groups 8 --gate_mode fixed --window_size 28 --backbone lightvit_t --dec_channels 64 --point_loss --ptl_balanced --ptl_class_share 0.05
+DA-TransUNet --dataset FeTA --max_epochs 61 --seed 0
+ApproxDA-TransUNet --dataset FeTA --max_epochs 61 --rank 32 --groups 8 --gate_mode fixed --window_size 28 --backbone lightvit_t --dec_channels 64 --point_loss --ptl_balanced --ptl_class_share 0.05 --seed 0
+DA-TransUNet --dataset FeTA --max_epochs 61 --seed 1
+ApproxDA-TransUNet --dataset FeTA --max_epochs 61 --rank 32 --groups 8 --gate_mode fixed --window_size 28 --backbone lightvit_t --dec_channels 64 --point_loss --ptl_balanced --ptl_class_share 0.05 --seed 1
+# P5f bottleneck order on AMOS around the final model (user 2026-10-24 17:50): ApproxDA block before LightViT-T (--bn_order pre,
+# block on the R50 1/8 output 28^2 x 512) vs after it (final model, P3c M28). Only Synapse evidence so far (pre -0.52, 3 / 3 seeds lower).
+ApproxDA-TransUNet --dataset AMOS --max_epochs 26 --rank 32 --groups 8 --gate_mode fixed --window_size 28 --backbone lightvit_t --dec_channels 64 --num_workers 8 --point_loss --ptl_balanced --ptl_class_share 0.05 --bn_order pre
+ApproxDA-TransUNet --dataset AMOS --max_epochs 26 --rank 32 --groups 8 --gate_mode fixed --window_size 28 --backbone lightvit_t --dec_channels 64 --num_workers 8 --point_loss --ptl_balanced --ptl_class_share 0.05 --bn_order pre --seed 0
+ApproxDA-TransUNet --dataset AMOS --max_epochs 26 --rank 32 --groups 8 --gate_mode fixed --window_size 28 --backbone lightvit_t --dec_channels 64 --num_workers 8 --point_loss --ptl_balanced --ptl_class_share 0.05 --bn_order pre --seed 1
+# P5a single-axis backbone / decoder ablation on AMOS around the FINAL model (user 2026-10-23 18:40: fixed g=1/2, r32, G8,
+# M28, point loss; was pam M112 without point loss): LightViT-S + C64, LightViT-T full decoder, no ViT + C64, ViT-B + C64
+ApproxDA-TransUNet --dataset AMOS --max_epochs 26 --rank 32 --groups 8 --gate_mode fixed --window_size 28 --backbone lightvit_s --dec_channels 64 --num_workers 8 --point_loss --ptl_balanced --ptl_class_share 0.05
+ApproxDA-TransUNet --dataset AMOS --max_epochs 26 --rank 32 --groups 8 --gate_mode fixed --window_size 28 --backbone lightvit_t --num_workers 8 --point_loss --ptl_balanced --ptl_class_share 0.05
+ApproxDA-TransUNet --dataset AMOS --max_epochs 26 --rank 32 --groups 8 --gate_mode fixed --window_size 28 --no_vit --dec_channels 64 --num_workers 8 --point_loss --ptl_balanced --ptl_class_share 0.05
+ApproxDA-TransUNet --dataset AMOS --max_epochs 26 --rank 32 --groups 8 --gate_mode fixed --window_size 28 --dec_channels 64 --num_workers 8 --point_loss --ptl_balanced --ptl_class_share 0.05
+ApproxDA-TransUNet --dataset AMOS --max_epochs 26 --rank 32 --groups 8 --gate_mode fixed --window_size 28 --backbone lightvit_s --dec_channels 64 --num_workers 8 --point_loss --ptl_balanced --ptl_class_share 0.05 --seed 0
+ApproxDA-TransUNet --dataset AMOS --max_epochs 26 --rank 32 --groups 8 --gate_mode fixed --window_size 28 --backbone lightvit_t --num_workers 8 --point_loss --ptl_balanced --ptl_class_share 0.05 --seed 0
+ApproxDA-TransUNet --dataset AMOS --max_epochs 26 --rank 32 --groups 8 --gate_mode fixed --window_size 28 --no_vit --dec_channels 64 --num_workers 8 --point_loss --ptl_balanced --ptl_class_share 0.05 --seed 0
+ApproxDA-TransUNet --dataset AMOS --max_epochs 26 --rank 32 --groups 8 --gate_mode fixed --window_size 28 --dec_channels 64 --num_workers 8 --point_loss --ptl_balanced --ptl_class_share 0.05 --seed 0
+ApproxDA-TransUNet --dataset AMOS --max_epochs 26 --rank 32 --groups 8 --gate_mode fixed --window_size 28 --backbone lightvit_s --dec_channels 64 --num_workers 8 --point_loss --ptl_balanced --ptl_class_share 0.05 --seed 1
+ApproxDA-TransUNet --dataset AMOS --max_epochs 26 --rank 32 --groups 8 --gate_mode fixed --window_size 28 --backbone lightvit_t --num_workers 8 --point_loss --ptl_balanced --ptl_class_share 0.05 --seed 1
+ApproxDA-TransUNet --dataset AMOS --max_epochs 26 --rank 32 --groups 8 --gate_mode fixed --window_size 28 --no_vit --dec_channels 64 --num_workers 8 --point_loss --ptl_balanced --ptl_class_share 0.05 --seed 1
+ApproxDA-TransUNet --dataset AMOS --max_epochs 26 --rank 32 --groups 8 --gate_mode fixed --window_size 28 --dec_channels 64 --num_workers 8 --point_loss --ptl_balanced --ptl_class_share 0.05 --seed 1
+# P5c block ablation main table on AMOS (user 2026-10-23), around the final model (P1: fixed g=1/2, r32, G8, M28, point loss;
+# if the point loss is dropped after P2b, remove --point_loss here and compare with P2). attn_off now also switches CAM off.
+ApproxDA-TransUNet --dataset AMOS --max_epochs 26 --rank 32 --groups 8 --gate_mode fixed --window_size 28 --backbone lightvit_t --dec_channels 64 --num_workers 8 --no_block --point_loss --ptl_balanced --ptl_class_share 0.05
+ApproxDA-TransUNet --dataset AMOS --max_epochs 26 --rank 32 --groups 8 --gate_mode fixed --window_size 28 --backbone lightvit_t --dec_channels 64 --num_workers 8 --attn_off --point_loss --ptl_balanced --ptl_class_share 0.05
+ApproxDA-TransUNet --dataset AMOS --max_epochs 26 --rank 0 --groups 1 --gate_mode fixed --window_size 112 --backbone lightvit_t --dec_channels 64 --num_workers 8 --point_loss --ptl_balanced --ptl_class_share 0.05
+ApproxDA-TransUNet --dataset AMOS --max_epochs 26 --rank 32 --groups 8 --gate_mode fixed --window_size 28 --backbone lightvit_t --dec_channels 64 --num_workers 8 --no_block --point_loss --ptl_balanced --ptl_class_share 0.05 --seed 0
+ApproxDA-TransUNet --dataset AMOS --max_epochs 26 --rank 32 --groups 8 --gate_mode fixed --window_size 28 --backbone lightvit_t --dec_channels 64 --num_workers 8 --attn_off --point_loss --ptl_balanced --ptl_class_share 0.05 --seed 0
+ApproxDA-TransUNet --dataset AMOS --max_epochs 26 --rank 32 --groups 8 --gate_mode fixed --window_size 28 --backbone lightvit_t --dec_channels 64 --num_workers 8 --no_block --point_loss --ptl_balanced --ptl_class_share 0.05 --seed 1
+ApproxDA-TransUNet --dataset AMOS --max_epochs 26 --rank 32 --groups 8 --gate_mode fixed --window_size 28 --backbone lightvit_t --dec_channels 64 --num_workers 8 --attn_off --point_loss --ptl_balanced --ptl_class_share 0.05 --seed 1
+# P6 (23 parked runs) removed 2026-10-23 18:20: point loss kept, ablations on AMOS only, Synapse not reported (separate journal paper)
+# P5h additive roadmap on AMOS, clean single-axis steps (user 2026-10-26): step 0 = same R50 (to 1/8) + one 3x3 stride-2 conv instead of LightViT (--backbone conv), no ApproxDA block, no point loss
+# step 1 = + LightViT-T (no block, no point loss); step 2 = + ApproxDA block = P2 (M28 fixed, no point loss); step 3 = + point loss = final.
+ApproxDA-TransUNet --dataset AMOS --max_epochs 26 --rank 32 --groups 8 --gate_mode fixed --window_size 28 --backbone conv --dec_channels 64 --num_workers 8 --no_block
+ApproxDA-TransUNet --dataset AMOS --max_epochs 26 --rank 32 --groups 8 --gate_mode fixed --window_size 28 --backbone lightvit_t --dec_channels 64 --num_workers 8 --no_block
+ApproxDA-TransUNet --dataset AMOS --max_epochs 26 --rank 32 --groups 8 --gate_mode fixed --window_size 28 --backbone conv --dec_channels 64 --num_workers 8 --no_block --seed 0
+ApproxDA-TransUNet --dataset AMOS --max_epochs 26 --rank 32 --groups 8 --gate_mode fixed --window_size 28 --backbone lightvit_t --dec_channels 64 --num_workers 8 --no_block --seed 0
+ApproxDA-TransUNet --dataset AMOS --max_epochs 26 --rank 32 --groups 8 --gate_mode fixed --window_size 28 --backbone conv --dec_channels 64 --num_workers 8 --no_block --seed 1
+ApproxDA-TransUNet --dataset AMOS --max_epochs 26 --rank 32 --groups 8 --gate_mode fixed --window_size 28 --backbone lightvit_t --dec_channels 64 --num_workers 8 --no_block --seed 1
+# P5d CAM groups on AMOS around the final model (user 2026-10-23): G = 1 (DANet CAM) and G = 4 vs the default G = 8 (P1).
+# With C/16 compression the light-tier CAM has 8 / 32 / 16 / 4 channels (bottleneck, 1/8, 1/4, 1/2 skip); G = 8 leaves
+# 1 channel per group at the bottleneck and the 1/2 skip, where CAM reduces to a learned scale (1 + beta) x.
+ApproxDA-TransUNet --dataset AMOS --max_epochs 26 --rank 32 --groups 1 --gate_mode fixed --window_size 28 --backbone lightvit_t --dec_channels 64 --num_workers 8 --point_loss --ptl_balanced --ptl_class_share 0.05
+ApproxDA-TransUNet --dataset AMOS --max_epochs 26 --rank 32 --groups 4 --gate_mode fixed --window_size 28 --backbone lightvit_t --dec_channels 64 --num_workers 8 --point_loss --ptl_balanced --ptl_class_share 0.05
+ApproxDA-TransUNet --dataset AMOS --max_epochs 26 --rank 32 --groups 1 --gate_mode fixed --window_size 28 --backbone lightvit_t --dec_channels 64 --num_workers 8 --point_loss --ptl_balanced --ptl_class_share 0.05 --seed 0
+# P5i 2x2 cell (user 2026-10-26 08:30): ApproxDA blocks without a transformer (--backbone conv + blocks, no point loss);
+# with roadmap steps 0 / 1 / 2 this gives {conv, LightViT-T} x {no block, block}: are block and ViT substitutes or complements?
+ApproxDA-TransUNet --dataset AMOS --max_epochs 26 --rank 32 --groups 8 --gate_mode fixed --window_size 28 --backbone conv --dec_channels 64 --num_workers 8
+ApproxDA-TransUNet --dataset AMOS --max_epochs 26 --rank 32 --groups 8 --gate_mode fixed --window_size 28 --backbone conv --dec_channels 64 --num_workers 8 --seed 0
+ApproxDA-TransUNet --dataset AMOS --max_epochs 26 --rank 32 --groups 8 --gate_mode fixed --window_size 28 --backbone conv --dec_channels 64 --num_workers 8 --seed 1
+ApproxDA-TransUNet --dataset AMOS --max_epochs 26 --rank 32 --groups 4 --gate_mode fixed --window_size 28 --backbone lightvit_t --dec_channels 64 --num_workers 8 --point_loss --ptl_balanced --ptl_class_share 0.05 --seed 0
+ApproxDA-TransUNet --dataset AMOS --max_epochs 26 --rank 32 --groups 1 --gate_mode fixed --window_size 28 --backbone lightvit_t --dec_channels 64 --num_workers 8 --point_loss --ptl_balanced --ptl_class_share 0.05 --seed 1
+ApproxDA-TransUNet --dataset AMOS --max_epochs 26 --rank 32 --groups 4 --gate_mode fixed --window_size 28 --backbone lightvit_t --dec_channels 64 --num_workers 8 --point_loss --ptl_balanced --ptl_class_share 0.05 --seed 1
+# P5e PAM rank on AMOS around the final model (user 2026-10-23): r = 0 (exact attention in the 28^2 windows) and r = 64 vs r = 32 (P1)
+ApproxDA-TransUNet --dataset AMOS --max_epochs 26 --rank 0 --groups 8 --gate_mode fixed --window_size 28 --backbone lightvit_t --dec_channels 64 --num_workers 8 --point_loss --ptl_balanced --ptl_class_share 0.05
+ApproxDA-TransUNet --dataset AMOS --max_epochs 26 --rank 64 --groups 8 --gate_mode fixed --window_size 28 --backbone lightvit_t --dec_channels 64 --num_workers 8 --point_loss --ptl_balanced --ptl_class_share 0.05
+ApproxDA-TransUNet --dataset AMOS --max_epochs 26 --rank 0 --groups 8 --gate_mode fixed --window_size 28 --backbone lightvit_t --dec_channels 64 --num_workers 8 --point_loss --ptl_balanced --ptl_class_share 0.05 --seed 0
+ApproxDA-TransUNet --dataset AMOS --max_epochs 26 --rank 64 --groups 8 --gate_mode fixed --window_size 28 --backbone lightvit_t --dec_channels 64 --num_workers 8 --point_loss --ptl_balanced --ptl_class_share 0.05 --seed 0
+ApproxDA-TransUNet --dataset AMOS --max_epochs 26 --rank 0 --groups 8 --gate_mode fixed --window_size 28 --backbone lightvit_t --dec_channels 64 --num_workers 8 --point_loss --ptl_balanced --ptl_class_share 0.05 --seed 1
+# P5j re-run of roadmap step 0 (R50-to-1/8 U-Net: --backbone conv, no block, no point loss), same 3 seeds, new directory
+# (user 2026-10-26 18:35: checks that the surprisingly high U-Net result reproduces)
+ApproxDA-TransUNet --dataset AMOS --max_epochs 26 --rank 32 --groups 8 --gate_mode fixed --window_size 28 --backbone conv --dec_channels 64 --num_workers 8 --no_block --run_tag rerun
+ApproxDA-TransUNet --dataset AMOS --max_epochs 26 --rank 32 --groups 8 --gate_mode fixed --window_size 28 --backbone conv --dec_channels 64 --num_workers 8 --no_block --run_tag rerun --seed 0
+ApproxDA-TransUNet --dataset AMOS --max_epochs 26 --rank 32 --groups 8 --gate_mode fixed --window_size 28 --backbone conv --dec_channels 64 --num_workers 8 --no_block --run_tag rerun --seed 1
+ApproxDA-TransUNet --dataset AMOS --max_epochs 26 --rank 64 --groups 8 --gate_mode fixed --window_size 28 --backbone lightvit_t --dec_channels 64 --num_workers 8 --point_loss --ptl_balanced --ptl_class_share 0.05 --seed 1
+# P6 baselines (user 2026-10-26): the CVC / ISIC baseline set (U-Net, Attention U-Net, U-Net++, TransUNet; DA-TransUNet done; Res-UNet dropped by the user)
+# on AMOS and FeTA, 3 seeds; one project folder per baseline mirroring DA-TransUNet (same data, loss, optimiser, schedule, evaluation).
+UNet --dataset AMOS --max_epochs 26 --num_workers 8
+AttUNet --dataset AMOS --max_epochs 26 --num_workers 8
+UNetPlusPlus --dataset AMOS --max_epochs 26 --num_workers 8
+TransUNet --dataset AMOS --max_epochs 26 --num_workers 8
+UNet --dataset AMOS --max_epochs 26 --num_workers 8 --seed 0
+AttUNet --dataset AMOS --max_epochs 26 --num_workers 8 --seed 0
+UNetPlusPlus --dataset AMOS --max_epochs 26 --num_workers 8 --seed 0
+TransUNet --dataset AMOS --max_epochs 26 --num_workers 8 --seed 0
+UNet --dataset AMOS --max_epochs 26 --num_workers 8 --seed 1
+AttUNet --dataset AMOS --max_epochs 26 --num_workers 8 --seed 1
+UNetPlusPlus --dataset AMOS --max_epochs 26 --num_workers 8 --seed 1
+TransUNet --dataset AMOS --max_epochs 26 --num_workers 8 --seed 1
+UNet --dataset FeTA --max_epochs 61
+AttUNet --dataset FeTA --max_epochs 61
+UNetPlusPlus --dataset FeTA --max_epochs 61
+TransUNet --dataset FeTA --max_epochs 61
+UNet --dataset FeTA --max_epochs 61 --seed 0
+AttUNet --dataset FeTA --max_epochs 61 --seed 0
+UNetPlusPlus --dataset FeTA --max_epochs 61 --seed 0
+TransUNet --dataset FeTA --max_epochs 61 --seed 0
+UNet --dataset FeTA --max_epochs 61 --seed 1
+AttUNet --dataset FeTA --max_epochs 61 --seed 1
+UNetPlusPlus --dataset FeTA --max_epochs 61 --seed 1
+TransUNet --dataset FeTA --max_epochs 61 --seed 1
+# P6b Swin-Unet baseline (official network, ImageNet Swin-T at /data/checkpoints/Swin), AMOS and FeTA, 3 seeds (user 2026-10-26)
+SwinUNet --dataset AMOS --max_epochs 26 --num_workers 8
+SwinUNet --dataset AMOS --max_epochs 26 --num_workers 8 --seed 0
+SwinUNet --dataset AMOS --max_epochs 26 --num_workers 8 --seed 1
+SwinUNet --dataset FeTA --max_epochs 61
+SwinUNet --dataset FeTA --max_epochs 61 --seed 0
+SwinUNet --dataset FeTA --max_epochs 61 --seed 1
+# DA-equivalent block seeds 0 / 1 moved to the end 2026-10-26 00:00 (3.5 h each; seed 0 was killed at epoch 23/26 by a reboot)
+ApproxDA-TransUNet --dataset AMOS --max_epochs 26 --rank 0 --groups 1 --gate_mode fixed --window_size 112 --backbone lightvit_t --dec_channels 64 --num_workers 8 --point_loss --ptl_balanced --ptl_class_share 0.05 --seed 0
+ApproxDA-TransUNet --dataset AMOS --max_epochs 26 --rank 0 --groups 1 --gate_mode fixed --window_size 112 --backbone lightvit_t --dec_channels 64 --num_workers 8 --point_loss --ptl_balanced --ptl_class_share 0.05 --seed 1

@@ -603,6 +603,8 @@ Paper switched to CVC-ClinicDB (2026-10-18).
 
 ## PAM attention is inactive in the reported models (2026-10-18)
 
+The journal follow-up (redesign experiments and their results) is tracked in `JOURNAL_EXPERIMENTS.md`.
+
 The PAM output is `alpha * E + x`, with alpha initialised at 0 (as in DANet and DA-TransUNet).
 
 ### What was measured (`scratchpad/pam_effect.py`, `scratchpad/alpha_grad.py`)
@@ -685,3 +687,72 @@ Every remaining run keeps only its final-epoch checkpoint, so `test.py --eval_ep
 | 2 | DA-TransUNet Synapse checkpoint (72.03% mismatch) | **Resolved** — caused by Finding 1; matched re-run 79.81 ± 0.09 with per-case logs |
 | 3 | DA-TransUNet CVC-ClinicDB | Running (see the CVC-ClinicDB round above) |
 | 4 | Entropy-gate result (78.87%, code never committed) | Unchanged — do not cite until the code is recovered and re-run |
+
+## Camera-ready format fixes (2026-10-20; format only, no content change)
+
+Checked against the IEEE BIBM 2026 camera-ready instructions (8 pages, IEEE conference template, Letter 612 x 792 pt,
+fonts embedded and subset, graphics >= 300 dpi, Acrobat 5.0 compatibility). Three fixes:
+- Type 3 fonts (matplotlib default) in Fig. 1, Fig. 3 and Fig. 5 (the gate-entropy scatter):
+  - Fig. 1 (`generate_overview.py`) and Fig. 3 (`make_qualitative_figure.py`) regenerated with `pdf.fonttype = 42`
+    (TrueType). The PNG renders are pixel-identical to the previous ones; Fig. 3 selects the same cases with the
+    same Dice values (case0032/131 64.08 / 96.44, CVC 510 92.64 / 95.76, ISIC_0009938 91.36 / 93.58).
+  - Fig. 5 (`fig_entropy_scatter.pdf`): text converted to outlines with ghostscript (`-dNoOutputFonts`, no image downsampling) instead of
+    re-running `analyze_gate_entropy.py`; the render differs only in text anti-aliasing. That script now also sets
+    `pdf.fonttype = 42`.
+- Fig. 3 panels were embedded at ~297 ppi (resampled at savefig dpi=300, then scaled to \columnwidth); the PDF is
+  now written at dpi=600 -> 594 ppi.
+- `\pdfminorversion=4` as the first line of `ApproxDA-TransUNet.tex` -> PDF 1.4.
+Result: 8 pages, Letter, PDF 1.4, fonts Type 1 + TrueType (no Type 3), all embedded and subset, minimum image
+resolution 594 ppi, no errors or undefined references. Pages 1, 2, 4, 5 and 8 render pixel-identical to the
+previous PDF; pages 3, 6 and 7 differ only inside the three figures (anti-aliasing). Backups of the previous
+figures, .tex and PDF were kept in the session scratchpad.
+Remaining (author actions): electronic copyright form, PDF eXpress check (conference ID 70697X), final PDF upload,
+registration receipt, in-person presentation choice.
+- Title changed (2026-10-20; the only text change at this stage, the author list is locked by the system):
+  "ApproxDA-TransUNet: Understanding Global Context Sensitivity of Attention Approximation for Medical Image
+  Segmentation" -> "ApproxDA-TransUNet: Exploring Window Sensitivity in Dual-Attention Approximation for Medical
+  Image Segmentation". Reasons: "Understanding" contradicted the Limitations ("the mechanism ... is not yet
+  understood"), GCS is only a descriptive, single-seed metric (R6, R8; the later G1 analysis puts the Synapse span
+  within seed noise), and the window ablation is the paper's actual empirical finding. Still 8 pages, 3-line title.
+  The same title must be used in the submission system (B1231), the eCF and PDF eXpress.
+- Narrative aligned with the new title (2026-10-20, five sentence-level edits, no new claims or numbers): the
+  storyline is now ApproxDA as the platform -> systematic window-sensitivity study -> task-dependent response -> GCS
+  only as the empirical summary metric -> near-uniform routing.
+  - Abstract: "a characteristic we formalize as empirical GCS" -> "We quantify this task-dependent response using an
+    empirical Global Context Sensitivity (GCS) metric."
+  - Contribution 2: "Systematic Context Sensitivity Study" -> "Systematic Window-Sensitivity Study", GCS as summary.
+  - Section V-B title "Cross-task Ablation and Global Context Sensitivity" -> "Cross-Task Window Sensitivity"; GCS
+    introduced with "To summarize this cross-task response quantitatively, we define ...".
+  - Conclusion: window sensitivity first, GCS as the summary metric.
+  - Research question, Section V-A, Fig. 4 and the routing finding unchanged. Still 8 pages, PDF 1.4, no Type 3
+    fonts, no errors. Pre-edit sections and PDF backed up in the session scratchpad.
+- GCS terminology removed from the paper (2026-10-20, user request; supersedes the "GCS as summary metric" wording
+  above): the phenomenon is "window sensitivity", measured as the DSC span over the window sweep (Delta DSC, same
+  equation and numbers 2.47 / 0.71 / 1.22 pp, 3.5x / 2.0x).
+  - Abstract: the GCS sentence deleted; keywords "global context sensitivity" -> "window sensitivity".
+  - Contribution 2: "The DSC span over the window sweep differs by up to 3.5x across benchmarks."
+  - Section V-B: "We quantify window sensitivity as the DSC span over the window sweep:"; the following discussion
+    uses "this span / a large span / a small span" (descriptive, post hoc, not an a priori predictor).
+  - Conclusion: GCS sentence deleted; Limitations: "the mechanism behind this window sensitivity ... the DSC span
+    summarizes ...".
+  - No GCS left in the sources or the PDF text; 8 pages, PDF 1.4, no Type 3 fonts, no errors.
+
+- Camera-ready edits (2026-10-24, user request; no new numbers or claims):
+  - Abstract: the two mechanism findings (window sensitivity, near-uniform gate) now come first ("Furthermore, our
+    empirical analysis" -> "Our empirical analysis"), the Dice results last, introduced with "With task-appropriate
+    configurations," (the three numbers are the per-dataset best configurations, as in the Conclusion).
+  - Index Terms: "window size" -> "hybrid CNN-Transformer".
+  - Fig. 3 (`experiments/make_qualitative_figure.py --reuse`, cached predictions of 2026-10-20): column title
+    "ApproxDA" -> "Ours"; caption says "Ours: ApproxDA-TransUNet". Same cases and Dice; the PNG differs only in that
+    column title.
+  - Fig. 5 (`analyze_gate_entropy.py` Figure B, re-run on the M=28 gate=learn checkpoint): small edge-less dots
+    (s=4, no 1.5 pt marker ring), one Okabe-Ito colour per block, panel titles "Bottleneck / 28^2 / 56^2 / 112^2 skip"
+    instead of module names. Same data: r_s +0.259 / -0.432 / -0.004 / +0.081, Delta g identical. TrueType fonts.
+  - Result: 8 pages, Letter, PDF 1.4, all 42 fonts embedded and subset, no Type 3, no errors; the two overfull boxes in
+    Section IV are pre-existing (identical with the old sources). Pages 5 and 8 unchanged; the slightly longer abstract
+    reflows pages 2-4. Old sources, figures and PDF in the session scratchpad (paper_backup_1024).
+- Company website (2026-10-24, user request): first-page footnote instead of the author block, which keeps the
+  IEEE template's author-block fields (organization, city/country, e-mail or ORCID). Dagger on the first author's
+  name and "\IEEEauthorrefmark{2}DeepSOTA AI: \url{https://deep-sota.ai}" appended to the existing
+  corresponding-author \thanks footnote (same line, so no reflow). Only the name and footnote pixels of page 1
+  change; pages 2-8 render identical. 8 pages, PDF 1.4, no Type 3, no errors.

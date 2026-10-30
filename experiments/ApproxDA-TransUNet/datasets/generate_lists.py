@@ -6,9 +6,16 @@ Run ONCE on Lightning AI after attaching the dataset volumes:
 
   cd experiments/ApproxDA-TransUNet
 
-  # Kvasir-SEG: the committed lists are the official 880/120 split used in the
-  # re-runs -- do NOT regenerate them (this script refuses to overwrite existing
-  # lists unless --force is given; its random 80/20 split is NOT the official one).
+  # Kvasir-SEG: random 75/25 train/test split as in the DA-TransUNet paper (the
+  # official 880/120 split left DA-TransUNet ~4 pts below its reported Dice):
+  python datasets/generate_lists.py --dataset Kvasir --data_dir ../data/Kvasir-SEG \
+      --train_ratio 0.75 --seed 1234 --force
+
+  # ISIC 2018, DA-TransUNet paper protocol used by the journal re-runs: random 75/25
+  # of the 2594 official training images (data_dir = the 256 px copy made by
+  # resize_isic.py --names <official train list>; delete any stale val.txt):
+  python datasets/generate_lists.py --dataset ISIC --data_dir ../data/ISIC2018 \
+      --train_ratio 0.75 --seed 1234 --force
 
   # ISIC 2018 Task 1, official train (2594) / val (100) / test (1000) split.
   # --isic_official_root must contain the six official ISIC2018_Task1* folders;
@@ -84,8 +91,9 @@ def _isic_official(root, data_dir):
     os.makedirs(mask_out, exist_ok=True)
     splits = {}
     for split, tag in [("train", "Training"), ("val", "Validation"), ("test", "Test")]:
-        img_dirs = glob.glob(os.path.join(root, f"*Task1*{tag}_Input*"))
-        gt_dirs = glob.glob(os.path.join(root, f"*Task1*{tag}_GroundTruth*"))
+        # directories only: the downloaded .zip archives may sit next to them
+        img_dirs = [d for d in glob.glob(os.path.join(root, f"*Task1*{tag}_Input*")) if os.path.isdir(d)]
+        gt_dirs = [d for d in glob.glob(os.path.join(root, f"*Task1*{tag}_GroundTruth*")) if os.path.isdir(d)]
         if len(img_dirs) != 1 or len(gt_dirs) != 1:
             raise SystemExit(f"expected one {tag} input and one {tag} GroundTruth folder under {root}")
         stems = sorted(

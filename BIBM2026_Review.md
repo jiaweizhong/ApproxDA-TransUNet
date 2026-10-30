@@ -1,6 +1,6 @@
 # ApproxDA-TransUNet 修改追踪：ML4BMI camera-ready + Journal
 
-最后更新：2026-10-18。审稿意见来自 BIBM 2026 主会（ML4BMI 没有单独的审稿意见）。实验细节和全部数值见 `PENDING_RUNS.md`。
+最后更新：2026-10-20。审稿意见来自 BIBM 2026 主会（ML4BMI 没有单独的审稿意见）。实验细节和全部数值见 `PENDING_RUNS.md`。
 
 - **Camera-ready（workshop）**：稿件在 `paper/`。原计划只改文字；实际做法是在本机 RTX 5090 上按新协议重跑全部实验，再按新结果改写。正文报 seed 1234 的单次运行，配置取消融中最好的。
 - **Journal**：补多 seed、不在 test 上选配置、修复 PAM 不起作用的问题等，需要新证据的内容放在这里。
@@ -57,14 +57,14 @@
 > 审稿原意：g=0.5 不代表 PAM/CAM 的参数更新相同，更不能推出表示收敛，因为两个分支的计算和 Jacobian 都不同；证据也主要来自 Synapse。
 
 - ✅ **只保留经验观察，写明不分析原因**：训练中记录了 gate（`gate_history.npz`），block 均值在 0.499–0.512 之间，per-channel std ≤ 0.022。
-- ✅ **Fig. 6 重画**：c16，M=28，learn。r_s 在 −0.43 到 +0.26 之间，Δg ≤ 3.4×10⁻⁴。
+- ✅ **Fig. 5（原 Fig. 6）重画**：c16，M=28，learn。r_s 在 −0.43 到 +0.26 之间，Δg ≤ 3.4×10⁻⁴。
 - ✅ **对照**：Table VI 有 fixed 0.5。CVC 上 learned gate 也没有胜出（89.90，低于 cam G=1 的 90.54）。
 - ⬜ **Journal**：换 gate 初始化或正则化，分析原因。
 
 ### R6. GCS 不能独立预测任务的上下文需求（Strongly recommended）
 > 审稿原意：GCS 是用 window 消融的 Dice 差值定义的，又拿来解释同一批实验，属于循环论证；3 个数据集也不足以说明它是任务本身的属性。
 
-- ✅ **只作描述性指标**：GCS 写成经验诊断，不是 predictor。删掉了 inductive bias 和 locality-induced bias 的说法。Limitations 写明需要更多数据集。
+- ✅ **只作描述性指标**（2026-10-20 起不再使用 GCS 这个名字，改称 window sensitivity / DSC span）：GCS 写成经验诊断，不是 predictor。删掉了 inductive bias 和 locality-induced bias 的说法。Limitations 写明需要更多数据集。
 - ✅ **新数据**：r=32 时的 Dice 跨度为 Synapse 2.47、CVC 0.71、ISIC 1.22，比值为 3.5× 和 2.0×。
 - ⚠️ **风险**：见第 3 节。Synapse 和 ISIC 的 PAM 实际上不起作用，窗口之间的差异主要是训练噪声。
 - ⬜ **Journal**：修好 attention 后重跑窗口消融；或者定义一个独立于 Dice 曲线的上下文指标。
@@ -104,7 +104,7 @@
 > 审稿原意：“state-of-the-art” 并非在所有指标上成立，Synapse HD95 和 ISIC mIoU 反而变差；Figure 6 的相关系数和正文冲突；gate 一会儿是标量一会儿是向量；Kvasir 的 HD95 没有物理标定却写成 mm。
 
 - ✅ **措辞**：没有 SOTA 或 top performance 的说法。主动写出 Synapse HD95 不如原文 DA 和 Swin-Unet，ISIC mIoU 略低于原文 DA。
-- ✅ **数值一致**：Fig. 6 的数值和正文一致；gate 统一写成向量 g ∈ [0,1]^{C′}。
+- ✅ **数值一致**：Fig. 5（原 Fig. 6）的数值和正文一致；gate 统一写成向量 g ∈ [0,1]^{C′}。
 - ✅ **单位**：HD95 统一用 mm。Kvasir 已整体移除，不再有 px 的问题。
 - ✅ **前后一致**：§III-D 原来写“primary benchmarks 用 PAM-only”，现在 CVC 主结果是 CAM-only，已改为“window/rank 消融用 PAM-only，routing 在 §V-C 比较”。
 
@@ -114,12 +114,16 @@
 
 - ✅ **作者信息**：按 IEEE/BIBM 模板填写。Hui Zhang 为通讯作者，脚注放在 `\title` 的 `\thanks` 里；放在 `\author` 里会多出约 11 pt 空白。
 - ✅ **代码链接**：https://github.com/deepsota-ai/ApproxDA-TransUNet
+- ✅ **标题**（2026-10-20）：改为 “ApproxDA-TransUNet: Exploring Window Sensitivity in Dual-Attention Approximation for Medical Image Segmentation”。原标题里的 “Understanding … Global Context Sensitivity” 和 Limitations（机制尚不清楚）矛盾，也和 R6（GCS 只是描述性指标）、R8（单 seed）的定位不符。作者列表系统已锁定，不能改。提交系统（B1231）、eCF、PDF eXpress 要使用同一个标题。
+- ✅ **叙事对齐**（2026-10-20）：与新标题对齐，改了 5 处（摘要一句、Contribution 2、§V-B 标题和 GCS 的引入句、结论两句）。叙事改为：先讲窗口敏感性，GCS 只作为量化这一现象的经验指标。没有新增结论或数字。
+- ✅ **去掉 GCS 术语**（2026-10-20，用户要求，替代上一条“GCS 只作为经验指标”的说法）：全文不再出现 GCS。现象统一称为 window sensitivity，用窗口扫描上的 DSC 跨度（ΔDSC）来量化，公式和数值不变（2.47 / 0.71 / 1.22 pp）。关键词同步改为 window sensitivity。
+- ✅ **格式**（2026-10-20）：去掉了 Type 3 字体（Fig. 1、3、5），Fig. 3 的图像提高到 594 ppi，输出 PDF 1.4。详见 `PENDING_RUNS.md` 中的 “Camera-ready format fixes”。
 - ✅ **数据集**：Kvasir-SEG 换成 CVC-ClinicDB，因为 Kvasir 上 DA 的复现比原文低 2.1（3 seed）。新增 Bernal 2015 引用。
   - ⚠️ camera-ready 阶段换数据集，是否需要告知 workshop chair，待定。
 - ✅ **图**：
   - Fig. 3 重新生成：Synapse 选增益最大且只有 2–3 种器官的切片，CVC 和 ISIC 选 Dice 中位数的 case。
   - Fig. 5（旧 Kvasir attention map）已删除，见第 3 节。
-  - Fig. 6 改为矢量 PDF。
+  - Fig. 5（原 Fig. 6，gate 与特征熵的散点图）改为矢量 PDF。
 - ✅ **措辞与排版**：去掉 inductive bias 的说法；表注统一为整宽 minipage；表格间距已统一（`\centering`）；Fig. 1 和 Fig. 2 为 100% 栏宽。
 
 ## 3. 新发现的问题：PAM 几乎不起作用（2026-10-18）

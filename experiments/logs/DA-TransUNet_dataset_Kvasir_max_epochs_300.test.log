@@ -1,0 +1,137 @@
+/home/jiawei/venvs/torch/lib/python3.14/site-packages/torch/jit/_script.py:1485: FutureWarning: `torch.jit.script` is not supported in Python 3.14+ and may break. Please switch to `torch.compile` or `torch.export`.
+  warnings.warn(
+/home/jiawei/venvs/torch/lib/python3.14/site-packages/torch/nn/modules/conv.py:196: UserWarning: Initializing zero-element tensors is a no-op
+  init.kaiming_uniform_(self.weight, a=math.sqrt(5))
+Not saving results.
+Namespace(volume_path='../data/Kvasir-SEG', dataset='Kvasir', num_classes=2, list_dir='./lists/lists_Kvasir', max_iterations=20000, max_epochs=300, batch_size=24, img_size=224, is_savenii=False, n_skip=3, vit_name='R50-ViT-B_16', test_save_dir='../predictions', deterministic=1, base_lr=0.01, seed=1234, vit_patches_size=16, optimizer='sgd', checkpoint='last', split='test', Dataset=<class 'datasets.dataset_kvasir.Kvasir_dataset'>, z_spacing=1, is_pretrain=True, exp='TU_Kvasir224')
+TU_pretrain_R50-ViT-B_16_skip3_epo300_bs24_224
+120 test iterations per epoch
+Model parameters: 107.95 M
+GFLOPs (single 224x224 slice, fvcore, includes attention bmm): 30.2
+/home/jiawei/venvs/torch/lib/python3.14/site-packages/torch/jit/_script.py:1485: FutureWarning: `torch.jit.script` is not supported in Python 3.14+ and may break. Please switch to `torch.compile` or `torch.export`.
+  warnings.warn(
+0it [00:00, ?it/s]idx 0 case cju0s690hkp960855tjuaqvv0 mean_dice 0.096074 mean_hd95 237.227739
+idx 1 case cju0sr5ghl0nd08789uzf1raf mean_dice 0.284474 mean_hd95 227.308158
+2it [00:00, 13.40it/s]idx 2 case cju0sxqiclckk08551ycbwhno mean_dice 0.651772 mean_hd95 292.791027
+idx 3 case cju0t4oil7vzk099370nun5h9 mean_dice 0.938787 mean_hd95 59.796735
+idx 4 case cju0tl3uz8blh0993wxvn7ly3 mean_dice 0.321200 mean_hd95 170.660482
+idx 5 case cju0u2g7pmnux0801vkk47ivj mean_dice 0.957991 mean_hd95 35.312853
+6it [00:00, 24.60it/s]idx 6 case cju0u82z3cuma0835wlxrnrjv mean_dice 0.647164 mean_hd95 105.725109
+idx 7 case cju0ue769mxii08019zqgdbxn mean_dice 0.885465 mean_hd95 19.697716
+idx 8 case cju0vtox5ain6099360pu62rp mean_dice 0.946339 mean_hd95 10.310098
+9it [00:00, 26.54it/s]idx 9 case cju13cgqmnhwn0988yrainhcp mean_dice 0.983116 mean_hd95 4.242641
+idx 10 case cju13fwthn9mq0835gacxgy01 mean_dice 0.966264 mean_hd95 10.000000
+idx 11 case cju13hp5rnbjx0835bf0jowgx mean_dice 0.949474 mean_hd95 16.970563
+idx 12 case cju14g8o4xui30878gkgbrvqj mean_dice 0.947483 mean_hd95 5.385165
+13it [00:00, 29.33it/s]idx 13 case cju14hjh2ob2o0835ouz3r5aa mean_dice 0.917460 mean_hd95 85.464606
+idx 14 case cju14pxbaoksp0835qzorx6g6 mean_dice 0.976724 mean_hd95 4.472136
+idx 15 case cju15czxqp3lv0835jvhgzurz mean_dice 0.975205 mean_hd95 9.433981
+16it [00:00, 29.37it/s]idx 16 case cju15jr8jz8sb0855ukmkswkz mean_dice 0.884935 mean_hd95 84.435991
+idx 17 case cju15l5ubz9yh0855b3ivdpse mean_dice 0.414412 mean_hd95 122.178147
+idx 18 case cju15mhjczc8z0801kit5c6di mean_dice 0.891614 mean_hd95 27.716406
+19it [00:00, 29.50it/s]idx 19 case cju15ptjtppz40988odsm9azx mean_dice 0.745243 mean_hd95 205.552545
+idx 20 case cju15wdt3zla10801odjiw7sy mean_dice 0.948675 mean_hd95 22.779260
+idx 21 case cju160wshltz10993i1gmqxbe mean_dice 0.921566 mean_hd95 10.261473
+idx 22 case cju16ach3m1da0993r1dq3sn2 mean_dice 0.982545 mean_hd95 6.324555
+23it [00:00, 31.55it/s]idx 23 case cju16b6ynq8e40988m8vx0xnj mean_dice 0.904090 mean_hd95 8.000000
+idx 24 case cju16d65tzw9d0799ouslsw25 mean_dice 0.961745 mean_hd95 7.280110
+idx 25 case cju16fpvhzypl0799p9phnlx6 mean_dice 0.960243 mean_hd95 10.198039
+idx 26 case cju16jgnyzp970878melv7r25 mean_dice 0.940170 mean_hd95 21.354105
+27it [00:00, 32.23it/s]idx 27 case cju16whaj0e7n0855q7b6cjkm mean_dice 0.249903 mean_hd95 210.595337
+idx 28 case cju32qr9tbvsj08013pkpjenq mean_dice 0.899350 mean_hd95 48.338373
+idx 29 case cju32srle1xfq083575i3fl75 mean_dice 0.963485 mean_hd95 10.108921
+idx 30 case cju32upim1z7u0988l883nqp6 mean_dice 0.953132 mean_hd95 21.612218
+31it [00:01, 31.12it/s]idx 31 case cju32zhbnc1oy0801iyv1ix6p mean_dice 0.677487 mean_hd95 104.489922
+idx 32 case cju330ofbc2l30801th5g3hw6 mean_dice 0.971569 mean_hd95 3.605551
+idx 33 case cju33231uy4gi0993qc7b1jch mean_dice 0.330930 mean_hd95 146.993196
+idx 34 case cju334jzo261t0835yqudnfs1 mean_dice 0.976901 mean_hd95 12.000000
+35it [00:01, 32.73it/s]idx 35 case cju336l68y7if0993wf092166 mean_dice 0.904584 mean_hd95 44.553339
+idx 36 case cju3381d8bz3h07991xtl7ra0 mean_dice 0.913547 mean_hd95 15.652476
+idx 37 case cju33belnbyhm0878yxl42233 mean_dice 0.937575 mean_hd95 9.219544
+idx 38 case cju33eqwbcch208012jikwdky mean_dice 0.905273 mean_hd95 41.713302
+39it [00:01, 33.00it/s]idx 39 case cju33jon3ygbj0993pu22a4k6 mean_dice 0.946245 mean_hd95 11.235693
+idx 40 case cju33mirdc8mj0799k33wzoes mean_dice 0.937722 mean_hd95 49.988998
+idx 41 case cju33o12x2jm50988944mxq0v mean_dice 0.957812 mean_hd95 7.211103
+idx 42 case cju33qpdvc9g0087825jhf3s9 mean_dice 0.922401 mean_hd95 132.864591
+43it [00:01, 32.57it/s]idx 43 case cju33w4sdcivk0855x879zht7 mean_dice 0.967816 mean_hd95 9.219544
+idx 44 case cju33x0f22peh0988g0ln7w5v mean_dice 0.910317 mean_hd95 12.027036
+idx 45 case cju8ceacrsqkr0755hdz145es mean_dice 0.960621 mean_hd95 5.000000
+idx 46 case cju8cgi2kspp308011nxdtjp6 mean_dice 0.940740 mean_hd95 14.465445
+47it [00:01, 32.80it/s]idx 47 case cju8chdlqsu620755azjty1tj mean_dice 0.942979 mean_hd95 19.554725
+idx 48 case cju8chxndsre008015uisl4si mean_dice 0.943663 mean_hd95 7.204101
+idx 49 case cju8cj10qsrau0871o2dr6ai1 mean_dice 0.976644 mean_hd95 4.123106
+idx 50 case cju8clorgsuwn08714toqb7v6 mean_dice 0.953621 mean_hd95 13.431294
+51it [00:01, 34.11it/s]idx 51 case cju8cwy02t9eq08185qn12c02 mean_dice 0.887857 mean_hd95 49.742804
+idx 52 case cju8czvnztbf40871b4m7t78w mean_dice 0.966635 mean_hd95 12.649111
+idx 53 case cju8d2q30tfhs0801n7lx77xl mean_dice 0.981872 mean_hd95 6.708204
+idx 54 case cju8d4jgatgpj0871q2ophhkm mean_dice 0.973006 mean_hd95 7.280110
+55it [00:01, 32.27it/s]idx 55 case cju8dic9mtppa0987swn23wbc mean_dice 0.969274 mean_hd95 19.162393
+idx 56 case cju8djdqztu6408506pzhlo18 mean_dice 0.954524 mean_hd95 12.806248
+idx 57 case cju8dk7eztzup08182yxko5zh mean_dice 0.964282 mean_hd95 5.000000
+idx 58 case cju8dm2cau2km0818jsv9eeq2 mean_dice 0.985007 mean_hd95 4.472136
+59it [00:01, 32.39it/s]idx 59 case cju8dn0c3u2v50801k8rvq02f mean_dice 0.934861 mean_hd95 120.000000
+idx 60 case cju8doa16u5gh0818w1ywda3q mean_dice 0.807568 mean_hd95 137.195446
+idx 61 case cju8dpa89u6l80818dj6lldh9 mean_dice 0.719705 mean_hd95 126.349656
+idx 62 case cju8dqkrqu83i0818ev74qpxq mean_dice 0.651890 mean_hd95 373.737943
+63it [00:02, 23.25it/s]idx 63 case cjyzjzssvd8pq0838f4nolj5l mean_dice 0.882705 mean_hd95 24.013444
+idx 64 case cjyzk8qieoboa0848ogj51wwm mean_dice 0.910135 mean_hd95 103.704866
+idx 65 case cjyzkmjy8evns070165gf9dmq mean_dice 0.976421 mean_hd95 5.385165
+66it [00:02, 24.47it/s]idx 66 case cjyzkpsbjdsjq07211dfi4sru mean_dice 0.923497 mean_hd95 10.630146
+idx 67 case cjyzl833ndne80838pzuq6ila mean_dice 0.954951 mean_hd95 112.476657
+idx 68 case cjyzlw7f9faqr070129au64sq mean_dice 0.933051 mean_hd95 17.464249
+idx 69 case cjyztzaqtrv430848l8xgcerw mean_dice 0.911169 mean_hd95 39.156066
+70it [00:02, 26.03it/s]idx 70 case cjyzu3reghjya0794w7pwoi50 mean_dice 0.912010 mean_hd95 24.041631
+idx 71 case cjyzu9th0qt4r0a46pyl4zik0 mean_dice 0.871545 mean_hd95 45.853557
+idx 72 case cjyzufihqquiw0a46jatrbwln mean_dice 0.973069 mean_hd95 12.529964
+73it [00:02, 26.77it/s]idx 73 case cjyzuio1qgh040763k56deohv mean_dice 0.908485 mean_hd95 7.071068
+idx 74 case cjyzul1qggwwj07216mhiv5sy mean_dice 0.900276 mean_hd95 36.576525
+idx 75 case cjyzurzvohqnr0794es1itzek mean_dice 0.955612 mean_hd95 13.341664
+76it [00:02, 22.03it/s]idx 76 case cjz14qsk2wci60794un9ozwmw mean_dice 0.973268 mean_hd95 6.000000
+idx 77 case ck2395w2mb4vu07480otsu6tw mean_dice 0.957456 mean_hd95 253.369498
+idx 78 case ck2bxiswtxuw80838qkisqjwz mean_dice 0.463565 mean_hd95 263.402347
+idx 79 case ck2bxknhjvs1x0794iogrq49k mean_dice 0.950195 mean_hd95 30.650000
+80it [00:02, 24.62it/s]idx 80 case ck2bxlujamu330725szlc2jdu mean_dice 0.823917 mean_hd95 52.630789
+idx 81 case ck2bxpfgxu2mk0748gsh7xelu mean_dice 0.612544 mean_hd95 115.949963
+idx 82 case ck2bxqz3evvg20794iiyv5v2m mean_dice 0.261328 mean_hd95 163.636793
+idx 83 case ck2bxskgxxzfv08386xkqtqdy mean_dice 0.908021 mean_hd95 15.000000
+84it [00:02, 27.00it/s]idx 84 case ck2bxw18mmz1k0725litqq2mc mean_dice 0.169000 mean_hd95 341.773682
+idx 85 case ck2da7fwcjfis07218r1rvm95 mean_dice 0.932620 mean_hd95 13.894241
+idx 86 case cju85nr8elly209872w9n5m0s mean_dice 0.863981 mean_hd95 33.241540
+idx 87 case cju85omszllp30850b6rm9mi3 mean_dice 0.898435 mean_hd95 228.417553
+88it [00:03, 28.97it/s]idx 88 case cju85plp7lmkw0850rx42jdpf mean_dice 0.659563 mean_hd95 131.672976
+idx 89 case cju85qefyln6v0850szeb9byi mean_dice 0.900476 mean_hd95 73.172354
+idx 90 case cju85rkbnlo1c08503uxcpax1 mean_dice 0.952428 mean_hd95 18.000000
+idx 91 case cju87kbcen2av0987usezo8kn mean_dice 0.012381 mean_hd95 223.958236
+92it [00:03, 30.67it/s]idx 92 case cju87li0zn3yb0817kbwgjiz8 mean_dice 0.810177 mean_hd95 109.222524
+idx 93 case cju87mrypnb1e0818scv1mxxg mean_dice 0.932214 mean_hd95 13.748584
+idx 94 case cju87nkyrnb970801q84m47yt mean_dice 0.956962 mean_hd95 11.401754
+idx 95 case cju87ox0kncom0801b98hqnd2 mean_dice 0.975038 mean_hd95 5.099020
+96it [00:03, 31.22it/s]idx 96 case cju87q6yoneim0871dl4phvkd mean_dice 0.729031 mean_hd95 94.924178
+idx 97 case cju87r56lnkyp0755hz30leew mean_dice 0.967491 mean_hd95 16.417662
+idx 98 case cju87tyddnnad0755bj0wxahe mean_dice 0.964675 mean_hd95 31.168812
+idx 99 case cju87vqa0ndwg0850onjdz7ol mean_dice 0.731020 mean_hd95 152.313700
+100it [00:03, 30.53it/s]idx 100 case cju87xn2snfmv0987sc3d9xnq mean_dice 0.867586 mean_hd95 186.429611
+idx 101 case cju87z6o6nh73085045bzsx6o mean_dice 0.982798 mean_hd95 4.123106
+idx 102 case cju87zv8lni0o0850hbbecbq6 mean_dice 0.901185 mean_hd95 8.062258
+idx 103 case cju8828oxnool0801qno9luhr mean_dice 0.982198 mean_hd95 6.403124
+104it [00:03, 32.02it/s]idx 104 case cju884985nlmx0817vzpax3y4 mean_dice 0.693330 mean_hd95 95.189285
+idx 105 case cju7dp3dw2k4n0755zhe003ad mean_dice 0.921369 mean_hd95 20.516776
+idx 106 case cju7dqcwi2dz00850gcmr2ert mean_dice 0.916647 mean_hd95 16.278821
+idx 107 case cju7druhp2gp308715i6km7be mean_dice 0.688000 mean_hd95 93.544638
+108it [00:03, 31.78it/s]idx 108 case cju7dsrtb2f8i085064kwugfk mean_dice 0.869014 mean_hd95 35.227830
+idx 109 case cju7dtb1e2j0t0818deq51ib3 mean_dice 0.923133 mean_hd95 33.000000
+idx 110 case cju7dubap2g0w0801fgl42mg9 mean_dice 0.650645 mean_hd95 85.115212
+idx 111 case cju7dvl5m2n4t0755hlnnjjet mean_dice 0.961742 mean_hd95 5.000000
+112it [00:03, 33.20it/s]idx 112 case cju7dwe282dc309876rco45ts mean_dice 0.535166 mean_hd95 183.767751
+idx 113 case cju7dxffn2eam0817qxosfwch mean_dice 0.640452 mean_hd95 207.100000
+idx 114 case cju7dymur2od30755eg8yv2ht mean_dice 0.731490 mean_hd95 72.969852
+idx 115 case cju7dz5yy2i7z0801ausi7rna mean_dice 0.769285 mean_hd95 93.551830
+116it [00:03, 33.18it/s]idx 116 case cju7ea4om2l910801bohqjccy mean_dice 0.958903 mean_hd95 10.000000
+idx 117 case cju7ebe962hr409872ovibahw mean_dice 0.921704 mean_hd95 48.166268
+idx 118 case cju7ecl9i2i060987xawjp4l0 mean_dice 0.870950 mean_hd95 106.013914
+idx 119 case cju7eea9b2m0z0801ynqv1fqu mean_dice 0.410422 mean_hd95 157.223709
+120it [00:04, 28.99it/s]120it [00:04, 29.18it/s]
+Inference total: 4.9s  avg per case: 41.0ms
+Inference peak VRAM: 948 MB (0.9 GB)
+Mean class 1 mean_dice 0.837131 mean_hd95 66.418222 mean_iou 0.761549
+Testing performance (split=test, checkpoint=last): mean_dice : 0.837131 mean_hd95 : 66.418222 mean_iou : 0.761549

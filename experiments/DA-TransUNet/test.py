@@ -11,8 +11,12 @@ import torch.nn as nn
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 from datasets.dataset_synapse import Synapse_dataset
+from datasets.dataset_acdc import ACDC_dataset
+from datasets.dataset_amos import AMOS_dataset
+from datasets.dataset_feta import FeTA_dataset
 from datasets.dataset_kvasir import Kvasir_dataset
 from datasets.dataset_isic import ISIC_dataset
+from datasets.dataset_cvc import CVC_dataset
 from utils import test_single_volume
 from Architecture.DATransUNet import DA_Transformer as ViT_seg
 from Architecture.DATransUNet import CONFIGS as CONFIGS_ViT_seg
@@ -82,11 +86,48 @@ parser.add_argument(
     "--vit_patches_size", type=int, default=16, help="vit_patches_size, default is 16"
 )
 parser.add_argument(
+    "--drop_last",
+    action="store_true",
+    help="drop the incomplete last training batch of each epoch (snapshot suffix _dl); with BN momentum "
+    "0.95 a 1-image last batch (ISIC 75/25) dominates the running statistics",
+)
+parser.add_argument(
+    "--num_workers",
+    type=int,
+    default=4,
+    help="training DataLoader workers (4 = all runs so far); a different value changes the augmentation "
+    "RNG stream, so it gets a _nw<N> snapshot suffix",
+)
+parser.add_argument(
+    "--rgb",
+    action="store_true",
+    help="Kvasir/ISIC only: feed RGB images instead of grayscale (snapshot suffix _rgb)",
+)
+parser.add_argument(
     "--optimizer",
     type=str,
     default="sgd",
     choices=["sgd", "adam"],
     help="Must match training optimizer (selects the snapshot directory)",
+)
+parser.add_argument(
+    "--ablate_cam",
+    type=str,
+    default="",
+    choices=["", "none", "all", "bottleneck", "skip"],
+    help="set CAM_Module gamma to 0 (CAM returns its input) at the bottleneck, the skips or both (log suffix _cabl_<where>)",
+)
+parser.add_argument(
+    "--precise_bn",
+    action="store_true",
+    help="re-estimate BatchNorm statistics on the training set before evaluating (log suffix _pbn)",
+)
+parser.add_argument(
+    "--eval_epoch",
+    type=int,
+    default=0,
+    help="evaluate the intermediate checkpoint epoch_<N-1>.pth of this run instead of the final epoch "
+    "(0 = final epoch); the poly LR schedule has not finished there",
 )
 parser.add_argument(
     "--checkpoint",
@@ -107,11 +148,86 @@ parser.add_argument(
 args = parser.parse_args()
 
 
+def precise_bn(args, net):
+    """Precise BN: re-estimate every BatchNorm layer's running statistics as a cumulative average over one
+    seeded pass of the augmented training set (weights untouched). DANetHead-style BN uses momentum 0.95, so the
+    saved statistics are essentially those of the last training mini-batch of the final epoch (a single image
+    on the ISIC 75/25 split), which adds evaluation noise of up to ~1.6 Dice points."""
+    import importlib
+    from torchvision import transforms
+
+    train_root = {"Synapse": "../data/Synapse/train_npz", "ACDC": "../data/ACDC/ACDC_training_slices"}
+    gen = importlib.import_module(args.Dataset.__module__).RandomGenerator([args.img_size, args.img_size])
+    db = args.Dataset(
+        base_dir=train_root.get(args.dataset, args.volume_path),
+        list_dir=args.list_dir,
+        split="train",
+        transform=transforms.Compose([gen]),
+        **({"rgb": True} if args.rgb else {}),
+    )
+    g = torch.Generator()
+    g.manual_seed(args.seed)
+    loader = DataLoader(db, batch_size=args.batch_size, shuffle=True, num_workers=8, drop_last=True, generator=g)
+    bns = [m for m in net.modules() if isinstance(m, nn.modules.batchnorm._BatchNorm)]
+    for m in bns:
+        m.reset_running_stats()
+        m.momentum = None  # cumulative average
+    net.eval()
+    for m in bns:
+        m.train()
+    with torch.no_grad():
+        for batch in loader:
+            net(batch["image"].cuda())
+    net.eval()
+    logging.info("precise BN: %d BatchNorm layers re-estimated on %d training batches" % (len(bns), len(loader)))
+
+
+def log_absent_aware_summary(args, per_case):
+    """AMOS: mean of each class over the cases that contain it (nnU-Net convention), then the class average, for all
+    15 organs and for the eight Synapse organs; HD95 in mm. Hallucinated organs (absent from the ground truth but
+    predicted) and missed organs (present but not predicted) are counted separately."""
+    import warnings
+    from datasets.dataset_amos import AMOS_CLASSES, SYNAPSE8
+    from datasets.dataset_feta import FETA_CLASSES
+
+    if args.dataset == "FeTA":
+        CLASSES, groups = FETA_CLASSES, (("all7", list(range(len(FETA_CLASSES)))),)
+    else:
+        CLASSES = AMOS_CLASSES
+        groups = (("synapse8", [c - 1 for c in SYNAPSE8]), ("all15", list(range(len(AMOS_CLASSES)))))
+
+    M = np.stack([m for _, m in per_case])  # (cases, classes, 5): dice, hd95, iou, predicted voxels, true voxels
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", RuntimeWarning)
+        cls = np.nanmean(M[:, :, :3], axis=0)
+    for i, name in enumerate(CLASSES):
+        absent = M[:, i, 4] == 0
+        logging.info(
+            "Mean class %d %s mean_dice %f mean_hd95 %f mean_iou %f (cases %d, missed %d, hallucinated %d/%d)"
+            % (i + 1, name, *cls[i], (~absent).sum(), (~absent & (M[:, i, 3] == 0)).sum(),
+               (absent & (M[:, i, 3] > 0)).sum(), absent.sum())
+        )
+    hall = [(c, CLASSES[i], int(m[i, 3])) for c, m in per_case for i in range(len(CLASSES)) if m[i, 4] == 0 and m[i, 3] > 0]
+    logging.info("hallucinated organs (case, class, predicted voxels): %s" % hall)
+    n_missed = int(((M[:, :, 4] > 0) & (M[:, :, 3] == 0)).sum())
+    logging.info("missed organs (present, not predicted; Dice 0, excluded from HD95): %d case-class pairs" % n_missed)
+    for name, idx in groups:
+        dice, iou = cls[idx, 0].mean(), cls[idx, 2].mean()
+        with warnings.catch_warnings():  # a class missed in every case has no HD95
+            warnings.simplefilter("ignore", RuntimeWarning)
+            hd95 = np.nanmean(cls[idx, 1])
+        logging.info(
+            "Testing performance [%s] (split=%s, checkpoint=%s): mean_dice : %f mean_hd95 : %f mean_iou : %f"
+            % (name, args.split, args.checkpoint, dice, hd95, iou)
+        )
+
+
 def inference(args, model, test_save_path=None):
     db_test = args.Dataset(
         base_dir=args.volume_path,
         split="val" if args.split == "val" else "test_vol",
         list_dir=args.list_dir,
+        **({"rgb": True} if args.rgb else {}),
     )
     testloader = DataLoader(db_test, batch_size=1, shuffle=False, num_workers=1)
     logging.info("{} test iterations per epoch".format(len(testloader)))
@@ -119,6 +235,9 @@ def inference(args, model, test_save_path=None):
     n_params = sum(p.numel() for p in model.parameters()) / 1e6
     logging.info("Model parameters: {:.2f} M".format(n_params))
 
+    # eval() before profiling: the FLOP-count forward pass would otherwise run in
+    # train mode and overwrite BatchNorm running stats (DANetHead uses momentum 0.95)
+    model.eval()
     if _FLOP_LIB:
         try:
             dummy = torch.randn(1, 1, args.img_size, args.img_size).cuda()
@@ -144,8 +263,10 @@ def inference(args, model, test_save_path=None):
     if torch.cuda.is_available():
         torch.cuda.reset_peak_memory_stats()
 
-    model.eval()
     metric_list = 0.0
+    # AMOS has organs absent from some cases; FeTA uses the same metric for HD95 in mm (spacing differs per subject)
+    metric_mode = "nan" if args.dataset in ("AMOS", "FeTA") else "legacy"
+    per_case = []
     infer_start = time.time()
     for i_batch, sampled_batch in tqdm(enumerate(testloader)):
         image, label, case_name = (
@@ -162,7 +283,15 @@ def inference(args, model, test_save_path=None):
             test_save_path=test_save_path,
             case=case_name,
             z_spacing=args.z_spacing,
+            metric_mode=metric_mode,
+            spacing=sampled_batch["spacing"][0].numpy() if "spacing" in sampled_batch else None,
         )
+        if metric_mode == "nan":
+            m = np.array(metric_i, dtype=float)
+            per_case.append((case_name, m))
+            logging.info("idx %d case %s mean_dice %f mean_hd95 %f"
+                         % (i_batch, case_name, np.nanmean(m[:, 0]), np.nanmean(m[:, 1])))
+            continue
         metric_list += np.array(metric_i)
         logging.info(
             "idx %d case %s mean_dice %f mean_hd95 %f"
@@ -187,6 +316,9 @@ def inference(args, model, test_save_path=None):
             "Inference peak VRAM: {:.0f} MB ({:.1f} GB)".format(peak_mb, peak_mb / 1024)
         )
 
+    if metric_mode == "nan":
+        log_absent_aware_summary(args, per_case)
+        return "Testing Finished!"
     metric_list = metric_list / len(db_test)
     for i in range(1, args.num_classes):
         logging.info(
@@ -229,6 +361,27 @@ if __name__ == "__main__":
             "num_classes": 9,
             "z_spacing": 1,
         },
+        "AMOS": {
+            "Dataset": AMOS_dataset,
+            "volume_path": "../data/AMOS_CT_2d/test_vol_h5",
+            "list_dir": "./lists/lists_AMOS",
+            "num_classes": 16,
+            "z_spacing": 1,
+        },
+        "FeTA": {
+            "Dataset": FeTA_dataset,
+            "volume_path": "../data/FeTA_2d/test_vol_h5",
+            "list_dir": "./lists/lists_FeTA",
+            "num_classes": 8,
+            "z_spacing": 1,
+        },
+        "ACDC": {
+            "Dataset": ACDC_dataset,
+            "volume_path": "../data/ACDC_MTUNet",
+            "list_dir": "./lists/lists_ACDC",
+            "num_classes": 4,
+            "z_spacing": 1,
+        },
         "Kvasir": {
             "Dataset": Kvasir_dataset,
             "volume_path": "../data/Kvasir-SEG",
@@ -240,6 +393,13 @@ if __name__ == "__main__":
             "Dataset": ISIC_dataset,
             "volume_path": "../data/ISIC2018",
             "list_dir": "./lists/lists_ISIC",
+            "num_classes": 2,
+            "z_spacing": 1,
+        },
+        "CVC": {
+            "Dataset": CVC_dataset,
+            "volume_path": "../data/CVC-ClinicDB",
+            "list_dir": "./lists/lists_CVC",
             "num_classes": 2,
             "z_spacing": 1,
         },
@@ -268,14 +428,7 @@ if __name__ == "__main__":
         if args.max_epochs != 30
         else snapshot_path
     )
-    if (
-        dataset_name == "ACDC"
-    ):  # using max_epoch instead of iteration to control training duration
-        snapshot_path = (
-            snapshot_path + "_" + str(args.max_iterations)[0:2] + "k"
-            if args.max_iterations != 30000
-            else snapshot_path
-        )
+    # (removed 2026-10-20: an ACDC-only '_20k' suffix that train.py never writes, so test.py missed the checkpoint)
     snapshot_path = snapshot_path + "_bs" + str(args.batch_size)
     snapshot_path = (
         snapshot_path + "_lr" + str(args.base_lr)
@@ -287,6 +440,9 @@ if __name__ == "__main__":
         snapshot_path + "_s" + str(args.seed) if args.seed != 1234 else snapshot_path
     )
     snapshot_path = snapshot_path + "_adam" if args.optimizer == "adam" else snapshot_path
+    snapshot_path = snapshot_path + "_rgb" if args.rgb else snapshot_path
+    snapshot_path = snapshot_path + f"_nw{args.num_workers}" if args.num_workers != 4 else snapshot_path
+    snapshot_path = snapshot_path + "_dl" if args.drop_last else snapshot_path
 
     if args.split == "val" and not os.path.isfile(os.path.join(args.list_dir, "val.txt")):
         raise SystemExit(f"--split val: {args.list_dir}/val.txt not found ({dataset_name} has no val split)")
@@ -306,7 +462,8 @@ if __name__ == "__main__":
 
     # Protocol: evaluate the final-epoch checkpoint. best_model.pth is only used on
     # request (it may be a stale file from older runs that validated on the test set).
-    ckpt_name = "best_model.pth" if args.checkpoint == "best" else f"epoch_{args.max_epochs - 1}.pth"
+    last = args.eval_epoch if args.eval_epoch > 0 else args.max_epochs
+    ckpt_name = "best_model.pth" if args.checkpoint == "best" else f"epoch_{last - 1}.pth"
     snapshot = os.path.join(snapshot_path, ckpt_name)
     if not os.path.exists(snapshot):
         raise SystemExit(f"checkpoint not found: {snapshot}")
@@ -321,6 +478,18 @@ if __name__ == "__main__":
     # keep val-split and best-checkpoint logs separate from the final test logs
     snapshot_name += "_val" if args.split == "val" else ""
     snapshot_name += "_best" if args.checkpoint == "best" else ""
+    snapshot_name += f"_ep{args.eval_epoch}" if args.eval_epoch > 0 else ""
+    snapshot_name += "_pbn" if args.precise_bn else ""
+    if args.ablate_cam:
+        n_off = 0
+        for name, m in net.named_modules():
+            if type(m).__name__ == "CAM_Module":
+                where = "bottleneck" if name.startswith("transformer.embeddings.") else "skip"
+                if args.ablate_cam in ("all", where):  # "none": same run, separate log (sanity check)
+                    m.gamma.data.zero_()
+                    n_off += 1
+        print(f"--ablate_cam {args.ablate_cam}: {n_off} CAM modules switched off")
+        snapshot_name += f"_cabl_{args.ablate_cam}"
 
     log_folder = "./test_log/test_log_" + args.exp
     os.makedirs(log_folder, exist_ok=True)
@@ -340,4 +509,6 @@ if __name__ == "__main__":
         os.makedirs(test_save_path, exist_ok=True)
     else:
         test_save_path = None
+    if args.precise_bn:
+        precise_bn(args, net)
     inference(args, net, test_save_path)
