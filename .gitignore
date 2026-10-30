@@ -68,6 +68,22 @@ outputs/
 wandb/
 mlruns/
 
+# ── Experiment artifacts (keep source, split lists, test results, reports) ─
+# checkpoints, per-run training logs (log.txt) and TensorBoard events
+experiments/model/
+events.out.tfevents.*
+# predicted volumes (the *.json analysis summaries next to them are kept)
+*.nii
+*.nii.gz
+# queue logs: keep the test results, queue history, queue backups and helper scripts; drop training logs
+!experiments/logs/
+experiments/logs/*
+!experiments/logs/*.test.log
+!experiments/logs/*.retest.log
+!experiments/logs/queue.history
+!experiments/logs/queue_backups/
+!experiments/logs/*.sh
+
 # ── OS / IDE ───────────────────────────────────────────────────────────────
 .DS_Store
 Thumbs.db
