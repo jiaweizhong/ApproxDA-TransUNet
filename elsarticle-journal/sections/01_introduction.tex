@@ -1,0 +1,27 @@
+\section{Introduction}
+\label{sec:introduction}
+
+Automated biomedical image segmentation is fundamental to computer-assisted diagnosis, radiotherapy planning, and surgical navigation~\cite{ronneberger2015unet,zhou2018unetpp,chen2021transunet}. Clinical modalities span a broad spectrum---from 3D volumetric CT and MRI to 2D endoscopic video and high-resolution dermoscopy. Accurate boundary delineation across these domains requires architectures capable of both fine-grained edge localization and expansive global context modeling.
+
+While convolutional neural networks (CNNs)~\cite{ronneberger2015unet,zhou2018unetpp,oktay2018attention} form the conventional baseline, their localized receptive fields limit long-range context aggregation. Hybrid CNN-Transformer frameworks like TransUNet~\cite{chen2021transunet} address this via self-attention, and dual-attention networks~\cite{fu2019dual} concurrently capture spatial affinities via Position Attention Modules (PAM) and cross-channel correlations via Channel Attention Modules (CAM). Recently, DA-TransUNet~\cite{sun2024datransunet} integrated dual-attention blocks across multi-scale skip connections and the bottleneck, demonstrating state-of-the-art accuracy on multi-organ CT and colon polyp benchmarks.
+
+Despite their representational strength, standard dual-attention architectures suffer from severe computational overhead. Full-map PAM scales quadratically with spatial tokens ($\mathcal{O}(N^2 C)$), while CAM scales quadratically with channel depth ($\mathcal{O}(C^2 N)$). Coupled with a heavy ViT-B/16 backbone and an uncompressed decoder, DA-TransUNet requires \textbf{107.95M parameters} and \textbf{30.25--39.80 GFLOPs} per slice. This massive footprint creates prohibitive GPU memory demands and latency bottlenecks, preventing practical deployment on resource-constrained hospital workstations and edge scanners.
+
+In this work, expanding upon our preliminary workshop exploration~\cite{zhong2026approxda}, we present \textbf{ApproxDA-TransUNet}, a holistically redesigned lightweight architecture that cuts dual-attention compute by an order of magnitude. ApproxDA-TransUNet integrates four synergistic innovations:
+(i) an \emph{early-truncated ResNet-50 stem} cut at Stage 2 (stride 8, 512 channels) coupled with a compact top-down Vision Transformer (\emph{LightViT-T}~\cite{huang2022lightvit}), eliminating over $85\%$ of encoder parameters;
+(ii) a \emph{tri-axial attention approximation} parameterizing spatial windowing ($M=28$), shared low-rank subspace projection ($r=32$), and grouped channel attention ($G=8$) with fixed equal-blend gating ($g=0.5$);
+(iii) \emph{multi-scale skip modulation} embedding ApproxDA blocks uniformly across all skip connections ($1/8, 1/4, 1/2$) and the bottleneck; and
+(iv) a \emph{slim decoder} maintaining a uniform channel width of $C=64$.
+Collectively, these modifications slash parameters from \textbf{107.95M to 10.75M} (a $90.0\%$ reduction) and compute from \textbf{30.25 to 6.92 GFLOPs} (a $77.1\%$ reduction).
+
+We evaluate ApproxDA-TransUNet across five multi-modal benchmarks under a strict three-seed protocol (1234, 0, 1): Synapse CT, ACDC cardiac MRI, CVC-ClinicDB colonoscopy, ISIC 2018 dermoscopy, and FeTA 2.4 fetal brain MRI. Across 15 independent seed pairs, ApproxDA-TransUNet consistently outperforms DA-TransUNet (mean paired Dice gain $+0.37\%$, $p = 0.009$). On FeTA 2.4, our 10.75M model outperforms standard 2D baselines by up to $+2.5\%$ Dice and matches competitive 3D models (MedNeXt, 3D UX-Net) at a fraction of their compute. Furthermore, mechanistic diagnostics uncover an $\alpha/\gamma$ gradient deadlock in SGD training, explaining why aggressive attention approximation maintains full fidelity while slashing compute.
+
+The primary contributions of this paper are:
+\begin{itemize}
+    \item \textbf{Lightweight Dual-Attention Architecture}: We engineer ApproxDA-TransUNet, cutting parameters by $90\%$ and compute by $77\%$ relative to DA-TransUNet while achieving superior segmentation accuracy.
+    \item \textbf{Tri-Axial Attention Approximation}: We formulate an orthogonal approximation scheme ($M, r, G$) that drastically reduces spatial and channel affinity computation without accuracy degradation.
+    \item \textbf{Multi-Modal 3-Seed Benchmarking}: We conduct rigorous evaluations across five diverse clinical benchmarks spanning CT, MRI, endoscopy, and dermoscopy, establishing superior efficiency-accuracy trade-offs against both 2D and 3D baselines.
+    \item \textbf{Mechanistic Optimization Diagnostics}: We identify and analyze an $\alpha/\gamma$ gradient deadlock in zero-initialized dual attention under SGD, clarifying the primary role of internal bottleneck convolutions in feature modulation.
+\end{itemize}
+
+The rest of this paper is organized as follows: Section~\ref{sec:related_work} reviews related work; Section~\ref{sec:method} presents the methodology; Section~\ref{sec:experiments} reports experimental results; Section~\ref{sec:ablation} provides ablation studies; Section~\ref{sec:discussion} discusses optimization diagnostics and deployment profiles; Section~\ref{sec:conclusion} concludes the paper.

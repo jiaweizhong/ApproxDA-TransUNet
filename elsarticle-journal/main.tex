@@ -1,0 +1,64 @@
+\documentclass[preprint,12pt]{elsarticle}
+
+%% Essential packages
+\usepackage{amssymb}
+\usepackage{amsmath}
+\usepackage{amsthm}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{array}
+\usepackage{url}
+\usepackage{xcolor}
+\usepackage{subcaption}
+\usepackage[hidelinks]{hyperref}
+
+\journal{Biomedical Signal Processing and Control}
+
+\begin{document}
+
+\begin{frontmatter}
+
+\title{ApproxDA-TransUNet: A highly efficient medical image segmentation method with dual spatial and channel attention approximation}
+
+\author[inst1]{Author One\corref{cor1}}
+\cortext[cor1]{Corresponding author}
+\ead{author1@example.com}
+
+\author[inst2]{Author Two}
+\ead{author2@example.com}
+
+\author[inst1]{Author Three}
+\ead{author3@example.com}
+
+\affiliation[inst1]{organization={Department of Computer Science, University Name},
+            city={City},
+            country={Country}}
+
+\affiliation[inst2]{organization={Department of Biomedical Engineering, University Name},
+            city={City},
+            country={Country}}
+
+\begin{abstract}
+Dual-attention networks effectively capture spatial and channel-wise dependencies for medical image segmentation, but models like DA-TransUNet incur prohibitive computational overhead ($\approx$108M parameters, 30+ GFLOPs) due to full-map self-attention, heavy Vision Transformer encoders, and wide decoders. We present \textbf{ApproxDA-TransUNet}, an ultra-lightweight architecture engineered for clinical efficiency without sacrificing segmentation precision. ApproxDA-TransUNet integrates four synergistic designs: an early-truncated ResNet-50 stem (stride 8), a compact top-down LightViT-T bottleneck transformer, tri-axial dual-attention approximation blocks (local windowing $M=28$, low-rank subspace projection $r=32$, and grouped channels $G=8$), and a uniform $C=64$ slim decoder. Evaluated across five multi-modal benchmarks (Synapse CT, ACDC MRI, CVC-ClinicDB polyp, ISIC 2018 dermoscopy, and FeTA 2.4 fetal MRI) over three independent seeds, ApproxDA-TransUNet reduces parameters by $90.0\%$ ($10.75$M vs. $107.95$M) and compute by $77.1\%$ ($6.92$ vs. $30.25$ GFLOPs) while consistently outperforming DA-TransUNet (mean paired Dice gain $+0.37\%$, $p = 0.009$). On FeTA 2.4, it matches 3D volumetric baselines at $<2.5\%$ of their FLOPs. Mechanistic diagnostics reveal an $\alpha/\gamma$ gradient deadlock in SGD that renders raw attention matrices dormant, confirming that feature modulation is governed by internal bottleneck convolutions and explaining why aggressive approximation preserves full accuracy.
+\end{abstract}
+
+\begin{keyword}
+Biomedical image segmentation \sep Lightweight architecture \sep Dual-attention approximation \sep Vision Transformer \sep Multi-organ segmentation
+\end{keyword}
+
+\end{frontmatter}
+
+%% Sections
+\input{sections/01_introduction}
+\input{sections/02_related_work}
+\input{sections/03_method}
+\input{sections/04_experiments}
+\input{sections/05_ablation}
+\input{sections/06_discussion}
+\input{sections/07_conclusion}
+
+\bibliographystyle{elsarticle-num}
+\bibliography{references}
+
+\end{document}

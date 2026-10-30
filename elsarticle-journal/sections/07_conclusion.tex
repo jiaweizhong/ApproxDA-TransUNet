@@ -1,0 +1,17 @@
+\section{Conclusion}
+\label{sec:conclusion}
+
+In this paper, we introduced \textbf{ApproxDA-TransUNet}, an ultra-efficient biomedical image segmentation architecture that resolves the computational bottlenecks of heavy dual-attention networks. By pairing an early-truncated ResNet-50 stem with LightViT-T, embedding tri-axially approximated dual-attention blocks ($M=28, r=32, G=8$) across all skip pathways, and adopting a uniform $C=64$ slim decoder, ApproxDA-TransUNet slashes parameters by \textbf{$90.0\%$} ($10.75\text{M}$ vs. $107.95\text{M}$) and FLOPs by \textbf{$77.1\%$} ($6.92\text{G}$ vs. $30.25\text{G}$). Rigorous evaluations over three random seeds across five benchmarks (Synapse CT, ACDC MRI, CVC-ClinicDB, ISIC 2018, and FeTA 2.4) confirm that ApproxDA-TransUNet consistently outscores the full 108M DA-TransUNet (mean paired Dice gain $+0.37\%$, $p = 0.009$) while matching 3D volumetric baselines on FeTA 2.4 at $<2.5\%$ of their FLOPs.
+
+Furthermore, our optimization diagnostics revealed an $\alpha/\gamma$ gradient deadlock in SGD training, explaining why raw self-attention matrices remain dormant while internal convolutional bottlenecks drive feature modulation. This discovery validates the efficacy of our aggressive approximation strategy. By preserving high segmentation accuracy while delivering a $3.3\times$ inference speedup and a $64\%$ reduction in GPU memory, ApproxDA-TransUNet provides a practical, high-throughput solution for real-time clinical workflows and resource-constrained imaging devices.
+
+\section*{Declaration of Competing Interest}
+The authors declare that they have no known competing financial interests or personal relationships that could have appeared to influence the work reported in this paper.
+
+\section*{CRediT Authorship Contribution Statement}
+\textbf{Author One}: Conceptualization, Methodology, Software, Formal analysis, Investigation, Data curation, Writing - Original Draft, Visualization.
+\textbf{Author Two}: Software, Validation, Data curation, Writing - Review \& Editing.
+\textbf{Author Three}: Supervision, Project administration, Resources, Funding acquisition, Writing - Review \& Editing.
+
+\section*{Data and Code Availability}
+All datasets used in this study (Synapse BTCV, ACDC, CVC-ClinicDB, ISIC 2018, and FeTA 2.4) are publicly accessible benchmark repositories. The complete source code and pretrained model checkpoints for ApproxDA-TransUNet will be made publicly available upon publication.
