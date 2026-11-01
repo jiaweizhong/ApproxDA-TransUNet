@@ -1,59 +1,58 @@
 \section{Discussion and Mechanistic Insights}
 \label{sec:discussion}
 
-This section investigates the internal optimization dynamics of dual attention under SGD, examines data augmentation chirality pitfalls, evaluates deployment profiles, and discusses future directions.
+This section analyzes the optimization of dual attention under SGD, discusses left--right errors caused by mirror augmentation, reports deployment costs, and outlines limitations.
 
-\subsection{Optimization Diagnostics: The $\alpha/\gamma$ Gradient Deadlock}
+\subsection{Optimization Diagnostics: Zero-Initialized Residual Scales}
 \label{sec:deadlock}
 A common convention in dual attention~\cite{fu2019dual,sun2024datransunet} is the zero-initialized residual scaling:
 \begin{equation}
     \mathbf{Y}_{\text{PAM}} = \alpha \mathbf{E}_{\text{PAM}} + \mathbf{X}, \quad \alpha_{\text{init}} = 0,
 \end{equation}
-and similarly $\beta_{\text{init}} = 0$ for CAM. However, auditing gradient dynamics under standard SGD reveals a hidden failure mode: \textbf{the $\alpha/\gamma$ gradient deadlock}.
+and similarly $\beta_{\text{init}} = 0$ for CAM. Under SGD this initialization leaves the position-attention weights almost untrained.
 
 By the chain rule, the gradient with respect to projection weights $\mathbf{W}_Q$ is:
 \begin{equation}
     \frac{\partial \mathcal{L}}{\partial \mathbf{W}_Q} = \frac{\partial \mathcal{L}}{\partial \mathbf{Y}_{\text{PAM}}} \cdot \left( \alpha \frac{\partial \mathbf{E}_{\text{PAM}}}{\partial \mathbf{W}_Q} \right).
 \end{equation}
-At initialization, because $\alpha = 0$, $\partial \mathcal{L} / \partial \mathbf{W}_Q$ evaluates strictly to zero. Moreover, $|\partial \mathcal{L} / \partial \alpha| = |\langle \partial \mathcal{L}/\partial \mathbf{Y}_{\text{PAM}}, \mathbf{E}_{\text{PAM}} \rangle|$ measures only $4 \times 10^{-6}$ to $4 \times 10^{-5}$, four orders of magnitude weaker than decoder convolutional gradients ($\approx 0.29$).
+At initialization, because $\alpha = 0$, $\partial \mathcal{L} / \partial \mathbf{W}_Q$ evaluates strictly to zero. The only way out is through $\alpha$ itself, whose gradient $|\partial \mathcal{L} / \partial \alpha| = |\langle \partial \mathcal{L}/\partial \mathbf{Y}_{\text{PAM}}, \mathbf{E}_{\text{PAM}} \rangle|$ we measured at $4 \times 10^{-6}$ to $4 \times 10^{-5}$, about four orders of magnitude below the gradients of the decoder convolutions ($\approx 0.29$).
 
-\paragraph{Empirical Verification} Tracking the ratio of maximum weight magnitude $\max |w|$ after 300 epochs relative to initialization bound $b$ shows that under pure weight decay with zero backpropagation, parameters scale down by $(1 - \eta \lambda)^T \approx 0.84$--$0.86$. In reproduced DA-TransUNet models, PAM projection weights exhibited drift ratios of exactly $0.84$--$0.86$, confirming that attention weights were never actively updated by gradient descent. Concurrently, forcing $\alpha = 0$ at test time altered fewer than $0.0002\%$ of predicted pixels.
+\paragraph{Empirical verification} With weight decay alone and no gradient, a weight shrinks by $(1 - \eta \lambda)^T \approx 0.84$--$0.86$ over training. In our SGD-trained models with the ViT-B/16 encoder (the configuration of our earlier study~\cite{zhong2026approxda}), the ratio of the final $\max |w|$ of the PAM query, key, value, and projection weights to their initialization bound was $0.84$--$0.86$, i.e., they were never updated by gradient descent, and setting $\alpha = 0$ at test time changed at most $0.0002\%$ of the predicted pixels. The effect is specific to SGD and PAM: with Adam (CVC-ClinicDB) the attention weights did train, and the CAM scale $\beta$ moved away from zero on Synapse and CVC-ClinicDB.
 
-\paragraph{The True Driver of Dual-Attention Blocks} This diagnostic demonstrates that the empirical success of dual attention in CNN-Transformer hybrids does not originate from full-rank spatial self-attention matrices. Instead, performance gains are driven primarily by the internal $3 \times 3$ bottleneck convolutional compression ($C \to C/16 \to C$). This insight explains why our tri-axial approximation ($M=28, r=32, G=8$) achieves full segmentation accuracy while shedding $90\%$ of model parameters.
+\paragraph{The final model} The same holds for ApproxDA-TransUNet. In the twelve SGD-trained models (Synapse, ACDC, ISIC 2018, and FeTA, three seeds each; 48 blocks), the learned scales stay at $|\alpha| \le 0.011$ and $|\beta| \le 0.06$. Switching both attention operators off at test time, so that each branch passes its compressed input through unchanged, changes $0.006$--$0.016\%$ of the predicted voxels on the Synapse test set and the Dice by $+0.01$, $+0.00$, and $+0.09$ points for the three seeds. With Adam (CVC-ClinicDB), weight decay drives the PAM query and key weights to zero in three of the four blocks, and only the $1/8$ skip block learns a non-zero $\alpha$ ($|\alpha| \approx 0.27$).
 
-\subsection{Anatomical Symmetries and Data Augmentation Pitfalls}
+\paragraph{What the block contributes} Together with the ablations in Section~\ref{sec:ablation}, where removing the block costs $2.76$ points but replacing its attention operator by an exact, approximate, or disabled one changes nothing, this indicates that the contribution of dual-attention blocks in this setting comes from their convolutional path ($C \to C/16 \to C$) rather than from the spatial attention matrices. It also explains why the approximation ($M=28$, $r=32$, $G=8$) costs no accuracy.
+
+\subsection{Anatomical Symmetries and Data Augmentation}
 \label{sec:symmetry}
-Decomposing segmentation errors on Synapse CT reveals that while $87\%$ of errors occur within $\le 2$ mm of true boundaries, $9\%$ consist of large block misidentifications ($>20$ px), primarily left/right kidney swaps. 
+In an error decomposition on the Synapse test set (with the earlier ViT-B/16 model), about $87\%$ of the misclassified voxels were boundary or extent errors between an organ and the background; confusions between organs were mostly whole-organ misidentifications, about $9\%$ of all errors, chiefly stomach versus spleen and left versus right kidney, concentrated in a few test cases.
 
-This error pattern stems directly from standard data augmentation: \texttt{random\_rot\_flip} applies random $90^\circ$ rotations followed by mandatory axis reflections without transposing bilateral organ labels. Consequently, half of all training slices exhibit reversed anatomical chirality (artificial situs inversus). Disabling mirror reflection eliminated left/right kidney confusion ($0.0\%$ error), though small training sets benefit from reflection to prevent shape overfitting. Clinicians and researchers should carefully deploy chirality-aware augmentations for bilateral anatomy.
+The left--right confusions are consistent with the standard TransUNet augmentation: \texttt{random\_rot\_flip} follows a random $90^\circ$ rotation with an axis flip without swapping the left and right labels, so about half of the augmented slices show mirrored anatomy. Laterality-aware augmentation should be considered for bilateral structures. \textcolor{red}{[TODO: the quantitative effect of removing mirroring was measured on AMOS, which is not reported; on Synapse the no-mirror model still had about $9\%$ whole-organ errors. Either add a Synapse measurement or keep this paragraph qualitative.]}
 
 \subsection{Computational Efficiency and Clinical Deployability}
 
 \begin{table}[t]
 \centering
-\caption{Deployment profile comparison on a single NVIDIA RTX 4090 GPU (batch size 1, $224 \times 224$ input).}
+\caption{Deployment profile on an NVIDIA RTX 5090 (fp32, $224 \times 224$ input, 9 classes, idle GPU). Memory is the peak allocated by PyTorch, including weights and cuDNN workspace; training uses batch size 24 with SGD.}
 \label{tab:deployment}
 \resizebox{\columnwidth}{!}{
 \begin{tabular}{lcc}
 \toprule
 \textbf{Metric} & \textbf{DA-TransUNet} & \textbf{ApproxDA-TransUNet (Ours)} \\
 \midrule
-Model Parameters & 107.95 M & \textbf{10.75 M} (\textbf{--90.0\%}) \\
-Inference GFLOPs & 30.25 G & \textbf{6.92 G} (\textbf{--77.1\%}) \\
-Peak GPU Memory (Training, $B{=}24$) & 16.8 GB & \textbf{6.1 GB} (\textbf{--63.7\%}) \\
-Inference Latency (Single Slice) & 28.4 ms & \textbf{8.7 ms} (\textbf{3.3$\times$ Speedup}) \\
-Throughput (Slices/sec) & 35.2 & \textbf{114.9} (\textbf{+226\%}) \\
-Storage Footprint (FP32 Checkpoint) & 432 MB & \textbf{43 MB} \\
+Parameters & 107.95 M & \textbf{10.75 M} ($-90.0\%$) \\
+GFLOPs per slice & 30.21 & \textbf{6.92} ($-77.1\%$) \\
+Checkpoint size (FP32) & 432 MB & \textbf{43.5 MB} \\
+Peak training memory (batch 24) & 11.52 GiB & \textbf{4.85 GiB} ($-58\%$) \\
+Peak inference memory (batch 1) & 2.59 GiB & \textbf{1.09 GiB} ($-58\%$) \\
+Throughput, batch 32 (slices/s) & 555 & \textbf{1415} ($2.55\times$) \\
+Latency, batch 1 & \textbf{6.5 ms} & 9.6 ms \\
 \bottomrule
 \end{tabular}
 }
 \end{table}
 
-As summarized in Table~\ref{tab:deployment}, ApproxDA-TransUNet delivers major hardware benefits:
-\begin{itemize}
-    \item \textbf{Memory \& Throughput}: Peak training memory drops by $63.7\%$ ($16.8 \to 6.1$ GB), enabling training on consumer GPUs. Inference latency drops from $28.4$ ms to $8.7$ ms ($114.9$ slices/s), achieving a $3.3\times$ speedup suitable for real-time intraoperative guidance.
-    \item \textbf{Edge Deployment}: The storage footprint is reduced from $432$ MB to $43$ MB, facilitating edge deployment on embedded scanners.
-\end{itemize}
+Table~\ref{tab:deployment} summarizes the deployment cost. ApproxDA-TransUNet needs $58\%$ less GPU memory for training and inference and stores a ten-times smaller checkpoint. Because volumes are segmented slice by slice in batches, throughput is the relevant speed measure, and it is $2.55$ times higher. At batch size 1, however, the lightweight model is slower (9.6 vs.\ 6.5 ms): its many small LightViT and attention kernels leave the GPU underutilized, so the FLOP reduction does not translate into lower single-slice latency.
 
 \subsection{Limitations and Future Work}
-ApproxDA-TransUNet processes 3D scans on a 2D planar basis. While highly efficient, approximately $12\%$ of remaining errors occur at the cranial/caudal extremities of organs where 3D inter-slice context is needed to identify organ endpoints. Extending ApproxDA blocks to lightweight 2.5D or anisotropic 3D formulations presents a promising avenue for volumetric research.
+ApproxDA-TransUNet processes 3D scans on a 2D planar basis. It therefore cannot use inter-slice context, which matters, for example, at the cranial and caudal ends of organs. Extending ApproxDA blocks to lightweight 2.5D or anisotropic 3D formulations presents a promising avenue for volumetric research.

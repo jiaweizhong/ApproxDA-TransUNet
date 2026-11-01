@@ -1,27 +1,27 @@
 \section{Experiments and Results}
 \label{sec:experiments}
 
-This section details the experimental protocol across five diverse clinical benchmarks, reports multi-seed quantitative comparisons between ApproxDA-TransUNet and DA-TransUNet, presents the FeTA fetal brain benchmark against 2D and 3D baselines, and discusses qualitative visual results.
+This section details the experimental protocol across five diverse clinical benchmarks, reports multi-seed quantitative comparisons between ApproxDA-TransUNet and DA-TransUNet, presents the FeTA fetal brain benchmark against 2D baselines and 3D references, and shows qualitative results.
 
 \subsection{Experimental Setup and Benchmark Datasets}
 Models are evaluated across \textbf{five clinical benchmarks} spanning four distinct imaging modalities under a strict \textbf{three-seed protocol} (seeds: 1234, 0, 1):
 \begin{enumerate}
-    \item \textbf{Synapse Multi-Organ CT}~\cite{landman2015miccai}: 30 volumetric abdominal CT scans (18 train, 12 test; 2211 slices) covering 8 abdominal organs (aorta, gallbladder, left/right kidneys, liver, pancreas, spleen, stomach), evaluated at $224 \times 224$ with Dice (\%) and HD95 (mm).
-    \item \textbf{ACDC Cardiac Cine-MRI}~\cite{bernard2018deep}: 100 patient exams (40 end-diastolic/systolic 3D test volumes) targeting right ventricle, myocardium, and left ventricle, evaluated at $224 \times 224$ with Dice (\%) and HD95 (px).
+    \item \textbf{Synapse Multi-Organ CT}~\cite{landman2015miccai}: 30 volumetric abdominal CT scans (18 train, 12 test; 2211 slices) covering 8 abdominal organs (aorta, gallbladder, left/right kidneys, liver, pancreas, spleen, stomach), trained for 300 epochs at $224 \times 224$ and evaluated with Dice (\%) and HD95 in voxels (the TransUNet evaluation code, without voxel spacing).
+    \item \textbf{ACDC Cardiac Cine-MRI}~\cite{bernard2018deep}: 100 patient exams (40 end-diastolic/systolic 3D test volumes) targeting right ventricle, myocardium, and left ventricle, trained for 300 epochs at $224 \times 224$ and evaluated with Dice (\%) and HD95 (px).
     \item \textbf{CVC-ClinicDB Colonoscopy}~\cite{bernal2015cvc}: 612 colonoscopy frames (75/25 split) for binary polyp segmentation, trained with Adam ($10^{-3}$) for 500 epochs at $256 \times 256$, evaluated with Dice (\%) and HD95 (px).
-    \item \textbf{ISIC 2018 Dermoscopy}~\cite{codella2019isic}: 2594 dermoscopic photographs (75/25 split) for binary melanoma segmentation, trained with SGD for 50 epochs at $256 \times 256$, evaluated with Dice (\%) and HD95 (px).
-    \item \textbf{FeTA 2.4 Fetal Brain MRI}~\cite{payette2021feta}: 80 reconstructed T2-weighted fetal brain MRI volumes under the standard EffiDec3D split (64 train, 8 val, 8 test) across 7 brain tissues (eCSF, GM, WM, LV, CBM, SGM, BS), evaluated at $224 \times 224$ with Dice (\%) and HD95 (mm).
+    \item \textbf{ISIC 2018 Dermoscopy}~\cite{codella2019isic}: 2594 dermoscopic images (75/25 split) for binary skin-lesion segmentation, trained with SGD for 50 epochs at $256 \times 256$, evaluated with Dice (\%) and HD95 (px).
+    \item \textbf{FeTA 2.4 Fetal Brain MRI}~\cite{payette2021feta}: 80 reconstructed T2-weighted fetal brain MRI volumes under the standard EffiDec3D split (64 train, 8 val, 8 test) across 7 brain tissues (eCSF, GM, WM, LV, CBM, SGM, BS), trained for 61 epochs at $224 \times 224$ and evaluated with Dice (\%) and HD95 (mm, using each subject's voxel spacing).
 \end{enumerate}
 
 \paragraph{Implementation Protocols}
-All models are trained with standard TransUNet augmentations (random rotations and flips). Evaluated strictly on the \emph{final training epoch} without test-set model selection. Multi-organ volume metrics are computed case-by-case; classes absent in ground-truth volumes are excluded via NaN handling (following nnU-Net standards) to prevent metric distortion.
+All models are trained with the TransUNet augmentations (random $90^\circ$ rotations with flips, and small rotations), a $0.5\,\mathcal{L}_{\text{CE}} + 0.5\,\mathcal{L}_{\text{Dice}}$ loss, batch size 24, and SGD (learning rate 0.01, momentum 0.9, weight decay $10^{-4}$, polynomial decay), except CVC-ClinicDB (Adam, $10^{-3}$). DA-TransUNet and ApproxDA-TransUNet are trained under identical settings. Every model is evaluated at the \emph{final training epoch}, without checkpoint selection. Volume metrics are computed per case and averaged over classes; on FeTA, classes absent from a ground-truth volume are excluded from the average, as in nnU-Net.
 
 \subsection{Main Multi-Seed Benchmark Results}
 \label{sec:main_results}
 
 \begin{table*}[t]
 \centering
-\caption{Quantitative comparison across five clinical benchmarks evaluated over three independent random seeds (1234 / 0 / 1). DSC is reported as individual seed scores and Mean $\pm$ Standard Deviation. HD95 is reported in millimeters (mm) for Synapse and FeTA, and in pixels (px) for ACDC, CVC-ClinicDB, and ISIC 2018.}
+\caption{Quantitative comparison across five clinical benchmarks evaluated over three independent random seeds (1234 / 0 / 1). DSC is reported as individual seed scores and Mean $\pm$ Standard Deviation. HD95 is reported in millimeters for FeTA, in voxels for Synapse, and in pixels for ACDC, CVC-ClinicDB, and ISIC 2018. $p$-values are paired $t$-tests over the three seeds.}
 \label{tab:main_benchmark}
 \resizebox{\textwidth}{!}{
 \begin{tabular}{lcccccc}
@@ -29,12 +29,12 @@ All models are trained with standard TransUNet augmentations (random rotations a
 \textbf{Dataset / Model} & \textbf{Params} & \textbf{FLOPs} & \textbf{Dice (\%)} & \textbf{Mean $\pm$ Std} & \textbf{HD95} & \textbf{Paired Diff.} \\
 & \textbf{(M)} & \textbf{(G)} & \textbf{(Seed 1234 / 0 / 1)} & \textbf{Dice (\%)} & & \textbf{(vs. DA)} \\
 \midrule
-\multicolumn{7}{l}{\textbf{Synapse Multi-Organ CT} (8 organs, HD95 in mm)} \\
-DA-TransUNet~\cite{sun2024datransunet} & 107.95 & 30.25 & 79.74 / 81.00 / 80.03 & 80.26 $\pm$ 0.66 & \textbf{23.49} & -- \\
+\multicolumn{7}{l}{\textbf{Synapse Multi-Organ CT} (8 organs, HD95 in voxels)} \\
+DA-TransUNet~\cite{sun2024datransunet} & 107.95 & 30.21 & 79.74 / 81.00 / 80.03 & 80.26 $\pm$ 0.66 & \textbf{23.49} & -- \\
 ApproxDA-TransUNet (Ours) & \textbf{10.75} & \textbf{6.92} & 80.61 / 80.75 / 80.36 & \textbf{80.57 $\pm$ 0.20} & 24.52 & \textbf{+0.32} ($p{=}0.43$) \\
 \midrule
 \multicolumn{7}{l}{\textbf{ACDC Cardiac Cine-MRI} (3 structures, HD95 in px)} \\
-DA-TransUNet~\cite{sun2024datransunet} & 107.95 & 30.25 & 90.66 / 91.06 / 91.09 & 90.94 $\pm$ 0.24 & \textbf{1.52} & -- \\
+DA-TransUNet~\cite{sun2024datransunet} & 107.95 & 30.21 & 90.66 / 91.06 / 91.09 & 90.94 $\pm$ 0.24 & \textbf{1.52} & -- \\
 ApproxDA-TransUNet (Ours) & \textbf{10.75} & \textbf{6.92} & 91.21 / 91.05 / 90.98 & \textbf{91.08 $\pm$ 0.12} & 1.91 & \textbf{+0.15} ($p{=}0.55$) \\
 \midrule
 \multicolumn{7}{l}{\textbf{CVC-ClinicDB Polyp} (Binary polyp, HD95 in px)} \\
@@ -46,68 +46,69 @@ DA-TransUNet~\cite{sun2024datransunet} & 108.00 & 39.80 & 88.08 / 88.48 / 88.35 
 ApproxDA-TransUNet (Ours) & \textbf{10.78} & \textbf{9.00} & 88.43 / 88.82 / 88.27 & \textbf{88.51 $\pm$ 0.28} & 14.83 & \textbf{+0.20} ($p{=}0.29$) \\
 \midrule
 \multicolumn{7}{l}{\textbf{FeTA 2.4 Fetal Brain MRI} (7 tissue classes, HD95 in mm)} \\
-DA-TransUNet~\cite{sun2024datransunet} & 107.95 & 30.25 & 80.93 / 79.61 / 80.23 & 80.26 $\pm$ 0.66 & \textbf{2.17} & -- \\
+DA-TransUNet~\cite{sun2024datransunet} & 107.95 & 30.21 & 80.93 / 79.61 / 80.23 & 80.26 $\pm$ 0.66 & \textbf{2.17} & -- \\
 ApproxDA-TransUNet (Ours) & \textbf{10.75} & \textbf{6.92} & 81.66 / 81.08 / 80.41 & \textbf{81.05 $\pm$ 0.63} & 2.85 & \textbf{+0.80} ($p{=}0.17$) \\
 \midrule
 \multicolumn{7}{l}{\textbf{Combined Multi-Benchmark Aggregate (15 Seed Pairs Across 5 Modalities)}} \\
-\multicolumn{5}{l}{Positive Seed Pairs: \textbf{10 / 15}} & \multicolumn{2}{r}{Mean Paired Gain: \textbf{+0.37\%} ($p = 0.009$)} \\
-\multicolumn{5}{l}{Parameter Reduction: \textbf{90.0\%} ($107.95\text{M} \to 10.75\text{M}$)} & \multicolumn{2}{r}{Compute Reduction: \textbf{77.1\%} ($30.25\text{G} \to 6.92\text{G}$)} \\
+\multicolumn{5}{l}{Positive Seed Pairs: \textbf{10 / 15}} & \multicolumn{2}{r}{Mean Paired Gain: \textbf{+0.37} pp (Wilcoxon $p = 0.010$)} \\
+\multicolumn{5}{l}{Parameter Reduction: \textbf{90.0\%} ($107.95\text{M} \to 10.75\text{M}$)} & \multicolumn{2}{r}{Compute Reduction: \textbf{77.1\%} ($30.21\text{G} \to 6.92\text{G}$)} \\
 \bottomrule
 \end{tabular}
 }
 \end{table*}
 
-Table~\ref{tab:main_benchmark} summarizes multi-seed performance across the five clinical benchmarks. Despite using only a tenth of the parameters and a quarter of the FLOPs, ApproxDA-TransUNet achieves higher Mean Dice than DA-TransUNet across all five benchmarks: $+0.32\%$ on Synapse (with tighter variance: $0.20$ vs. $0.66$), $+0.15\%$ on ACDC, $+0.41\%$ on CVC-ClinicDB (with boundary error HD95 improving from $14.49$ px to $12.74$ px), $+0.20\%$ on ISIC 2018, and $+0.80\%$ on FeTA 2.4 (positive across all 3 seeds: $+0.73, +1.47, +0.18$).
+Table~\ref{tab:main_benchmark} summarizes the results. With a tenth of the parameters and under a quarter of the FLOPs, ApproxDA-TransUNet has a higher mean Dice than DA-TransUNet on all five benchmarks: $+0.32$ points on Synapse (seed standard deviation $0.20$ vs.\ $0.66$), $+0.15$ on ACDC, $+0.41$ on CVC-ClinicDB, $+0.20$ on ISIC 2018, and $+0.80$ on FeTA 2.4 (positive for all three seeds: $+0.73$, $+1.47$, $+0.19$). None of these per-dataset differences is significant with three seeds.
 
-Across all 15 independent seed pairs, 10 strictly favor ApproxDA-TransUNet, yielding a statistically significant overall improvement of \textbf{$+0.37\%$ Dice} (Wilcoxon signed-rank test $p = 0.009$; paired $t$-test $p = 0.005$).
+Pooling the 15 seed pairs, 10 favor ApproxDA-TransUNet, with a mean gain of \textbf{$+0.37$ points} (Wilcoxon signed-rank $p = 0.010$; paired $t$-test $p = 0.007$). HD95 does not follow the Dice trend: it is lower than DA-TransUNet's only on CVC-ClinicDB ($12.74$ vs.\ $14.49$ px) and higher on the other four datasets (significantly only on FeTA, $p = 0.04$, see the case audit below).
 
 \subsection{FeTA 2.4 Benchmark: 2D and 3D Comparisons}
 \label{sec:feta_results}
 
 \begin{table*}[t]
 \centering
-\caption{Detailed tissue-level comparison on the FeTA 2.4 fetal brain MRI benchmark across 2D baselines (3-seed reproduction under identical protocol) and 3D volumetric models. All 7 brain tissue classes are reported in Dice (\%).}
+\caption{Tissue-level Dice (\%) on the FeTA 2.4 test set (8 subjects). 2D models: three seeds under the protocol of Section~\ref{sec:experiments}, last epoch; per-tissue values are three-seed means, and $p$ is a paired $t$-test against ApproxDA-TransUNet. FLOPs are per $224\times224$ slice. 3D models: our reproduction under the EffiDec3D protocol, one seed, checkpoint selected on the validation set; per-tissue values were not recorded, and their cost is given per $96^3$ patch in multiply--accumulates (GMac), so it is not directly comparable with the 2D FLOPs.}
 \label{tab:feta_detailed}
 \resizebox{\textwidth}{!}{
-\begin{tabular}{lccccccccccc}
+\begin{tabular}{lcccccccccccc}
 \toprule
-\textbf{Model} & \textbf{Type} & \textbf{Params} & \textbf{FLOPs} & \textbf{eCSF} & \textbf{GM} & \textbf{WM} & \textbf{LV} & \textbf{CBM} & \textbf{SGM} & \textbf{BS} & \textbf{Mean DSC} \\
-& & \textbf{(M)} & \textbf{(G)} & & & & & & & & \textbf{(\%)} \\
+\textbf{Model} & \textbf{Type} & \textbf{Params} & \textbf{Cost} & \textbf{eCSF} & \textbf{GM} & \textbf{WM} & \textbf{LV} & \textbf{CBM} & \textbf{SGM} & \textbf{BS} & \textbf{Mean DSC} & \textbf{$p$ vs.} \\
+& & \textbf{(M)} & & & & & & & & & \textbf{(\%)} & \textbf{ours} \\
 \midrule
-U-Net~\cite{ronneberger2015unet} & 2D & 31.04 & 36.90 & 76.5 & 78.4 & 82.1 & 81.2 & 83.4 & 80.2 & 72.7 & 79.21 $\pm$ 0.34 \\
-Attention U-Net~\cite{oktay2018attention} & 2D & 31.39 & 37.70 & 76.2 & 78.1 & 82.0 & 81.0 & 83.5 & 80.4 & 72.6 & 79.11 $\pm$ 0.34 \\
-U-Net++~\cite{zhou2018unetpp} & 2D & 9.16 & 26.50 & 76.0 & 78.3 & 81.9 & 80.9 & 83.1 & 80.3 & 72.6 & 79.01 $\pm$ 0.16 \\
-Swin-UNet~\cite{cao2022swinunet} & 2D & 27.17 & 6.20 & 75.8 & 77.9 & 81.4 & 80.2 & 82.9 & 79.8 & 72.2 & 78.60 $\pm$ 0.46 \\
-TransUNet~\cite{chen2021transunet} & 2D & 105.28 & 29.30 & 79.2 & 80.1 & 84.4 & 82.6 & 84.1 & \textbf{81.8} & \textbf{75.6} & \textbf{81.12 $\pm$ 0.63} \\
-DA-TransUNet~\cite{sun2024datransunet} & 2D & 107.95 & 30.25 & 78.1 & 79.2 & 83.2 & 82.4 & 83.9 & 81.0 & 74.0 & 80.26 $\pm$ 0.66 \\
-\textbf{ApproxDA (Ours)} & 2D & \textbf{10.75} & \textbf{6.92} & \textbf{80.9} & \textbf{80.7} & \textbf{84.5} & \textbf{82.9} & \textbf{84.0} & 80.5 & 73.1 & \textbf{81.05 $\pm$ 0.63} \\
+U-Net~\cite{ronneberger2015unet} & 2D & 31.04 & 36.9 GFLOPs & 73.8 & 67.7 & 84.4 & 84.1 & \textbf{82.5} & 83.1 & 78.9 & 79.21 $\pm$ 0.34 & 0.018 \\
+Attention U-Net~\cite{oktay2018attention} & 2D & 31.39 & 37.7 GFLOPs & 73.5 & 66.8 & 84.5 & 84.4 & 82.2 & 83.5 & 78.9 & 79.11 $\pm$ 0.34 & 0.073 \\
+U-Net++~\cite{zhou2018unetpp} & 2D & 9.16 & 26.5 GFLOPs & 73.3 & 67.4 & 84.1 & 83.8 & 82.3 & 83.3 & 78.9 & 79.01 $\pm$ 0.16 & 0.021 \\
+Swin-UNet~\cite{cao2022swinunet} & 2D & 27.17 & 6.2 GFLOPs & 74.1 & 68.6 & 83.9 & 83.6 & 81.1 & 84.7 & 74.0 & 78.60 $\pm$ 0.46 & 0.059 \\
+TransUNet~\cite{chen2021transunet} & 2D & 105.28 & 29.3 GFLOPs & 74.5 & 68.0 & 87.7 & \textbf{88.9} & 82.2 & \textbf{85.0} & \textbf{81.4} & \textbf{81.12 $\pm$ 0.63} & 0.036 \\
+DA-TransUNet~\cite{sun2024datransunet} & 2D & 107.95 & 30.2 GFLOPs & 73.9 & 68.7 & 85.2 & 87.4 & 81.9 & 84.1 & 80.6 & 80.26 $\pm$ 0.66 & 0.17 \\
+\textbf{ApproxDA (Ours)} & 2D & \textbf{10.75} & 6.9 GFLOPs & \textbf{75.5} & \textbf{71.3} & \textbf{87.9} & 87.9 & 81.8 & 83.7 & 79.3 & 81.05 $\pm$ 0.63 & -- \\
 \midrule
-\multicolumn{12}{l}{\textit{3D Volumetric Reference Models (EffiDec3D Benchmark Split)}} \\
-SwinUNETR~\cite{hatamizadeh2022swinunetr} & 3D & 62.19 & 358.4 & 76.4 & 77.2 & 81.5 & 80.1 & 82.6 & 79.2 & 71.7 & 78.38 \\
-3D UX-Net~\cite{lee20223duxnet} & 3D & 53.01 & 412.3 & 78.1 & 79.4 & 83.2 & 81.8 & 83.4 & 80.6 & 73.6 & 80.01 \\
-MedNeXt-M~\cite{roy2023mednext} & 3D & 41.70 & 284.1 & 79.8 & 80.4 & 84.2 & 82.8 & 84.2 & 81.2 & 74.7 & 81.22 \\
+\multicolumn{13}{l}{\textit{3D reference models (our reproduction, EffiDec3D split, one seed, validation-selected checkpoint)}} \\
+SwinUNETR~\cite{hatamizadeh2022swinunetr} & 3D & 62.19 & 308.0 GMac & -- & -- & -- & -- & -- & -- & -- & 78.38 & -- \\
+3D UX-Net~\cite{lee20223duxnet} & 3D & 53.01 & 578.5 GMac & -- & -- & -- & -- & -- & -- & -- & 80.01 & -- \\
+MedNeXt-M~\cite{roy2023mednext} & 3D & 17.56 & 106.1 GMac & -- & -- & -- & -- & -- & -- & -- & 81.22 & -- \\
 \bottomrule
 \end{tabular}
 }
 \end{table*}
 
-Table~\ref{tab:feta_detailed} contextualizes ApproxDA-TransUNet on FeTA 2.4 against six reproduced 2D baselines and published 3D models under the identical protocol:
+Table~\ref{tab:feta_detailed} places ApproxDA-TransUNet among six 2D models trained under the same protocol and three 3D references:
 \begin{itemize}
-    \item \textbf{Outperforming 2D Baselines}: ApproxDA-TransUNet ($81.05\%$) significantly exceeds U-Net ($79.21\%$, $+1.84\%$), Attention U-Net ($79.11\%$, $+1.94\%$), U-Net++ ($79.01\%$, $+2.04\%$), and Swin-UNet ($78.60\%$, $+2.45\%$) with $p < 0.05$ across all tests.
-    \item \textbf{Matching 100M+ Transformers and 3D Networks}: ApproxDA-TransUNet matches TransUNet ($81.05\%$ vs. $81.12\%$, $p = 0.96$) while using $10\times$ fewer parameters, and outperforms volumetric 3D models SwinUNETR ($78.38\%$) and 3D UX-Net ($80.01\%$), matching MedNeXt-M ($81.22\%$) at $<2.5\%$ of its FLOPs.
-    \item \textbf{Fine Boundary Sensitivity}: Substantial gains occur along delicate interfaces: external CSF ($+2.8\%$ vs. DA) and grey matter ($+1.5\%$).
+    \item \textbf{CNN and Swin baselines}: ApproxDA-TransUNet ($81.05\%$) is above U-Net ($+1.85$ points, $p = 0.018$), U-Net++ ($+2.04$, $p = 0.021$), Attention U-Net ($+1.94$, $p = 0.073$), and Swin-UNet ($+2.46$, $p = 0.059$).
+    \item \textbf{Transformer hybrids}: it is $0.07$ points below TransUNet, a small but consistent gap (lower for all three seeds, $p = 0.036$), with a tenth of the parameters and under a quarter of the FLOPs, and $0.80$ points above DA-TransUNet ($p = 0.17$).
+    \item \textbf{3D references}: its mean Dice lies between 3D UX-Net ($80.01\%$) and MedNeXt-M ($81.22\%$). The 3D numbers come from a single seed with validation-based checkpoint selection, so this comparison is indicative only.
+    \item \textbf{Tissues}: relative to DA-TransUNet, the gains are in grey matter ($+2.6$), white matter ($+2.7$), and external CSF ($+1.6$); cerebellum and deep grey matter are on par ($-0.1$, $-0.4$), and the brainstem is lower ($-1.3$).
 \end{itemize}
 
 \paragraph{Case Audit of FeTA HD95 (Sub-052 Outlier)}
-While ApproxDA-TransUNet shows higher average HD95 on FeTA ($2.85$ vs. $2.17$ mm in Table~\ref{tab:main_benchmark}), case audits reveal this is driven entirely by subject \textbf{sub-052}, an extreme hydrocephalus case with severe ventriculomegaly (LV/WM volume ratio $2.29$ vs. training median $0.16$). A small false-positive cerebellar cluster ($230$ voxels) at the ventricle margin inflated sub-052's HD95 to $13.09$ mm. Excluding this single out-of-distribution subject, the average HD95 drops to \textbf{$1.76$ mm} for ApproxDA-TransUNet, outperforming DA-TransUNet ($1.94$ mm).
+ApproxDA-TransUNet has a higher mean HD95 on FeTA than DA-TransUNet ($2.85$ vs.\ $2.17$ mm, Table~\ref{tab:main_benchmark}). The difference comes from a single subject, \textbf{sub-052}, which has severe ventriculomegaly (lateral-ventricle to white-matter volume ratio $2.29$, against a training median of $0.16$ and a training maximum of $1.81$) and is therefore outside the training distribution. On this subject, ApproxDA-TransUNet predicts a few small cerebellum regions (the largest has 34, 170, and 266 voxels for the three seeds) about 50 mm away from the true cerebellum, which raises the cerebellum HD95 to 28--50 mm and the subject's mean HD95 to $8.88$, $8.89$, and $13.65$ mm (DA-TransUNet: $2.85$, $4.43$, $4.02$ mm). Excluding sub-052, the mean HD95 over the other seven subjects is \textbf{$1.76$ mm} for ApproxDA-TransUNet and $1.94$ mm for DA-TransUNet.
 
 \subsection{Qualitative Visual Evaluation}
 
 \begin{figure*}[t]
 \centering
 \includegraphics[width=\textwidth]{figures/fig_qualitative_cross_task.png}
-\caption{Qualitative segmentation comparisons across clinical imaging modalities: Synapse CT, ACDC cine-MRI, CVC-ClinicDB polyp, and ISIC 2018 dermoscopy. ApproxDA-TransUNet delineates sharper anatomical contours and avoids false-positive bleedings seen in DA-TransUNet.}
+\caption{Qualitative segmentation comparisons. \textcolor{red}{[TODO: this is the workshop figure (ViT-B ApproxDA model; the middle row is Kvasir-SEG, not CVC-ClinicDB; no ACDC or FeTA rows). Regenerate it with the final model on the five datasets, showing ground truth, DA-TransUNet, and ApproxDA-TransUNet.]}}
 \label{fig:qualitative_visual}
 \end{figure*}
 
-As shown in Figure~\ref{fig:qualitative_visual}, ApproxDA-TransUNet consistently generates coherent anatomical masks across clinical modalities: delineating low-contrast organ boundaries (pancreas, stomach) without false-positive leakage in Synapse CT, cleanly separating the right ventricle cavity from the myocardium in ACDC MRI, and accurately tracing irregular lesion boundaries in CVC colonoscopy and ISIC dermoscopy.
+\textcolor{red}{[TODO: rewrite this paragraph after the figure is regenerated.]}

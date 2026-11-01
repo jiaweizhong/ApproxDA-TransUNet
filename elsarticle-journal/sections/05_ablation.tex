@@ -1,66 +1,62 @@
 \section{Ablation Studies}
 \label{sec:ablation}
 
-To evaluate individual architectural decisions, single-axis ablation experiments are conducted on the Synapse benchmark over three independent seeds (1234, 0, 1) using the lightweight ApproxDA-TransUNet without point loss as the reference baseline ($80.57\% \pm 0.20\%$ Mean DSC, $24.52$ mm HD95). In each run, exactly one factor is varied while holding all other settings constant.
+Single-axis ablations are run on Synapse with three seeds (1234, 0, 1). The reference is ApproxDA-TransUNet ($80.57 \pm 0.19\%$ Dice, HD95 $24.52$ voxels); each variant changes exactly one factor.
 
 \begin{table*}[t]
 \centering
-\caption{Single-axis ablation results on Synapse multi-organ CT (3 seeds: 1234 / 0 / 1 at $224 \times 224$). Baseline is the lightweight ApproxDA-TransUNet ($M=28, r=32, G=8, g=0.5$, LightViT-T, $C=64$ decoder).}
+\caption{Single-axis ablations on Synapse (seeds 1234 / 0 / 1, $224 \times 224$, 9 classes). The baseline is ApproxDA-TransUNet ($M=28$, $r=32$, $G=8$, $g=0.5$, LightViT-T, slim decoder). HD95 in voxels. Paired differences and $p$-values (paired $t$-test) are relative to the baseline. FLOPs are counted on CPU with explicit attention products.}
 \label{tab:ablation_synapse}
 \resizebox{\textwidth}{!}{
 \begin{tabular}{lccccc}
 \toprule
-\textbf{Ablation Variant} & \textbf{Params (M)} & \textbf{FLOPs (G)} & \textbf{Mean DSC (\%)} & \textbf{HD95 (mm)} & \textbf{Paired Diff.} \\
+\textbf{Ablation Variant} & \textbf{Params (M)} & \textbf{FLOPs (G)} & \textbf{Mean DSC (\%)} & \textbf{HD95} & \textbf{Paired Diff. ($p$)} \\
 \midrule
-\textbf{ApproxDA-TransUNet Baseline} & \textbf{10.75} & \textbf{6.92} & \textbf{80.57 $\pm$ 0.20} & \textbf{24.52} & -- \\
+\textbf{ApproxDA-TransUNet baseline} & \textbf{10.75} & \textbf{6.92} & \textbf{80.57 $\pm$ 0.19} & \textbf{24.52} & -- \\
 \midrule
-\multicolumn{6}{l}{\textit{Block Presence and Attention Pathways}} \\
-\quad w/o ApproxDA Block (\texttt{--no\_block}) & 10.21 & 6.40 & 77.81 $\pm$ 0.33 & 29.12 & \textbf{--2.76} ($p{=}0.008$) \\
-\quad Pure Convolutional Pathway (\texttt{--attn\_off}) & 10.75 & 6.92 & 80.78 $\pm$ 0.25 & 24.31 & +0.21 ($p{=}0.57$) \\
-\quad DA-Equivalent Full Attention ($M{=}112, r{=}0, G{=}1$) & 10.65 & 7.95 & 80.65 $\pm$ 0.31 & 24.18 & +0.08 ($p{=}0.75$) \\
+\multicolumn{6}{l}{\textit{Block presence and attention operator}} \\
+\quad w/o ApproxDA blocks & 10.20 & 6.3 & 77.82 $\pm$ 0.33 & 29.12 & \textbf{$-2.76$} (0.008) \\
+\quad Convolutional path only (attention disabled) & 10.75 & 6.92 & 80.78 $\pm$ 0.72 & 21.80 & $+0.21$ (0.57) \\
+\quad Exact global dual attention ($M{=}112, r{=}0, G{=}1$) & 10.65 & 7.90 & 80.56 $\pm$ 0.62 & 23.64 & $-0.01$ (0.97) \\
 \midrule
-\multicolumn{6}{l}{\textit{Spatial Scope (Window Size $M$)}} \\
-\quad $M = 28$ (Default local window) & 10.75 & 6.92 & 80.57 $\pm$ 0.20 & 24.52 & -- \\
-\quad $M = 112$ (Global window) & 12.25 & 6.92 & 79.40 $\pm$ 0.22 & 25.80 & --1.17 ($p{=}0.04$) \\
+\multicolumn{6}{l}{\textit{Window size $M$}} \\
+\quad $M = 112$ (global window at every stage) & 12.25 & 6.92 & 80.07 $\pm$ 0.98 & 28.99 & $-0.50$ (0.54) \\
 \midrule
-\multicolumn{6}{l}{\textit{Representation Rank ($r$)}} \\
-\quad $r = 32$ (Default subspace projection) & 10.75 & 6.92 & 80.57 $\pm$ 0.20 & 24.52 & -- \\
-\quad $r = 0$ (Exact intra-window attention) & 10.75 & 7.01 & 80.58 $\pm$ 0.39 & 24.48 & +0.01 ($p{=}0.95$) \\
-\quad $r = 64$ (Higher rank projection) & 10.75 & 7.05 & 79.30 $\pm$ 0.18 & 26.15 & --1.27 ($p{=}0.03$) \\
+\multicolumn{6}{l}{\textit{Projection rank $r$}} \\
+\quad $r = 0$ (exact attention inside each window) & 10.65 & 7.03 & 80.76 $\pm$ 0.15 & 21.12 & $+0.19$ (0.44) \\
+\quad $r = 64$ & 10.85 & 6.93 & 79.64 $\pm$ 0.40 & 26.85 & $-0.93$ (0.11) \\
 \midrule
-\multicolumn{6}{l}{\textit{Channel Grouping ($G$)}} \\
-\quad $G = 8$ (Default grouped CAM) & 10.75 & 6.92 & 80.57 $\pm$ 0.20 & 24.52 & -- \\
-\quad $G = 1$ (Standard un-grouped CAM) & 10.75 & 6.92 & 81.46 $\pm$ 0.19 & 23.85 & +0.89 ($p{=}0.06$) \\
-\quad $G = 4$ (Intermediate grouping) & 10.75 & 6.92 & 80.12 $\pm$ 0.25 & 25.10 & --0.45 ($p{=}0.14$) \\
+\multicolumn{6}{l}{\textit{Channel groups $G$}} \\
+\quad $G = 1$ (un-grouped CAM) & 10.75 & 6.92 & 81.12 $\pm$ 0.77 & 23.48 & $+0.55$ (0.25) \\
+\quad $G = 4$ & 10.75 & 6.92 & 79.91 $\pm$ 0.57 & 26.69 & $-0.67$ (0.10) \\
 \midrule
-\multicolumn{6}{l}{\textit{Encoder Backbone Architecture}} \\
-\quad LightViT-T (Default lightweight transformer) & 10.75 & 6.92 & 80.57 $\pm$ 0.20 & 24.52 & -- \\
-\quad R50 Stage 3 Conv Only (\texttt{--no\_vit}) & 15.42 & 8.70 & 78.72 $\pm$ 0.28 & 26.90 & --1.85 ($p{=}0.02$) \\
-\quad Full ViT-B ($C=64$ decoder) & 96.50 & 23.40 & 79.36 $\pm$ 0.61 & 24.10 & --1.21 ($p{=}0.16$) \\
-\quad LightViT-S ($C=64$ decoder) & 15.80 & 9.40 & 80.56 $\pm$ 0.42 & 24.80 & --0.01 ($p{=}0.98$) \\
+\multicolumn{6}{l}{\textit{Encoder}} \\
+\quad R50 third stage instead of LightViT-T & 15.42 & 8.7 & 78.81 $\pm$ 0.27 & 27.71 & \textbf{$-1.76$} (0.007) \\
+\quad ViT-B/16 instead of LightViT-T & 100.47 & 26.0 & 78.52 $\pm$ 1.64 & 26.01 & $-2.05$ (0.14) \\
+\quad One strided $3\times3$ convolution instead of LightViT-T & 3.53 & 6.3 & 80.55 $\pm$ 0.36 & 23.74 & $-0.02$ (0.94) \\
+\quad One strided convolution, w/o ApproxDA blocks & 2.98 & 5.7 & 78.98 $\pm$ 0.17 & 34.39 & \textbf{$-1.60$} (0.001) \\
+\quad LightViT-S instead of LightViT-T & 20.50 & 8.0 & 80.31 $\pm$ 0.63 & 23.62 & $-0.26$ (0.43) \\
 \midrule
-\multicolumn{6}{l}{\textit{Bottleneck Placement and Decoder Capacity}} \\
-\quad Post-LightViT-T (Default) & 10.75 & 6.92 & 80.57 $\pm$ 0.20 & 24.52 & -- \\
-\quad Pre-LightViT-T (On R50 Stage 2 output) & 10.75 & 6.92 & 79.57 $\pm$ 0.35 & 25.60 & --1.00 ($p{=}0.05$) \\
-\quad Slim Decoder ($C=64$, Default) & 10.75 & 6.92 & 80.57 $\pm$ 0.20 & 24.52 & -- \\
-\quad Full Decoder ($C=256 \to 128 \to 64 \to 16$) & 12.10 & 8.64 & 79.45 $\pm$ 0.90 & 25.95 & --1.12 ($p{=}0.18$) \\
+\multicolumn{6}{l}{\textit{Bottleneck placement and decoder}} \\
+\quad Bottleneck block before LightViT-T & 11.06 & 7.2 & 79.47 $\pm$ 0.36 & 26.10 & \textbf{$-1.10$} (0.008) \\
+\quad Full decoder ($256 \to 128 \to 64 \to 16$) & 14.24 & 10.4 & 79.60 $\pm$ 1.64 & 25.63 & $-0.97$ (0.40) \\
 \bottomrule
 \end{tabular}
 }
 \end{table*}
 
-\subsection{Architectural Component Ablation}
-Table~\ref{tab:ablation_synapse} highlights three key insights on the ApproxDA block:
+\subsection{Block and Attention Operator}
 \begin{itemize}
-    \item \textbf{Block Necessity}: Completely removing ApproxDA blocks (\texttt{--no\_block}) causes a significant collapse of \textbf{$-2.76\%$ Dice} ($77.81\%$, $p = 0.008$) and increases HD95 from $24.52$ mm to $29.12$ mm, with pronounced drops on gallbladder ($-5.6\%$) and pancreas ($-5.3\%$).
-    \item \textbf{Approximation Fidelity}: Exact dual attention ($M=112, r=0, G=1$) matches our approximated block ($80.65\%$ vs. $80.57\%$, $+0.08\%$, $p = 0.75$) but adds $15\%$ compute and doubles per-epoch training time (from $45$ to $94$ min), proving that our approximation incurs zero penalty in segmentation fidelity.
-    \item \textbf{Convolutional Pathway}: A convolution-only block (\texttt{--attn\_off}) scores $80.78\%$ ($+0.21\%$, $p = 0.57$), indicating that the internal $C \to C/16 \to C$ bottleneck projection serves as an effective multi-scale regularizer.
+    \item \textbf{The block is necessary}: removing all ApproxDA blocks lowers Dice by \textbf{$2.76$ points} for every seed ($p = 0.008$) and raises HD95 from $24.52$ to $29.12$; the largest drops are in the gallbladder and pancreas.
+    \item \textbf{The attention operator is not}: exact global dual attention ($M=112$, $r=0$, $G=1$; $-0.01$, $p = 0.97$), exact attention inside windows ($r=0$; $+0.19$), and the convolutional path alone with both attention operators disabled ($+0.21$, $p = 0.57$) all match the baseline. The exact global variant costs $14\%$ more FLOPs and about twice the training time per run (94 vs.\ 45 minutes). The accuracy of the block therefore comes from its convolutional path, consistent with the gradient analysis in Section~\ref{sec:deadlock}, and the approximation does not cost accuracy.
 \end{itemize}
 
-\subsection{Approximation Hyperparameters and Scaling}
+\subsection{Approximation Hyperparameters}
 \begin{itemize}
-    \item \textbf{Spatial Window ($M$)}: Local windowing ($M=28$) outperforms global full-map attention ($M=112$, $79.40\%$, $-1.17\%$, $p = 0.04$) by suppressing long-range noise at high-resolution skip stages.
-    \item \textbf{Projection Rank ($r$)}: Subspace rank $r=32$ matches exact intra-window attention ($r=0$, $80.58\%$, $p = 0.95$), while $r=64$ shows slight overfitting on small datasets ($79.30\%$, $-1.27\%$).
-    \item \textbf{Channel Groups ($G$)}: Grouping channels into $G=8$ clusters achieves $80.57\%$, simplifying cross-channel matrix operations with negligible difference from un-grouped CAM ($G=1$, $81.46\%$, $+0.89\%$, $p = 0.06$).
-    \item \textbf{Backbone and Decoder Scaling}: Replacing LightViT-T with CNN convolutions (\texttt{--no\_vit}, $78.72\%$, $-1.85\%$) confirms the necessity of transformer attention for global context. Conversely, scaling to heavy ViT-B/16 ($96.5$M) drops performance ($79.36\%$, $-1.21\%$) due to overfitting. Post-transformer bottleneck placement outperforms pre-transformer placement by $+1.00\%$, and our slim $C=64$ decoder outperforms the wider $256 \to 16$ decoder ($79.45\%$, $-1.12\%$) while saving $1.35$M parameters.
+    \item \textbf{Window size and rank}: a global window ($M=112$, $-0.50$, $p = 0.54$) and a higher rank ($r=64$, $-0.93$, $p = 0.11$) are not significantly different from the defaults; with three seeds on Synapse, differences below about one point cannot be resolved.
+    \item \textbf{Channel groups}: un-grouped CAM ($G=1$) is $0.55$ points higher ($p = 0.25$). With $G=8$, CAM degenerates to a scaling in the bottleneck and the $1/2$ skip (Section~\ref{sec:method}); $G=1$ avoids this at no extra cost.
+    \item \textbf{Channel groups $G=4$}: $-0.67$ ($p = 0.10$), not significant.
+    \item \textbf{Encoder}: replacing LightViT-T with the third ResNet-50 stage (the TransUNet stem, 15.42M parameters) lowers Dice by $1.76$ points for every seed ($p = 0.007$) while adding 4.7M parameters. ViT-B/16 is also lower ($-2.05$, $p = 0.14$), and LightViT-S is not better ($-0.26$, $p = 0.43$).
+    \item \textbf{Block placement}: applying the bottleneck block before LightViT-T, on the $28\times28\times512$ stage-2 output as in DA-TransUNet's ordering, lowers Dice by $1.10$ points for every seed ($p = 0.008$) and adds 0.31M parameters. The full decoder of DA-TransUNet is not better than the slim decoder ($-0.97$, $p = 0.40$) at 1.3 times the parameters and 1.5 times the FLOPs.
+    \item \textbf{Transformer versus blocks}: crossing the bottleneck module (one strided convolution or LightViT-T) with the presence of ApproxDA blocks gives a $2\times2$ design. The blocks help in both cases ($+1.57$ points with the convolution, $p = 0.034$; $+2.76$ with LightViT-T, $p = 0.008$) and lower HD95 by $10.7$ and $4.6$ voxels. LightViT-T, in contrast, does not help: without blocks it is $1.16$ points below the convolution ($p = 0.049$), and with blocks the two are equal ($80.57$ vs.\ $80.55$, $p = 0.94$). \textcolor{red}{[TODO (author decision): on Synapse the 3.53M convolutional variant with ApproxDA blocks matches the final model; decide how the paper motivates LightViT-T.]}
 \end{itemize}
