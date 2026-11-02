@@ -25,6 +25,7 @@
 *.acn
 *.acr
 *.alg
+*.spl
 
 # Keep the compiled PDF (comment this out if you want to exclude it too)
 # *.pdf
