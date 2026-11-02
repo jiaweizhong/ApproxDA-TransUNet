@@ -1,21 +1,39 @@
-# AdaDA-TransUNet Experiments
+# ApproxDA-TransUNet Experiments
 
-This folder contains two models:
+Updated 2026-11-01. Each model lives in its own folder with the same layout (`train.py`, `test.py`, `utils.py`,
+`Architecture/`, `datasets/`, `lists/`, `test_log/`), the same data, loss, optimiser and evaluation:
 
-| Folder | Description |
+| Folder | Model |
 |---|---|
-| `DA-TransUNet/` | Original baseline — reproduce paper results |
-| `ApproxDA-TransUNet/` | Our model — AdaDA-TransUNet implementation |
+| `ApproxDA-TransUNet/` | ours (journal final model: `--backbone lightvit_t --dec_channels 64 --gate_mode fixed --window_size 28 --rank 32 --groups 8`) |
+| `DA-TransUNet/` | baseline, retrained on every dataset |
+| `TransUNet/`, `UNet/`, `AttUNet/`, `UNetPlusPlus/`, `SwinUNet/` | baselines retrained on AMOS and FeTA |
 
 Shared resources at the experiment root:
 
 | Path | Contents |
 |---|---|
-| `data/Synapse/train_npz/` | 2211 training slices (.npz) |
-| `data/Synapse/test_vol_h5/` | 12 test volumes (.h5) |
-| `model/vit_checkpoint/imagenet21k/R50+ViT-B_16.npz` | Pretrained ViT weights |
+| `data/` | datasets (Synapse, ACDC, CVC-ClinicDB, ISIC 2018, FeTA 2.4, AMOS; not in git) |
+| `model/` | checkpoints, one folder per model and dataset (not in git) |
+| `logs/` | `<run>.test.log` (kept in git), training logs (not in git), `queue.history` |
+| `run_queue.sh`, `queue_attn_noid.txt` | job queue: one `<Folder> <train.py args>` line per run |
+| `qualitative_journal_predict.py`, `make_qualitative_figure_journal.py` | journal qualitative figure |
+
+## Running locally (current setup)
+
+```bash
+cd experiments
+setsid nohup bash run_queue.sh queue_attn_noid.txt >> logs/queue.out 2>&1 < /dev/null &
+```
+
+The runner re-reads the queue file before every job and runs the first line that is in neither `logs/queue.done` nor
+`logs/queue.failed`; each job trains and then tests with the same arguments, writing `logs/<run>.train.log` and
+`logs/<run>.test.log`. All results and decisions are logged in `../JOURNAL_EXPERIMENTS.md`.
 
 ---
+
+> The sections below are the original Kaggle instructions from the workshop phase (T4 GPU, two models only); they are
+> kept for reference and are no longer used.
 
 ## Running on Kaggle (Free GPU)
 

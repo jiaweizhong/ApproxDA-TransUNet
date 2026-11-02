@@ -1,5 +1,7 @@
 # Pending Runs — Journal Extension
 
+> **历史文档（2026-11-01 注）**：这是 workshop 阶段（10-13 – 10-24）的重跑记录，标题里的 “Journal Extension” 指当时的计划。期刊的实验和最终结果以 `JOURNAL_EXPERIMENTS.md` 开头的“当前状态”为准；本文件中的模型配置（c16 block、pam / cam 门控、按数据集选的 M）、Kvasir 数据集和待跑列表都已过时。
+
 > Updated 2026-10-13. Journal re-runs (BIBM2026_Review.md J1–J6) run on the local RTX 5090 (32 GB),
 > Python 3.14, torch 2.14+cu130, via `experiments/run_queue.sh <queue>`. Live status: `bash experiments/status.sh`;
 > per-job logs in `experiments/logs/`, checkpoints in `experiments/model/`, per-case test logs in `*/test_log/`.

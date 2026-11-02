@@ -7,6 +7,36 @@
 
 ---
 
+## 当前状态（2026-11-01，以此为准；下文 §0 – §5 中与此冲突的内容都是历史记录）
+
+**论文**：`elsarticle-journal/`（投 Biomedical Signal Processing and Control），latexmk 编译通过，稿中已无 TODO。改稿记录见 `elsarticle-journal/AUDIT_2026-10-30.md`。
+
+**最终模型**：R50 到 1/8 → LightViT-T → ApproxDA block → slim decoder（64 通道，skip 相加融合），3 个 skip 上也有 ApproxDA block；fixed g = ½，M = 28（256 输入为 32），r = 32，G = 8；**不加点损失**。10.75M 参数，6.92 GFLOPs（224²，9 类，CPU 上 fvcore 计数；DA-TransUNet 107.95M / 30.21）。
+
+**主表**（3 seed：1234 / 0 / 1，最后一个 epoch，相对 DA-TransUNet 按 seed 配对）：
+
+| 数据集 | DA-TransUNet | 最终模型 | 配对差（p） | HD95：DA → 我们 |
+|---|---|---|---|---|
+| Synapse | 80.26 ± 0.66 | 80.57 ± 0.19 | +0.32（0.43） | 23.49 → 24.52（体素） |
+| ACDC | 90.94 ± 0.24 | 91.08 ± 0.12 | +0.15（0.55） | 1.52 → 1.91 px |
+| CVC-ClinicDB | 89.47 ± 0.23 | 89.88 ± 0.48 | +0.41（0.20） | 14.49 → 12.74 px |
+| ISIC 2018 | 88.30 ± 0.20 | 88.51 ± 0.28 | +0.20（0.29） | 14.15 → 14.83 px |
+| FeTA 2.4 | 80.26 ± 0.66 | 81.05 ± 0.63 | +0.80（0.17） | 2.17 → 2.85 mm |
+
+- 合并 15 组配对：+0.37，10 / 15 为正，Wilcoxon p = 0.010，t 检验 p = 0.007；单个数据集都不显著。HD95 只有 CVC 更好，FeTA 更差（p = 0.04）几乎全部来自 sub-052（§5 P10）。
+- AMOS 不报（不加点损失时比 DA 低 0.56，3 / 3 seed）。点损失不用（Synapse 上 −1.57，§5 P9 / P10）。
+- 其他 baseline：Synapse / ACDC / CVC / ISIC 引用文献值（论文 Table 3，数值取自 `Reference/` 下 DA-TransUNet 论文 Table 1 – 2 和 Swin-Unet 论文 Table 2）；FeTA 用我们按同协议重训的 2D baseline（U-Net 79.21、Att-UNet 79.11、U-Net++ 79.01、TransUNet 81.12、Swin-UNet lr 0.05 78.60），另附 AdaDec3D 复现的 3D 参考（MedNeXt-M 81.22、3D UX-Net 80.01、SwinUNETR 78.38，单 seed、按验证集选 checkpoint）。
+
+**消融**（Synapse，以最终模型为基准，15 个配置 × 3 seed，§5 P11）：去掉 block −2.76（p = 0.008）；R50 第 3 stage 代替 LightViT −1.76（0.007）；block 放在 LightViT 之前 −1.10（0.008）；ViT-B −2.05（0.14）；完整 decoder −0.97（0.40）；r64 −0.93（0.11）；G4 −0.67（0.10）；M112 −0.50（0.54）；LightViT-S −0.26（0.43）；DA 等价 block −0.01（0.97）；r0 +0.19；只留卷积 +0.21（0.57）；G1 +0.55（0.25）；一层卷积 + block −0.02（0.94，论文只用这一行支撑“轻量 Transformer 与 block 可互相替代”，不报 2×2）。
+
+**机制**：SGD 训练的最终模型 48 个 block 中 |α| ≤ 0.011、|β| ≤ 0.06；Synapse 上测试时关掉 PAM 和 CAM，Dice 变化 +0.01 / +0.00 / +0.09，0.006 – 0.016% 的体素改变（§5 P11 下）。
+
+**部署**（RTX 5090，fp32，224²）：训练显存 4.85 / 11.52 GiB，推理显存 1.09 / 2.59 GiB，batch 32 吞吐 1415 / 555 slices/s，batch 1 延迟 9.6 / 6.5 ms（我们更慢），checkpoint 43.5 / 432 MB。
+
+**图表来源**：图 1 `elsarticle-journal/figures/generate_overview_journal.py`；图 2(a) `figures/plotnn/approxda_journal_block.py`（PlotNeuralNet），图 2(b) `figures/generate_block_decoder_journal.py`；图 3 `experiments/qualitative_journal_predict.py` + `experiments/make_qualitative_figure_journal.py`（seed 1234，中位数病例，只按真值选切片）。
+
+---
+
 ## 0. 路线与约定
 
 **2026-10-29 用户决定（取代下面关于数据集和点损失的安排）**：
@@ -15,7 +45,7 @@
 - 依据（§5 P10）：不加点损失相对 DA 为 Synapse +0.32、ACDC +0.15、CVC +0.41、ISIC +0.20、FeTA +0.80，合并 15 组 +0.37，10 / 15 为正，p ≈ 0.01；只有 AMOS 为 −0.56（3 / 3 seed 更低）。
 - 待定：消融放在哪个数据集（现有消融都在 AMOS 上、且以带点损失的模型为基准）；Synapse / ACDC / CVC / ISIC 上的 baseline（同协议的 baseline 目前只有 AMOS 和 FeTA）。
 
-**论文路线**（2026-10-23 – 10-25 用户决定）：
+**论文路线**（2026-10-23 – 10-25 用户决定；数据集、点损失和“消融只在 AMOS 上做”三条已被 10-29 / 10-30 的决定取代，见“当前状态”）：
 
 - 期刊是一篇独立于 workshop 的论文。模型就是最终架构（§1.1），只和 DA-TransUNet 比，不报告旧架构（workshop 版 ApproxDA ViT-B、pam M112 的轻量档）。
 - 数据集：AMOS、ACDC、CVC、ISIC、FeTA，不报 Synapse。
@@ -48,7 +78,7 @@
 
 旧的 §1.1 – §1.4（旧架构在 Synapse 等数据集上的主表、效率实测与 block 消融）已于 2026-10-26 删除，原文见开头所说的备份。
 
-### 1.1 主表与 AMOS 消融（2026-10-26 汇总，机器重启前完成的全部 run）
+### 1.1 主表与 AMOS 消融（2026-10-26 汇总；**历史版本**：带点损失、含 AMOS，论文不再使用，最终数字见“当前状态”）
 
 **最终架构**（§4.10）：
 - R50 到 1/8 → LightViT-T → ApproxDA block → C64 精简 decoder，3 层 skip 上也有 ApproxDA block；
@@ -779,8 +809,16 @@ PAM 输出 `α·E + x`，α 初始化为 0（DANet、DA-TransUNet、ApproxDA 都
       - 2 seed（两个 seed 同向）：G1 +0.89，M112 −1.17，r64 −1.27，bn pre −1.00，ViT-B −1.21，R50 第 3 stage −1.85，一层卷积无 block −1.64，G4 −0.45。
       - 2 seed（持平或不同向）：DA 等价 +0.08，r0 +0.01，LightViT-S −0.01，一层卷积 + block −0.17，完整 decoder −2.69 / +0.46。
       - 剩 13 个 seed 1 run，预计 10-31 约 00:15 跑完（DA 等价约 94 min，其余约 45 min）。
+    - 中期结果（10-30 21:40，41 / 45）：新补齐 3 seed 的 G4 −0.67（p = 0.10）、bn pre **−1.10（p = 0.008，3 / 3）**、LightViT-S −0.26（p = 0.43）、R50 第 3 stage **−1.76（p = 0.007，3 / 3）**；已写入论文消融表。剩 ViT-B、完整 decoder、一层卷积 ± block 的 seed 1。
+    - **最终模型（不加点损失）的 α / β（10-30 22:00，CPU，`scratchpad/alpha_beta_final.py`）**：SGD 训练的 Synapse / ACDC / ISIC / FeTA 各 3 seed，共 48 个 block，|α| ≤ 0.011，|β| ≤ 0.06（多数 < 0.02），PAM 和 CAM 的残差项基本没被打开。Adam 训练的 CVC：4 个 block 中 3 个的 PAM query / key（conv_B / conv_C）权重被权重衰减压到 0，只有 1/8 skip 的 α ≈ ±0.27、β ≈ 0.09 – 0.15。权重 std 相对初始化的比值无法区分训练与否（同 block 的卷积也在 0.84 – 0.93），不作为证据。
+    - **P11 全部完成（10-31 00:08，45 / 45，无失败）**，最后 4 个配置（3 seed）：ViT-B 78.52 ± 1.64（−2.05，p = 0.14；seed 1 −3.74）；完整 decoder 79.60 ± 1.64（−0.97，p = 0.40）；一层卷积无 block 78.98 ± 0.17（−1.60，p = 0.001，HD95 34.39）；一层卷积 + block 80.55 ± 0.36（−0.02，p = 0.94，3.53M / 6.3 G）。
+      - **Synapse 上的 ViT × block 2×2**：block 在两种主干上都有用（卷积 +1.57，p = 0.034；LightViT +2.76，p = 0.008；HD95 −10.7 / −4.6）；LightViT-T 没用：无 block 时比一层卷积低 1.16（p = 0.049），有 block 时相等（80.57 对 80.55）。与 AMOS 的 2×2（无点损失，13 器官：卷积 + block 82.88 对 LightViT + block 82.65）一致。**3.53M 的“一层卷积 + block”与最终模型精度相同**，论文如何论证 LightViT-T 需要用户决定。
+    - **部署实测（10-31 00:15，RTX 5090 空闲，fp32，224²，9 类，`scratchpad/bench.py`，跑两遍一致）**：最终模型 / DA：batch 1 延迟 9.6 / 6.5 ms（我们更慢）；batch 32 吞吐 1415 / 555 slices/s（2.55 倍）；推理峰值显存（batch 1，含权重和 cuDNN workspace）1.09 / 2.59 GiB；训练峰值显存（batch 24，SGD）4.85 / 11.52 GiB（−58%）；checkpoint 43.5 / 432 MB。已写入论文部署表。
+    - **sub-052（最终模型，不加点损失）**：小脑在约 50 mm 外有几个小区域（最大 34 / 170 / 266 体素），小脑 HD95 32.3 / 27.8 / 49.7 mm；侧脑室 HD95 约 6 mm。已写入论文。
+    - **测试时关掉 attention（最终模型，Synapse，`scratchpad/synapse_attn_off.py`，10-31 01:00）**：开着时 80.610 / 80.746 / 80.362（与日志一致），关掉 PAM 和 CAM 后 80.619 / 80.747 / 80.456，Dice +0.01 / +0.00 / +0.09，体素标签改变 0.0070% / 0.0058% / 0.0157%。已写入论文讨论节。
     - 10-30 用户决定：主消融就是这组 Synapse 消融；G = 1 只作为消融的一行报告，不在其他数据集上补跑，最终模型仍为 G = 8。
 - 10-30 用户决定（baseline）：主表与 workshop 一样，重训的只有 DA-TransUNet 和我们的模型，其余 baseline 引用文献值并单独列出，不再排 baseline 重训。CVC / ISIC 的划分与文献不同，文献值要注明不可直接配对。FeTA 没有可引用的文献值，10-30 用户定为用我们自己复现的结果：同协议重训的 2D baseline（U-Net / Att-UNet / U-Net++ / TransUNet / Swin-UNet lr 0.05，3 seed，§5），并可附 AdaDec3D 项目按 EffiDec3D 协议复现的 3D 方法（测试集：MedNeXt-M 81.22、3D UX-Net 80.01、SwinUNETR 78.38，单 seed、按验证集选 checkpoint；出处 `~/projects/AdaDec3D/results/feta/logs/E0_*_test.log`；同目录 `metrics_feta.csv` 的 82.x 不是测试集结果，不能用）。
+- 11-01 用户决定：最终模型保留 LightViT-T；论文不做卷积 / LightViT 的 2×2，只写“轻量 Transformer 与 ApproxDA block 提供可互相替代的全局上下文，有一个就够，block 更便宜”，依据是消融表里“一层卷积 + block”一行（80.55 对 80.57，p = 0.94）和去掉 block（−2.76）；不在其他数据集补测卷积版。镜像增强一节只做定性描述。
 - 10-30 用户确认：主表保留 5 个数据集（Synapse、ACDC、CVC、ISIC、FeTA），FeTA 不去掉（与 workshop 的 Synapse / CVC / ISIC 区分；不加点损失相对 DA，5 个数据集 +0.37、p = 0.009，去掉 FeTA 为 +0.27、p = 0.042）。
 - 决策记录：
   - 10-23 16:30：消融和设计决策改以 AMOS 为准。
@@ -803,6 +841,7 @@ PAM 输出 `α·E + x`，α 初始化为 0（DANet、DA-TransUNet、ApproxDA 都
   - 10-25 约 23:50 机器重启：DA 等价 block 的 seed 0 跑到 23 / 26 epoch 时中断，已移到队列最后从头重跑；session scratchpad 被清空。
   - 10-26 00:10：54 个中间 checkpoint（3.3 GB）、`__pycache__`、Fig. 3 的候选预测；经用户确认，又删了 172 个只剩日志的旧 run 目录（7.3 GB，清单见 `logs/cleanup_20261026_rundirs.txt`）和 11 个旧队列文件。model 目录现为 19 GB。
   - 10-28 20:38（用户要求，P9 之前）：Synapse 上“fixed M28 + 原点损失”3 个 run 的 checkpoint 目录（`*_M28_fixed_c16_ptl_lvt_dec64`，共约 128 MB）。`logs/` 和 `test_log/` 里的日志保留，上面引用的数字来自这些日志。
+  - 11-01（用户确认）：32 个已不用的 checkpoint 目录（约 4.8 GB）：带点损失的 24 个（ACDC / CVC / ISIC / FeTA / Synapse）、DA-TransUNet 的额外 seed 2345 / 3456 共 5 个、Swin-UNet lr 0.01 的 3 个；清单见 `logs/cleanup_20261101_candidates.txt`，测试日志全部保留。AMOS（93 个 run 及预测结果）和 Synapse 消融（45 个）的 checkpoint 按用户要求先保留（`logs/cleanup_20261101_needs_decision.txt`）。model 目录现为 39 GB。
 - 影响结果的代码改动（都已验证默认路径不变）：
   - `--attn_off` 同时关掉 CAM（原来只关 PAM，在 fixed gate 下 CAM 仍起作用）。
   - GroupedCAM 的分组规则（§4.10）。
@@ -855,17 +894,10 @@ PAM 输出 `α·E + x`，α 初始化为 0（DANet、DA-TransUNet、ApproxDA 都
 
 ---
 
-## 7. 待办
+## 7. 待办（2026-11-01 更新；已完成或已决定的条目已删除，过程见 §5 和决策记录）
 
-- 正在跑 P11：Synapse 上的单轴消融（不加点损失），15 个配置 × 3 seed（10-29 10:04 开始，预计 10-30 约 22:00 跑完）。
-- **10-29 改为不加点损失、主表不报 AMOS 后的待定事项（§0）**：
-  - ~~消融放在哪里~~：10-29 用户定为 Synapse（P11）。
-  - ~~Synapse / ACDC / CVC / ISIC 的 baseline~~：10-30 用户定为与 workshop 相同的做法：只有 DA-TransUNet 和我们的模型是重训结果（3 seed），其余 baseline 引用文献值，单独列出。原记录：同协议的 baseline 只有 AMOS 和 FeTA 有；Synapse 是 TransUNet 的标准划分（2211 层训练 / 12 例测试），可以引用文献值；ACDC 是 20 例测试（40 个 ED / ES 体积），是否与文献划分一致，引用前要核对；CVC / ISIC 的划分与文献不同。
-- ~~Synapse 结果怎么处理（P9）~~：10-29 已定，最终模型不加点损失，Synapse 进主表（§0）。
-- **经典 U-Net 在 AMOS 上高于最终模型约 1.7（seed 1234，小器官 +3 – 4）**：等 baseline 的 3 个 seed 和 FeTA 结果后，决定论文是主张精度–开销权衡，还是改进模型的高分辨率通路（例如在 224² 上补一条 skip、加宽高分辨率的 decoder），再按路线图做单轴验证。
-- **CVC / ISIC 的 baseline 只有文献值**（DA-TransUNet 论文 Table 2，划分不同，不能配对）。按文献值，ISIC 上最终模型 88.67 低于 DA 88.88 和 TransUNet 88.78。是否在我们的划分上同协议重训 U-Net / Att-UNet / U-Net++ / TransUNet（3 seed，估计约 15 h）：用户 10-27 决定等 AMOS 的结果（P7 和 baseline）出来再定。
-- **决定论文怎么处理 ApproxDA block**：有 LightViT 时没有 Dice 贡献（路线图 −0.47，去掉后 +0.18，只留卷积 +0.01）；没有 Transformer 时 +0.22 Dice；三种情况下都降低 HD95（7 / 9 组配对）。block 与 LightViT 互相替代（§1.1 的 2×2）。
-- 补测推理时间和显存（参数和 GFLOPs 已按各数据集测得，§1.1），补上精度–开销图，以及与已发表高效方法的开销比较。
-- 审稿意见中的期刊项：J8 分层定性分析，J10 可复现材料。
+- 参考文献逐条核对：`ding2025damamba`、`li2025dbaanet`、`azad2024transdae` 的作者，`payette2021feta` 已改的标题，`zhong2026approxda` 的作者顺序；`bernal2015wm` 与 `bernal2015cvc` 重复。
+- 全文措辞再润色一遍（去掉营销式用词，如 tri-axial、slash 等残留）。
+- 审稿意见中的期刊项：J8 分层定性分析，J10 可复现材料（代码与 checkpoint 公开）。
 - 可选：FeTA 验证集 8 例的额外评测（`test.py --split val`）。
-- 用户未决定：`paper-journal/` 里的旧草稿和 GCS 图、`experiments/` 下的 GCS 分析脚本，是否删除或归档。
+- 用户未决定：`paper-journal/` 里的旧草稿和 GCS 图、`experiments/` 下的 GCS 分析脚本，是否删除或归档。（`elsarticle-journal/` 中未用的图、模板包文档和中间版本已于 11-01 删除。）

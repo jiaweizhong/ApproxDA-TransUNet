@@ -61,6 +61,37 @@ Table~\ref{tab:main_benchmark} summarizes the results. With a tenth of the param
 
 Pooling the 15 seed pairs, 10 favor ApproxDA-TransUNet, with a mean gain of \textbf{$+0.37$ points} (Wilcoxon signed-rank $p = 0.010$; paired $t$-test $p = 0.007$). HD95 does not follow the Dice trend: it is lower than DA-TransUNet's only on CVC-ClinicDB ($12.74$ vs.\ $14.49$ px) and higher on the other four datasets (significantly only on FeTA, $p = 0.04$, see the case audit below).
 
+\subsection{Comparison with Published Results}
+\label{sec:literature}
+
+\begin{table*}[t]
+\centering
+\caption{Comparison with published results. Upper block: values reported in the literature (single runs, original training settings); Synapse, CVC-ClinicDB, and ISIC 2018 as compiled in the DA-TransUNet paper~\cite{sun2024datransunet}, ACDC from the Swin-Unet paper~\cite{cao2022swinunet}. Lower block: models retrained in this work (three-seed means, final epoch). Synapse and ACDC use the common TransUNet test sets (12 CT volumes; 70/10/20 ACDC patients); our CVC-ClinicDB and ISIC 2018 splits (75/25) differ from those of the literature, so these columns are indicative only. HD95 in voxels; the best value in each column is in bold.}
+\label{tab:literature}
+\resizebox{\textwidth}{!}{
+\begin{tabular}{lccccccc}
+\toprule
+\textbf{Method} & \multicolumn{2}{c}{\textbf{Synapse}} & \textbf{ACDC} & \multicolumn{2}{c}{\textbf{CVC-ClinicDB}} & \multicolumn{2}{c}{\textbf{ISIC 2018}} \\
+\cmidrule(lr){2-3} \cmidrule(lr){5-6} \cmidrule(lr){7-8}
+& DSC (\%) & HD95 & DSC (\%) & DSC (\%) & IoU (\%) & DSC (\%) & IoU (\%) \\
+\midrule
+U-Net~\cite{ronneberger2015unet} & 76.85 & 39.70 & 87.55$^{\dagger}$ & 86.93 & 78.21 & 87.22 & 81.14 \\
+Attention U-Net~\cite{oktay2018attention} & 77.77 & 36.02 & 86.75$^{\dagger}$ & 87.41 & 79.35 & 87.60 & 81.51 \\
+U-Net++~\cite{zhou2018unetpp} & 76.91 & 36.93 & -- & 87.14 & 78.47 & 87.30 & 81.33 \\
+TransUNet~\cite{chen2021transunet} & 77.48 & 31.69 & 89.71 & 89.01 & 81.63 & 88.78 & 82.63 \\
+Swin-Unet~\cite{cao2022swinunet} & 79.13 & \textbf{21.55} & 90.00 & -- & -- & -- & -- \\
+DA-TransUNet~\cite{sun2024datransunet} & 79.80 & 23.48 & -- & 89.47 & 82.51 & \textbf{88.88} & \textbf{82.78} \\
+\midrule
+DA-TransUNet~\cite{sun2024datransunet} (retrained) & 80.26 & 23.49 & 90.94 & 89.47 & 84.55 & 88.30 & 81.54 \\
+\textbf{ApproxDA-TransUNet (Ours)} & \textbf{80.57} & 24.52 & \textbf{91.08} & \textbf{89.88} & \textbf{85.19} & 88.51 & 81.63 \\
+\bottomrule
+\end{tabular}
+}
+\par\vspace{2pt}{\footnotesize $^{\dagger}$ResNet-50 encoder variants (R50 U-Net, R50 Att-UNet) as reported by Cao et al.~\cite{cao2022swinunet}.}
+\end{table*}
+
+Table~\ref{tab:literature} relates the results to published numbers. On the two benchmarks with shared test sets, ApproxDA-TransUNet is above all reported values: $80.57\%$ on Synapse against $79.80\%$ for DA-TransUNet and $79.13\%$ for Swin-Unet, and $91.08\%$ on ACDC against $90.00\%$ for Swin-Unet. Our retrained DA-TransUNet reaches $80.26\%$ on Synapse, close to the reported $79.80\%$, which supports the fairness of our training setup. On ISIC 2018 our retrained models are slightly below the reported values, which were obtained on a different split.
+
 \subsection{FeTA 2.4 Benchmark: 2D and 3D Comparisons}
 \label{sec:feta_results}
 
@@ -104,11 +135,11 @@ ApproxDA-TransUNet has a higher mean HD95 on FeTA than DA-TransUNet ($2.85$ vs.\
 
 \subsection{Qualitative Visual Evaluation}
 
-\begin{figure*}[t]
+\begin{figure*}[!htbp]
 \centering
-\includegraphics[width=\textwidth]{figures/fig_qualitative_cross_task.png}
-\caption{Qualitative segmentation comparisons. \textcolor{red}{[TODO: this is the workshop figure (ViT-B ApproxDA model; the middle row is Kvasir-SEG, not CVC-ClinicDB; no ACDC or FeTA rows). Regenerate it with the final model on the five datasets, showing ground truth, DA-TransUNet, and ApproxDA-TransUNet.]}}
+\includegraphics[width=0.82\textwidth]{figures/fig_qualitative_journal.pdf}
+\caption{Qualitative results (seed 1234, final epoch). For each dataset, the example is chosen without reference to DA-TransUNet: the test case with the median Dice of ApproxDA-TransUNet and, for volumes, the slice with the most annotated classes. Panels are cropped to the annotated region; the Dice of the displayed slice or image is given on each prediction.}
 \label{fig:qualitative_visual}
 \end{figure*}
 
-\textcolor{red}{[TODO: rewrite this paragraph after the figure is regenerated.]}
+Figure~\ref{fig:qualitative_visual} shows one representative example per dataset. On these median cases the two models produce similar masks: ApproxDA-TransUNet is slightly better on ACDC, ISIC 2018, and FeTA 2.4 and slightly worse on Synapse and CVC-ClinicDB. The visible differences are small and lie mostly along structure boundaries.

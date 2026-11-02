@@ -8,8 +8,8 @@ Figure~\ref{fig:overall_arch} shows the complete architecture. Compared with the
 
 \begin{figure*}[t]
 \centering
-\includegraphics[width=\textwidth]{figures/approxda_light_unet_a.png}
-\caption{Overall architecture of the lightweight ApproxDA-TransUNet. The encoder consists of an early-truncated ResNet-50 (Stages 1--2, down to stride 8) followed by a top-down LightViT-T bottleneck. ApproxDA blocks are placed on all three skip connections ($1/8$, $1/4$, $1/2$) and on the bottleneck. The decoder uses 64 channels at every skip stage and 16 channels at full resolution (10.75M parameters in total). \textcolor{red}{[TODO: the figure still shows the point loss (d) and the native label, which the final model no longer uses; regenerate it without them.]}}
+\includegraphics[width=\textwidth]{figures/approxda_overview_journal.pdf}
+\caption{Overall architecture of the lightweight ApproxDA-TransUNet. The encoder consists of a ResNet-50 truncated after its second stage (stride 8) followed by LightViT-T, which produces the $14\times14\times128$ bottleneck. ApproxDA blocks are placed on all three skip connections ($1/8$, $1/4$, $1/2$) and on the bottleneck. The decoder uses 64 channels at every skip stage and 16 channels at full resolution (10.75M parameters in total).}
 \label{fig:overall_arch}
 \end{figure*}
 
@@ -31,20 +31,21 @@ Figure~\ref{fig:approxda_block_detail} illustrates the internal topology of the 
 
 \begin{figure*}[t]
 \centering
-\begin{subfigure}[b]{0.64\textwidth}
+\begin{subfigure}[b]{\textwidth}
     \centering
-    \includegraphics[width=\textwidth]{figures/approxda_light_unet_b.png}
-    \caption{ApproxDA Block with tri-axial approximation ($M, r, G$) and fixed gate ($g=0.5$).}
+    \includegraphics[width=\textwidth]{figures/approxda_journal_block.pdf}
+    \caption{ApproxDA block: windowed low-rank PAM ($M$, $r$) and grouped CAM ($G$), fused with a fixed gate $g=\frac{1}{2}$.}
     \label{fig:block_pam_cam}
 \end{subfigure}
-\hfill
-\begin{subfigure}[b]{0.33\textwidth}
+
+\vspace{6pt}
+\begin{subfigure}[b]{\textwidth}
     \centering
-    \includegraphics[width=\textwidth]{figures/approxda_light_unet_c.png}
-    \caption{Slim Decoder Block ($C=64$).}
+    \includegraphics[width=\textwidth]{figures/approxda_decoder_journal.pdf}
+    \caption{One slim decoder stage with additive skip fusion; RB is the residual reduction block.}
     \label{fig:block_decoder}
 \end{subfigure}
-\caption{Detailed architectural diagrams of (a) the ApproxDA block with Low-Rank Windowed PAM and Grouped CAM branches, and (b) the compact decoder block with uniform $C=64$ channel width.}
+\caption{Detailed diagrams of (a) the ApproxDA block and (b) a slim decoder stage (64 channels).}
 \label{fig:approxda_block_detail}
 \end{figure*}
 
@@ -88,11 +89,11 @@ Within each group $g$, the channel correlation energy between channel slice $i$ 
 where $\beta$ is a learnable scalar initialized to 0. Groups are concatenated along the channel dimension to form $\mathbf{E}_{\text{CAM}} \in \mathbb{R}^{C' \times H \times W}$ and refined by a $3 \times 3$ convolution. When $G$ does not divide $C'$, the largest divisor of $C'$ not exceeding $G$ is used. Because $C'$ is small in the lightweight model, $G=8$ leaves a single channel per group in the bottleneck ($C'=8$) and in the $1/2$ skip ($C'=4$, four groups), where CAM reduces to $(1+\beta)\mathbf{X}'$; the cost of CAM is negligible at every stage, and un-grouped CAM ($G=1$) is evaluated in Section~\ref{sec:ablation}.
 
 \subsubsection{Fixed Equal-Blend Routing}
-In preliminary experiments, learnable gating vectors $\mathbf{g} = \sigma(\mathbf{W}_g \operatorname{GAP}(\mathbf{x}))$ systematically collapsed toward uniform blending ($g \approx 0.5$). Consequently, ApproxDA-TransUNet fixes gating to equal blending:
+In our earlier study~\cite{zhong2026approxda}, a learnable per-channel gate $\mathbf{g} = \sigma(\mathbf{W}_g \operatorname{GAP}(\mathbf{x}))$ stayed at a near-uniform blend throughout training on Synapse (block means within $0.499$--$0.512$ over 300 epochs) and did not outperform single-branch routing. ApproxDA-TransUNet therefore fixes the gate to an equal blend:
 \begin{equation}
     \mathbf{Y} = \mathbf{W}_f \left( 0.5 \cdot \mathbf{E}_{\text{PAM}} + 0.5 \cdot \mathbf{E}_{\text{CAM}} \right) \in \mathbb{R}^{C \times H \times W},
 \end{equation}
-where $\mathbf{W}_f$ consists of channel dropout ($p=0.05$), a $1 \times 1$ convolution back to $C$ channels, and ReLU, as in the DANet head; there is no outer residual connection. \textcolor{red}{[TODO: cite the evidence that the learned gate stayed near 0.5 (workshop gate analysis), or drop that claim.]}
+where $\mathbf{W}_f$ consists of channel dropout ($p=0.05$), a $1 \times 1$ convolution back to $C$ channels, and ReLU, as in the DANet head; there is no outer residual connection.
 
 \subsection{Compact Decoder Architecture}
 Unlike the concatenation decoder of DA-TransUNet ($256 \to 128 \to 64 \to 16$ channels), ApproxDA-TransUNet uses 64 channels at every skip stage and fuses skips by addition (Figure~\ref{fig:block_decoder}). A $3\times3$ convolution first maps $\mathbf{Z}$ to 64 channels. At each skip stage $l \in \{1, 2, 3\}$ ($1/8$, $1/4$, $1/2$), the previous map is bilinearly upsampled by $2\times$ and added to the ApproxDA-refined skip $\mathbf{S}_l$ after a channel-reduction block:

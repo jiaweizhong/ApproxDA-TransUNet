@@ -1,5 +1,7 @@
 # Generate Qualitative Figure (Fig 3 / Fig 4)
 
+> **历史文档（2026-11-01 注）**：workshop 论文定性图的生成说明（Kvasir 时期的配置与路径）。期刊的定性图（论文图 3）改用 `experiments/qualitative_journal_predict.py` 和 `experiments/make_qualitative_figure_journal.py` 生成，用法见这两个脚本的文件头。
+
 This guide walks through downloading data, arranging directories, and running
 `generate_qualitative_figure.py` to produce both the ApproxDA-TransUNet cross-task
 figure and the matching DA-TransUNet predictions for manual comparison.

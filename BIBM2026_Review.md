@@ -1,6 +1,6 @@
 # ApproxDA-TransUNet 修改追踪：ML4BMI camera-ready + Journal
 
-最后更新：2026-10-20。审稿意见来自 BIBM 2026 主会（ML4BMI 没有单独的审稿意见）。实验细节和全部数值见 `PENDING_RUNS.md`。
+最后更新：2026-10-20；**11-01 补记**：期刊版已经完成的 Journal 条目改为 ✅，其余内容保持 10-20 的原样。期刊的现状以 `JOURNAL_EXPERIMENTS.md` 开头的“当前状态”为准。审稿意见来自 BIBM 2026 主会（ML4BMI 没有单独的审稿意见）。实验细节和全部数值见 `PENDING_RUNS.md`。
 
 - **Camera-ready（workshop）**：稿件在 `paper/`。原计划只改文字；实际做法是在本机 RTX 5090 上按新协议重跑全部实验，再按新结果改写。正文报 seed 1234 的单次运行，配置取消融中最好的。
 - **Journal**：补多 seed、不在 test 上选配置、修复 PAM 不起作用的问题等，需要新证据的内容放在这里。
@@ -19,7 +19,7 @@
   - Synapse 18/12；ISIC 从 2594 张官方训练图中随机 75/25（1945/649）；CVC 随机 75/25（459/153）。
   - 三个划分都没有 val 集。Implementation Details 写明了这一点。
 - ⚠️ **配置（M、r、G、gate）**：取 test 上消融结果最好的那个。Implementation Details 写明“reported configurations are those with the highest DSC in the ablations”。2026-10-18 起，Limitations 不再写“结果偏乐观”。
-- ⬜ **Journal**：配置选择不再使用 test（加 val 划分或交叉验证）。
+- ✅ **Journal（11-01）**：期刊版所有数据集用同一个固定配置（M28、r32、G8、g = ½），不再按数据集在 test 上挑配置；仍取最后一个 epoch。消融的结果只用于分析，不用来选主模型。
 
 ### R2. Baseline 比较可能不公平（Must fix）
 > 审稿原意：大部分 baseline 数字抄自文献，split 和训练协议可能不同；尤其不清楚 ISIC 上的 DA-TransUNet 是否在同样的 80/20 split 下重跑过。
@@ -59,7 +59,7 @@
 - ✅ **只保留经验观察，写明不分析原因**：训练中记录了 gate（`gate_history.npz`），block 均值在 0.499–0.512 之间，per-channel std ≤ 0.022。
 - ✅ **Fig. 5（原 Fig. 6）重画**：c16，M=28，learn。r_s 在 −0.43 到 +0.26 之间，Δg ≤ 3.4×10⁻⁴。
 - ✅ **对照**：Table VI 有 fixed 0.5。CVC 上 learned gate 也没有胜出（89.90，低于 cam G=1 的 90.54）。
-- ⬜ **Journal**：换 gate 初始化或正则化，分析原因。
+- ✅ **Journal（11-01）**：不再研究 gate，期刊版固定 g = ½，引用 workshop 的结论（学到的 gate 停在约 0.5）。
 
 ### R6. GCS 不能独立预测任务的上下文需求（Strongly recommended）
 > 审稿原意：GCS 是用 window 消融的 Dice 差值定义的，又拿来解释同一批实验，属于循环论证；3 个数据集也不足以说明它是任务本身的属性。
@@ -67,7 +67,7 @@
 - ✅ **只作描述性指标**（2026-10-20 起不再使用 GCS 这个名字，改称 window sensitivity / DSC span）：GCS 写成经验诊断，不是 predictor。删掉了 inductive bias 和 locality-induced bias 的说法。Limitations 写明需要更多数据集。
 - ✅ **新数据**：r=32 时的 Dice 跨度为 Synapse 2.47、CVC 0.71、ISIC 1.22，比值为 3.5× 和 2.0×。
 - ⚠️ **风险**：见第 3 节。Synapse 和 ISIC 的 PAM 实际上不起作用，窗口之间的差异主要是训练噪声。
-- ⬜ **Journal**：修好 attention 后重跑窗口消融；或者定义一个独立于 Dice 曲线的上下文指标。
+- ✅ **Journal（11-01）**：修 attention 的各种尝试都是负结果（`JOURNAL_EXPERIMENTS.md` §4）；期刊版改为如实报告 attention 算子可以替换（Synapse 消融：只留卷积 +0.21、精确 attention −0.01），不再主张窗口敏感性。
 
 ### R7. 效率的说法在整网层面不成立（Must fix）
 > 审稿原意：模型参数和 GFLOPs 都比 DA-TransUNet 多；约 390× 的节省只对应 attention 矩阵那一项；训练时间比较混用了 2-GPU 和 1-GPU。
@@ -84,7 +84,7 @@
 
   attention 部分省 54–57%，整网只省 1.6–1.8%。
 - ✅ **不主张效率优势**：表中没有训练时间、显存，也没有 DDP 对比。摘要、引言、结论都不提效率优势，定位为诊断平台。
-- ⬜ **Journal**：在同一块 GPU 上测 latency、显存和吞吐。
+- ✅ **Journal（10-31）**：RTX 5090 上实测（论文部署表）：吞吐 2.55 倍、显存约 −58%，batch 1 延迟反而更高（9.6 对 6.5 ms），如实报告。
 
 ### R8. 统计可靠性不足（Strongly recommended）
 > 审稿原意：主要提升只来自单次运行；Synapse 只有 12 个测试病例，0.5–2 个 Dice 点的差距可能只是初始化、数据顺序或 checkpoint 选择造成的。
@@ -98,7 +98,7 @@
   | ISIC（3 seed） | 88.38 ± 0.32 | M=128：88.56 ± 0.33 | p = 0.46 |
   | CVC（2 seed） | 89.66 ± 0.08 | cam G=1：90.08 ± 0.65；pam M=128：89.92 ± 0.40 | |
 
-- ⬜ **Journal**：主配置每个数据集至少 3 个 seed，报 paired test 或 bootstrap CI；Synapse 报 per-organ 结果。
+- ✅ **Journal（11-01）**：主表和全部消融都是 3 个 seed，按 seed 配对做 t 检验，合并 15 组做 Wilcoxon。Synapse 的逐器官结果在 `JOURNAL_EXPERIMENTS.md` §5，论文未单列。
 
 ### R9. 表述过强或前后不一致（Strongly recommended）
 > 审稿原意：“state-of-the-art” 并非在所有指标上成立，Synapse HD95 和 ISIC mIoU 反而变差；Figure 6 的相关系数和正文冲突；gate 一会儿是标量一会儿是向量；Kvasir 的 HD95 没有物理标定却写成 mm。
@@ -145,9 +145,9 @@
 
 ## 4. Journal 待办
 
-- ⬜ J1：配置选择不用 test（val 或交叉验证）。
-- ⬜ J4：多 seed，加统计检验。
-- ⬜ J5、J6：修好 attention 后重跑窗口消融；分析 gate 的原因。
-- ⬜ J7：测 latency、显存、吞吐；可选轻量化 backbone，并和近似带来的收益分开报告。
+- ✅ J1：固定配置，不在 test 上挑（见 R1）。
+- ✅ J4：3 seed + 配对检验（见 R8）。
+- ✅ J5、J6：改为诊断 attention 不起作用的原因（α / β 死锁），gate 固定为 ½（见 R5、R6）。
+- ✅ J7：已实测，并做了轻量 backbone（LightViT-T）；开销按模块拆分（论文 Table 1）。
 - ⬜ J8：分层定性分析（目标大小、边界和内部），包括失败案例。
 - ⬜ J10：发布可复现材料：split、配置、seed、评估脚本和 checkpoint，放到上面的公开仓库。

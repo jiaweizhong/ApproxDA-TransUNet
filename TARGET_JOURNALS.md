@@ -1,5 +1,7 @@
 # 投稿期刊列表与投递策略 (Target Journals & Submission Strategy)
 
+> **2026-11-01 注**：期刊稿已按 *Biomedical Signal Processing and Control*（BSPC）排版，见 `elsarticle-journal/main.tex`。下面的比较是 10-11 的分析，“AdaDA-TransUNet”为旧名。
+
 本文档记录 **ApproxDA-TransUNet / AdaDA-TransUNet** 项目的推荐投稿期刊、中科院分区、投稿难度以及对应的投递策略与论文匹配度分析。
 
 ---

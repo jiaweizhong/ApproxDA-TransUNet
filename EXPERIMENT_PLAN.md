@@ -1,5 +1,7 @@
 # AdaDA-TransUNet Experiment Plan
 
+> **历史文档（2026-11-01 注）**：workshop 投稿前的实验计划（AdaDA-TransUNet 命名、Kvasir、GCS / context sensitivity 主线），已被 workshop 定稿和期刊计划取代，不再更新。期刊现状见 `JOURNAL_EXPERIMENTS.md`。
+
 ## Goal
 
 Run experiments on 3 datasets to support conference submission (**BIBM 2026**, primary target, ~Aug 2026 deadline).

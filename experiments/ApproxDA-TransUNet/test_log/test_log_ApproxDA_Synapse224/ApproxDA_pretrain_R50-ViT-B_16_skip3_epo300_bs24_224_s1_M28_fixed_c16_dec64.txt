@@ -1,0 +1,28 @@
+[22:01:02.458] Namespace(volume_path='../data/Synapse/test_vol_h5', dataset='Synapse', num_classes=9, list_dir='./lists/lists_Synapse', max_iterations=20000, max_epochs=300, batch_size=24, img_size=224, is_savenii=False, n_skip=3, vit_name='R50-ViT-B_16', test_save_dir='../predictions', deterministic=1, base_lr=0.01, seed=1, vit_patches_size=16, window_size=28, rank=32, groups=8, gate_mode='fixed', block_version='c16', alpha_init=0.0, ablate_attn=False, ablate_attn_at='all', lr_post=False, upsample='nearest', ablate_third=False, ablate_slice='', ablate_cam='', backbone='vit', lightvit_dir='/data/checkpoints/LightViT', no_vit=False, dec_channels=64, dec_stop112=False, pam_style='danet', pam_fusion='residual', attn_off=False, attn_opt='same', attn_lr=0.001, attn_scope='pamcam', attn_wd=0.01, attn_off_at='all', no_block=False, aug='default', pam_relpos=False, pam_abspos=False, coord_gate=False, bn_order='post', hr_skip=0, final_channels=16, point_loss=False, ptl_balanced=False, ptl_class_share=0.25, point_refine=False, pr_residual=False, pr_balanced=False, slice_attn=-1, third_branch='none', organ_aux=0.4, pam_affinity=0.0, refine_mode='plain', block_type='approxda', mednext_k=5, mednext_exp=2, skip_ratio=16, pam_no_identity=False, attn_norm=False, run_tag='', drop_last=False, num_workers=4, rgb=False, optimizer='sgd', precise_bn=False, eval_epoch=0, checkpoint='last', split='test', Dataset=<class 'datasets.dataset_synapse.Synapse_dataset'>, z_spacing=1, is_pretrain=True, exp='ApproxDA_Synapse224')
+[22:01:02.458] ApproxDA_pretrain_R50-ViT-B_16_skip3_epo300_bs24_224_s1_M28_fixed_c16_dec64
+[22:01:02.459] 12 test iterations per epoch
+[22:01:02.459] Model parameters: 100.47 M
+[22:01:03.135] GFLOPs (single 224x224 slice, fvcore, includes attention bmm): 26.0
+[22:02:01.341] idx 0 case case0008 mean_dice 0.666700 mean_hd95 13.056765
+[22:02:33.547] idx 1 case case0022 mean_dice 0.897424 mean_hd95 2.803369
+[22:03:09.214] idx 2 case case0038 mean_dice 0.793989 mean_hd95 5.571005
+[22:04:23.834] idx 3 case case0036 mean_dice 0.808037 mean_hd95 30.595753
+[22:05:18.762] idx 4 case case0032 mean_dice 0.788876 mean_hd95 14.546264
+[22:06:10.478] idx 5 case case0002 mean_dice 0.825954 mean_hd95 5.418890
+[22:06:45.160] idx 6 case case0029 mean_dice 0.612555 mean_hd95 60.164433
+[22:08:04.672] idx 7 case case0003 mean_dice 0.639808 mean_hd95 73.545110
+[22:09:02.284] idx 8 case case0001 mean_dice 0.771982 mean_hd95 31.730915
+[22:09:54.040] idx 9 case case0004 mean_dice 0.721982 mean_hd95 11.628014
+[22:10:24.752] idx 10 case case0025 mean_dice 0.787885 mean_hd95 46.653268
+[22:10:53.347] idx 11 case case0035 mean_dice 0.879761 mean_hd95 3.529027
+[22:10:53.362] Inference total: 590.2s  avg per case: 49185.6ms
+[22:10:53.363] Inference peak VRAM: 881 MB (0.9 GB)
+[22:10:53.363] Mean class 1 mean_dice 0.859447 mean_hd95 5.752027 mean_iou 0.754563
+[22:10:53.363] Mean class 2 mean_dice 0.541566 mean_hd95 20.275264 mean_iou 0.445903
+[22:10:53.363] Mean class 3 mean_dice 0.797503 mean_hd95 40.273127 mean_iou 0.705441
+[22:10:53.363] Mean class 4 mean_dice 0.731839 mean_hd95 40.829361 mean_iou 0.635373
+[22:10:53.363] Mean class 5 mean_dice 0.948554 mean_hd95 13.296774 mean_iou 0.902703
+[22:10:53.363] Mean class 6 mean_dice 0.596312 mean_hd95 12.673808 mean_iou 0.445306
+[22:10:53.363] Mean class 7 mean_dice 0.863503 mean_hd95 45.435788 mean_iou 0.783136
+[22:10:53.363] Mean class 8 mean_dice 0.791244 mean_hd95 20.959061 mean_iou 0.667301
+[22:10:53.363] Testing performance (split=test, checkpoint=last): mean_dice : 0.766246 mean_hd95 : 24.936901 mean_iou : 0.667466

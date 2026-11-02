@@ -1,5 +1,7 @@
 # Research Plan: ApproxDA-TransUNet
 
+> **历史文档（2026-11-01 注）**：workshop 之前的研究计划（context sensitivity 主线、标题和方法设定均已变化），不再更新。期刊现状见 `JOURNAL_EXPERIMENTS.md`，期刊稿在 `elsarticle-journal/`。
+
 ## 1. Naming
 
 | Layer | Name |

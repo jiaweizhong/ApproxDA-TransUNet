@@ -1,0 +1,37 @@
+{
+ "Synapse": {
+  "case": "case0004",
+  "slice": 99,
+  "case_dice_ours": 0.7953749462348945,
+  "DA-TransUNet": 0.7327661082215318,
+  "ApproxDA-TransUNet": 0.7140273802287262
+ },
+ "ACDC": {
+  "case": "case_008_volume_ES",
+  "slice": 2,
+  "case_dice_ours": 0.9205318746775258,
+  "DA-TransUNet": 0.9379270644674826,
+  "ApproxDA-TransUNet": 0.9443776078256146
+ },
+ "CVC": {
+  "case": "182",
+  "slice": null,
+  "case_dice_ours": 0.9567118495846086,
+  "DA-TransUNet": 0.9616434420341905,
+  "ApproxDA-TransUNet": 0.9567118495846086
+ },
+ "ISIC": {
+  "case": "ISIC_0014698",
+  "slice": null,
+  "case_dice_ours": 0.9298653042266605,
+  "DA-TransUNet": 0.9226812409580454,
+  "ApproxDA-TransUNet": 0.9298653042266605
+ },
+ "FeTA": {
+  "case": "sub-076",
+  "slice": 71,
+  "case_dice_ours": 0.8659333556167678,
+  "DA-TransUNet": 0.688450000999144,
+  "ApproxDA-TransUNet": 0.7156359960880506
+ }
+}

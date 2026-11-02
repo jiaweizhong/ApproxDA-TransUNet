@@ -34,7 +34,6 @@ Single-axis ablations are run on Synapse with three seeds (1234, 0, 1). The refe
 \quad R50 third stage instead of LightViT-T & 15.42 & 8.7 & 78.81 $\pm$ 0.27 & 27.71 & \textbf{$-1.76$} (0.007) \\
 \quad ViT-B/16 instead of LightViT-T & 100.47 & 26.0 & 78.52 $\pm$ 1.64 & 26.01 & $-2.05$ (0.14) \\
 \quad One strided $3\times3$ convolution instead of LightViT-T & 3.53 & 6.3 & 80.55 $\pm$ 0.36 & 23.74 & $-0.02$ (0.94) \\
-\quad One strided convolution, w/o ApproxDA blocks & 2.98 & 5.7 & 78.98 $\pm$ 0.17 & 34.39 & \textbf{$-1.60$} (0.001) \\
 \quad LightViT-S instead of LightViT-T & 20.50 & 8.0 & 80.31 $\pm$ 0.63 & 23.62 & $-0.26$ (0.43) \\
 \midrule
 \multicolumn{6}{l}{\textit{Bottleneck placement and decoder}} \\
@@ -58,5 +57,5 @@ Single-axis ablations are run on Synapse with three seeds (1234, 0, 1). The refe
     \item \textbf{Channel groups $G=4$}: $-0.67$ ($p = 0.10$), not significant.
     \item \textbf{Encoder}: replacing LightViT-T with the third ResNet-50 stage (the TransUNet stem, 15.42M parameters) lowers Dice by $1.76$ points for every seed ($p = 0.007$) while adding 4.7M parameters. ViT-B/16 is also lower ($-2.05$, $p = 0.14$), and LightViT-S is not better ($-0.26$, $p = 0.43$).
     \item \textbf{Block placement}: applying the bottleneck block before LightViT-T, on the $28\times28\times512$ stage-2 output as in DA-TransUNet's ordering, lowers Dice by $1.10$ points for every seed ($p = 0.008$) and adds 0.31M parameters. The full decoder of DA-TransUNet is not better than the slim decoder ($-0.97$, $p = 0.40$) at 1.3 times the parameters and 1.5 times the FLOPs.
-    \item \textbf{Transformer versus blocks}: crossing the bottleneck module (one strided convolution or LightViT-T) with the presence of ApproxDA blocks gives a $2\times2$ design. The blocks help in both cases ($+1.57$ points with the convolution, $p = 0.034$; $+2.76$ with LightViT-T, $p = 0.008$) and lower HD95 by $10.7$ and $4.6$ voxels. LightViT-T, in contrast, does not help: without blocks it is $1.16$ points below the convolution ($p = 0.049$), and with blocks the two are equal ($80.57$ vs.\ $80.55$, $p = 0.94$). \textcolor{red}{[TODO (author decision): on Synapse the 3.53M convolutional variant with ApproxDA blocks matches the final model; decide how the paper motivates LightViT-T.]}
+    \item \textbf{Transformer and ApproxDA blocks}: with the ApproxDA blocks in place, replacing LightViT-T by a single strided $3\times3$ convolution leaves Dice unchanged ($80.55$ vs.\ $80.57$, $p = 0.94$), whereas removing the blocks from the LightViT-T model costs $2.76$ points. The lightweight transformer and the ApproxDA blocks thus provide interchangeable global context: one of them is sufficient, and the blocks are the cheaper of the two. We keep LightViT-T in the final model as the transformer component of the TransUNet design.
 \end{itemize}

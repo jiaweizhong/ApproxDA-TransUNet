@@ -25,9 +25,9 @@ At initialization, because $\alpha = 0$, $\partial \mathcal{L} / \partial \mathb
 
 \subsection{Anatomical Symmetries and Data Augmentation}
 \label{sec:symmetry}
-In an error decomposition on the Synapse test set (with the earlier ViT-B/16 model), about $87\%$ of the misclassified voxels were boundary or extent errors between an organ and the background; confusions between organs were mostly whole-organ misidentifications, about $9\%$ of all errors, chiefly stomach versus spleen and left versus right kidney, concentrated in a few test cases.
+In an error analysis on the Synapse test set (with the earlier ViT-B/16 model), most misclassified voxels were boundary or extent errors between an organ and the background. The confusions between organs were mostly whole-organ misidentifications, chiefly stomach versus spleen and left versus right kidney, and were concentrated in a few test cases.
 
-The left--right confusions are consistent with the standard TransUNet augmentation: \texttt{random\_rot\_flip} follows a random $90^\circ$ rotation with an axis flip without swapping the left and right labels, so about half of the augmented slices show mirrored anatomy. Laterality-aware augmentation should be considered for bilateral structures. \textcolor{red}{[TODO: the quantitative effect of removing mirroring was measured on AMOS, which is not reported; on Synapse the no-mirror model still had about $9\%$ whole-organ errors. Either add a Synapse measurement or keep this paragraph qualitative.]}
+The left--right confusions are a plausible side effect of the standard TransUNet augmentation: \texttt{random\_rot\_flip} follows a random $90^\circ$ rotation with an axis flip but does not swap the left and right labels, so about half of the augmented slices show mirrored anatomy with unchanged laterality labels. We did not quantify this effect on the reported benchmarks; laterality-aware augmentation, which swaps the labels of bilateral structures when an image is mirrored, is a simple safeguard for such structures.
 
 \subsection{Computational Efficiency and Clinical Deployability}
 
