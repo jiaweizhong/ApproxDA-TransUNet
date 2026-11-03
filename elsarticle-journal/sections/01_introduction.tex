@@ -14,14 +14,14 @@ In this work, expanding upon our preliminary workshop study~\cite{zhong2026appro
 (iv) a \emph{slim decoder} with additive skip fusion and 64 channels at every skip stage.
 Together, these changes reduce the parameters from \textbf{107.95M to 10.75M} ($-90.0\%$) and the compute from \textbf{30.21 to 6.92 GFLOPs} ($-77.1\%$).
 
-Single-axis ablations show that the dual-attention blocks are necessary and that their approximation costs no accuracy: replacing the approximated attention by the exact global dual attention of DA-TransUNet leaves Dice unchanged while increasing FLOPs by $14\%$ and doubling the training time.
+In single-axis ablations on Synapse, removing the dual-attention blocks reduces Dice by $2.76$ points, and their approximation costs no accuracy: replacing the approximated attention by the exact global dual attention of DA-TransUNet leaves Dice unchanged while increasing FLOPs by $14\%$ and doubling the training time.
 
 We evaluate ApproxDA-TransUNet across five multi-modal benchmarks under a three-seed protocol (1234, 0, 1): Synapse CT, ACDC cardiac MRI, CVC-ClinicDB colonoscopy, ISIC 2018 dermoscopy, and FeTA 2.4 fetal brain MRI. ApproxDA-TransUNet retains the Dice of DA-TransUNet: its three-seed mean Dice is higher on all five datasets (average gain $+0.37$ percentage points, 10 of 15 seed pairs positive), although no single dataset shows a significant difference, and HD95 is higher than DA-TransUNet's on four of the five datasets. On FeTA 2.4, the 10.75M model is $1.8$--$2.5$ points above the reproduced U-Net family and Swin-UNet and within $0.1$ points of TransUNet.
 
 The primary contributions of this paper are:
 \begin{itemize}
     \item \textbf{Lightweight dual-attention architecture}: ApproxDA-TransUNet uses $90\%$ fewer parameters and $77\%$ fewer FLOPs than DA-TransUNet at comparable segmentation accuracy.
-    \item \textbf{Dual-attention approximation}: windowed low-rank position attention ($M$, $r$) and grouped channel attention ($G$), with single-axis ablations showing that the dual-attention blocks are necessary and that the approximation matches exact dual attention at lower cost.
+    \item \textbf{Dual-attention approximation}: windowed low-rank position attention ($M$, $r$) and grouped channel attention ($G$), with single-axis ablations on Synapse showing that removing the blocks reduces Dice by $2.76$ points and that the approximation matches exact dual attention at lower cost.
     \item \textbf{Five-dataset, three-seed validation}: paired comparisons with DA-TransUNet on benchmarks spanning CT, MRI, colonoscopy, dermoscopy, and fetal MRI, with literature and reproduced baselines and a deployment profile.
 \end{itemize}
 
