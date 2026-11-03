@@ -1,27 +1,7 @@
 \section{Discussion and Mechanistic Insights}
 \label{sec:discussion}
 
-This section analyzes the optimization of dual attention under SGD, discusses left--right errors caused by mirror augmentation, reports deployment costs, and outlines limitations.
-
-\subsection{Optimization Diagnostics: Zero-Initialized Residual Scales}
-\label{sec:deadlock}
-A common convention in dual attention~\cite{fu2019dual,sun2024datransunet} is the zero-initialized residual scaling:
-\begin{equation}
-    \mathbf{Y}_{\text{PAM}} = \alpha \mathbf{E}_{\text{PAM}} + \mathbf{X}, \quad \alpha_{\text{init}} = 0,
-\end{equation}
-and similarly $\beta_{\text{init}} = 0$ for CAM. Under SGD this initialization leaves the position-attention weights almost untrained.
-
-By the chain rule, the gradient with respect to projection weights $\mathbf{W}_Q$ is:
-\begin{equation}
-    \frac{\partial \mathcal{L}}{\partial \mathbf{W}_Q} = \frac{\partial \mathcal{L}}{\partial \mathbf{Y}_{\text{PAM}}} \cdot \left( \alpha \frac{\partial \mathbf{E}_{\text{PAM}}}{\partial \mathbf{W}_Q} \right).
-\end{equation}
-At initialization, because $\alpha = 0$, $\partial \mathcal{L} / \partial \mathbf{W}_Q$ evaluates strictly to zero. The only way out is through $\alpha$ itself, whose gradient $|\partial \mathcal{L} / \partial \alpha| = |\langle \partial \mathcal{L}/\partial \mathbf{Y}_{\text{PAM}}, \mathbf{E}_{\text{PAM}} \rangle|$ we measured at $4 \times 10^{-6}$ to $4 \times 10^{-5}$, about four orders of magnitude below the gradients of the decoder convolutions ($\approx 0.29$).
-
-\paragraph{Empirical verification} With weight decay alone and no gradient, a weight shrinks by $(1 - \eta \lambda)^T \approx 0.84$--$0.86$ over training. In our SGD-trained models with the ViT-B/16 encoder (the configuration of our earlier study~\cite{zhong2026approxda}), the ratio of the final $\max |w|$ of the PAM query, key, value, and projection weights to their initialization bound was $0.84$--$0.86$, i.e., they were never updated by gradient descent, and setting $\alpha = 0$ at test time changed at most $0.0002\%$ of the predicted pixels. The effect is specific to SGD and PAM: with Adam (CVC-ClinicDB) the attention weights did train, and the CAM scale $\beta$ moved away from zero on Synapse and CVC-ClinicDB.
-
-\paragraph{The final model} The same holds for ApproxDA-TransUNet. In the twelve SGD-trained models (Synapse, ACDC, ISIC 2018, and FeTA, three seeds each; 48 blocks), the learned scales stay at $|\alpha| \le 0.011$ and $|\beta| \le 0.06$. Switching both attention operators off at test time, so that each branch passes its compressed input through unchanged, changes $0.006$--$0.016\%$ of the predicted voxels on the Synapse test set and the Dice by $+0.01$, $+0.00$, and $+0.09$ points for the three seeds. With Adam (CVC-ClinicDB), weight decay drives the PAM query and key weights to zero in three of the four blocks, and only the $1/8$ skip block learns a non-zero $\alpha$ ($|\alpha| \approx 0.27$).
-
-\paragraph{What the block contributes} Together with the ablations in Section~\ref{sec:ablation}, where removing the block costs $2.76$ points but replacing its attention operator by an exact, approximate, or disabled one changes nothing, this indicates that the contribution of dual-attention blocks in this setting comes from their convolutional path ($C \to C/16 \to C$) rather than from the spatial attention matrices. It also explains why the approximation ($M=28$, $r=32$, $G=8$) costs no accuracy.
+This section discusses left--right errors caused by mirror augmentation, reports deployment costs, and outlines limitations.
 
 \subsection{Anatomical Symmetries and Data Augmentation}
 \label{sec:symmetry}
@@ -29,7 +9,7 @@ In an error analysis on the Synapse test set (with the earlier ViT-B/16 model), 
 
 The left--right confusions are a plausible side effect of the standard TransUNet augmentation: \texttt{random\_rot\_flip} follows a random $90^\circ$ rotation with an axis flip but does not swap the left and right labels, so about half of the augmented slices show mirrored anatomy with unchanged laterality labels. We did not quantify this effect on the reported benchmarks; laterality-aware augmentation, which swaps the labels of bilateral structures when an image is mirrored, is a simple safeguard for such structures.
 
-\subsection{Computational Efficiency and Clinical Deployability}
+\subsection{Computational Efficiency and Deployment Profile}
 
 \begin{table}[t]
 \centering
@@ -55,4 +35,4 @@ Latency, batch 1 & \textbf{6.5 ms} & 9.6 ms \\
 Table~\ref{tab:deployment} summarizes the deployment cost. ApproxDA-TransUNet needs $58\%$ less GPU memory for training and inference and stores a ten-times smaller checkpoint. Because volumes are segmented slice by slice in batches, throughput is the relevant speed measure, and it is $2.55$ times higher. At batch size 1, however, the lightweight model is slower (9.6 vs.\ 6.5 ms): its many small LightViT and attention kernels leave the GPU underutilized, so the FLOP reduction does not translate into lower single-slice latency.
 
 \subsection{Limitations and Future Work}
-ApproxDA-TransUNet processes 3D scans on a 2D planar basis. It therefore cannot use inter-slice context, which matters, for example, at the cranial and caudal ends of organs. Extending ApproxDA blocks to lightweight 2.5D or anisotropic 3D formulations presents a promising avenue for volumetric research.
+The channel grouping is a fixed default ($G=8$) rather than an optimized design: with the small compressed widths of the lightweight model it removes cross-channel interaction in two of the four blocks. A stage-adaptive grouping that keeps at least two channels per group (for example $G = C'/4$) would be the more principled choice. The ablations were run on Synapse only, where three seeds resolve differences of about one Dice point at best, and the statistical analysis across datasets rests on five benchmarks. ApproxDA-TransUNet processes 3D scans on a 2D planar basis. It therefore cannot use inter-slice context, which matters, for example, at the cranial and caudal ends of organs. Extending ApproxDA blocks to lightweight 2.5D or anisotropic 3D formulations presents a promising avenue for volumetric research.

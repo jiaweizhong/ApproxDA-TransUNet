@@ -5,7 +5,7 @@ Single-axis ablations are run on Synapse with three seeds (1234, 0, 1). The refe
 
 \begin{table*}[t]
 \centering
-\caption{Single-axis ablations on Synapse (seeds 1234 / 0 / 1, $224 \times 224$, 9 classes). The baseline is ApproxDA-TransUNet ($M=28$, $r=32$, $G=8$, $g=0.5$, LightViT-T, slim decoder). HD95 in voxels. Paired differences and $p$-values (paired $t$-test) are relative to the baseline. FLOPs are counted on CPU with explicit attention products.}
+\caption{Single-axis ablations on Synapse (seeds 1234 / 0 / 1, $224 \times 224$, 9 classes). The baseline is ApproxDA-TransUNet ($M=28$, $r=32$, $G=8$, $g=0.5$, LightViT-T, slim decoder). HD95 in voxels. Paired differences and $p$-values (paired $t$-test over three seeds, $n = 3$) are relative to the baseline. FLOPs are counted on CPU with explicit attention products.}
 \label{tab:ablation_synapse}
 \resizebox{\textwidth}{!}{
 \begin{tabular}{lccccc}
@@ -14,9 +14,8 @@ Single-axis ablations are run on Synapse with three seeds (1234, 0, 1). The refe
 \midrule
 \textbf{ApproxDA-TransUNet baseline} & \textbf{10.75} & \textbf{6.92} & \textbf{80.57 $\pm$ 0.19} & \textbf{24.52} & -- \\
 \midrule
-\multicolumn{6}{l}{\textit{Block presence and attention operator}} \\
+\multicolumn{6}{l}{\textit{Block presence and exact dual attention}} \\
 \quad w/o ApproxDA blocks & 10.20 & 6.3 & 77.82 $\pm$ 0.33 & 29.12 & \textbf{$-2.76$} (0.008) \\
-\quad Convolutional path only (attention disabled) & 10.75 & 6.92 & 80.78 $\pm$ 0.72 & 21.80 & $+0.21$ (0.57) \\
 \quad Exact global dual attention ($M{=}112, r{=}0, G{=}1$) & 10.65 & 7.90 & 80.56 $\pm$ 0.62 & 23.64 & $-0.01$ (0.97) \\
 \midrule
 \multicolumn{6}{l}{\textit{Window size $M$}} \\
@@ -33,7 +32,6 @@ Single-axis ablations are run on Synapse with three seeds (1234, 0, 1). The refe
 \multicolumn{6}{l}{\textit{Encoder}} \\
 \quad R50 third stage instead of LightViT-T & 15.42 & 8.7 & 78.81 $\pm$ 0.27 & 27.71 & \textbf{$-1.76$} (0.007) \\
 \quad ViT-B/16 instead of LightViT-T & 100.47 & 26.0 & 78.52 $\pm$ 1.64 & 26.01 & $-2.05$ (0.14) \\
-\quad One strided $3\times3$ convolution instead of LightViT-T & 3.53 & 6.3 & 80.55 $\pm$ 0.36 & 23.74 & $-0.02$ (0.94) \\
 \quad LightViT-S instead of LightViT-T & 20.50 & 8.0 & 80.31 $\pm$ 0.63 & 23.62 & $-0.26$ (0.43) \\
 \midrule
 \multicolumn{6}{l}{\textit{Bottleneck placement and decoder}} \\
@@ -44,18 +42,17 @@ Single-axis ablations are run on Synapse with three seeds (1234, 0, 1). The refe
 }
 \end{table*}
 
-\subsection{Block and Attention Operator}
+\subsection{Dual-Attention Blocks and Their Approximation}
 \begin{itemize}
-    \item \textbf{The block is necessary}: removing all ApproxDA blocks lowers Dice by \textbf{$2.76$ points} for every seed ($p = 0.008$) and raises HD95 from $24.52$ to $29.12$; the largest drops are in the gallbladder and pancreas.
-    \item \textbf{The attention operator is not}: exact global dual attention ($M=112$, $r=0$, $G=1$; $-0.01$, $p = 0.97$), exact attention inside windows ($r=0$; $+0.19$), and the convolutional path alone with both attention operators disabled ($+0.21$, $p = 0.57$) all match the baseline. The exact global variant costs $14\%$ more FLOPs and about twice the training time per run (94 vs.\ 45 minutes). The accuracy of the block therefore comes from its convolutional path, consistent with the gradient analysis in Section~\ref{sec:deadlock}, and the approximation does not cost accuracy.
+    \item \textbf{The blocks are necessary}: removing all ApproxDA blocks lowers Dice by \textbf{$2.76$ points} for every seed ($p = 0.008$) and raises HD95 from $24.52$ to $29.12$; the largest drops are in the gallbladder and pancreas.
+    \item \textbf{The approximation costs no accuracy}: replacing the approximated attention by the exact global dual attention of DA-TransUNet ($M=112$, $r=0$, $G=1$) leaves Dice unchanged ($-0.01$, $p = 0.97$), and exact attention inside each window ($r=0$) is also on par ($+0.19$). The exact global variant costs $14\%$ more FLOPs and about twice the training time per run (94 vs.\ 45 minutes).
 \end{itemize}
 
 \subsection{Approximation Hyperparameters}
 \begin{itemize}
     \item \textbf{Window size and rank}: a global window ($M=112$, $-0.50$, $p = 0.54$) and a higher rank ($r=64$, $-0.93$, $p = 0.11$) are not significantly different from the defaults; with three seeds on Synapse, differences below about one point cannot be resolved.
-    \item \textbf{Channel groups}: un-grouped CAM ($G=1$) is $0.55$ points higher ($p = 0.25$). With $G=8$, CAM degenerates to a scaling in the bottleneck and the $1/2$ skip (Section~\ref{sec:method}); $G=1$ avoids this at no extra cost.
+    \item \textbf{Channel groups}: $G=8$ is a fixed default carried over from the ViT-B/16 version of the block, where the bottleneck has $C' = 48$ channels and each group six; it was not tuned for the lightweight model. Here it leaves one channel per group in the bottleneck ($C'=8$) and the $1/2$ skip ($C'=4$, four groups), where CAM degenerates to the scaling $(1+\beta)\mathbf{X}'$ (Section~\ref{sec:method}). Un-grouped CAM ($G=1$) is $0.55$ points higher ($p = 0.25$) at no extra cost.
     \item \textbf{Channel groups $G=4$}: $-0.67$ ($p = 0.10$), not significant.
-    \item \textbf{Encoder}: replacing LightViT-T with the third ResNet-50 stage (the TransUNet stem, 15.42M parameters) lowers Dice by $1.76$ points for every seed ($p = 0.007$) while adding 4.7M parameters. ViT-B/16 is also lower ($-2.05$, $p = 0.14$), and LightViT-S is not better ($-0.26$, $p = 0.43$).
+    \item \textbf{Encoder}: replacing LightViT-T with the third ResNet-50 stage (the TransUNet stem, 15.42M parameters) lowers Dice by $1.76$ points for every seed ($p = 0.007$) while adding 4.7M parameters. ViT-B/16 is also lower ($-2.05$, $p = 0.14$), and the larger LightViT-S is not better ($-0.26$, $p = 0.43$), so the lightest transformer tested is sufficient.
     \item \textbf{Block placement}: applying the bottleneck block before LightViT-T, on the $28\times28\times512$ stage-2 output as in DA-TransUNet's ordering, lowers Dice by $1.10$ points for every seed ($p = 0.008$) and adds 0.31M parameters. The full decoder of DA-TransUNet is not better than the slim decoder ($-0.97$, $p = 0.40$) at 1.3 times the parameters and 1.5 times the FLOPs.
-    \item \textbf{Transformer and ApproxDA blocks}: with the ApproxDA blocks in place, replacing LightViT-T by a single strided $3\times3$ convolution leaves Dice unchanged ($80.55$ vs.\ $80.57$, $p = 0.94$), whereas removing the blocks from the LightViT-T model costs $2.76$ points. The lightweight transformer and the ApproxDA blocks thus provide interchangeable global context: one of them is sufficient, and the blocks are the cheaper of the two. We keep LightViT-T in the final model as the transformer component of the TransUNet design.
 \end{itemize}

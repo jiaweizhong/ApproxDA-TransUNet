@@ -6,11 +6,24 @@ This section describes ApproxDA-TransUNet: the overall topology, the attention a
 \subsection{Overall Lightweight Architecture}
 Figure~\ref{fig:overall_arch} shows the complete architecture. Compared with the 108M-parameter DA-TransUNet~\cite{sun2024datransunet}, every stage is redesigned for efficiency while keeping the multi-scale skip structure.
 
-\begin{figure*}[t]
+\begin{figure*}[!tbp]
 \centering
-\includegraphics[width=\textwidth]{figures/approxda_overview_journal.pdf}
-\caption{Overall architecture of the lightweight ApproxDA-TransUNet. The encoder consists of a ResNet-50 truncated after its second stage (stride 8) followed by LightViT-T, which produces the $14\times14\times128$ bottleneck. ApproxDA blocks are placed on all three skip connections ($1/8$, $1/4$, $1/2$) and on the bottleneck. The decoder uses 64 channels at every skip stage and 16 channels at full resolution (10.75M parameters in total).}
-\label{fig:overall_arch}
+\begin{subfigure}[b]{\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{figures/approxda_overview_journal.pdf}
+    \caption{Overall architecture. The encoder consists of a ResNet-50 truncated after its second stage (stride 8) followed by LightViT-T, which produces the $14\times14\times128$ bottleneck. ApproxDA blocks are placed on all three skip connections ($1/8$, $1/4$, $1/2$) and on the bottleneck; $C'$ is the compressed width inside each block. The decoder uses 64 channels at every skip stage and 16 channels at full resolution.}
+    \label{fig:overall_arch}
+\end{subfigure}
+
+\vspace{6pt}
+\begin{subfigure}[b]{\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{figures/approxda_journal_block.pdf}
+    \caption{ApproxDA block: a windowed low-rank PAM branch ($M$, $r$) and a grouped CAM branch ($G$), each between two $3\times3$ convolutions, fused with a fixed gate $g=\frac{1}{2}$.}
+    \label{fig:block_pam_cam}
+\end{subfigure}
+\caption{ApproxDA-TransUNet: (a) the overall architecture (10.75M parameters) and (b) the ApproxDA block.}
+\label{fig:framework}
 \end{figure*}
 
 \subsubsection{Early-Truncated CNN Stem}
@@ -27,27 +40,8 @@ The third stage is removed, so the CNN stem has 1.45M parameters (1.83 GFLOPs).
 Instead of ViT-B, $\mathbf{F}_{1/8}$ is projected by a $1\times1$ convolution and processed by the three stages of LightViT-T~\cite{huang2022lightvit} (ImageNet-1k weights), a hierarchical lightweight vision transformer. The second-stage output and the upsampled third-stage output are fused into the bottleneck representation $\mathbf{Z} \in \mathbb{R}^{128 \times \frac{H}{16} \times \frac{W}{16}}$ ($14 \times 14$ for $224\times224$ input). LightViT-T has 7.81M parameters but only 0.75 GFLOPs, because it operates on $28\times28$ and smaller token grids. The bottleneck ApproxDA block is positioned post-transformer, directly operating on $\mathbf{Z}$ to refine global representations before decoding.
 
 \subsection{The ApproxDA Block Formulation}
-Figure~\ref{fig:approxda_block_detail} illustrates the internal topology of the ApproxDA block. The module receives input tensor $\mathbf{X} \in \mathbb{R}^{C \times H \times W}$ and splits computation into two parallel streams: Low-Rank Windowed Position Attention (PAM) and Grouped Channel Attention (CAM).
+Figure~\ref{fig:block_pam_cam} illustrates the internal topology of the ApproxDA block. The module receives input tensor $\mathbf{X} \in \mathbb{R}^{C \times H \times W}$ and splits computation into two parallel streams: Low-Rank Windowed Position Attention (PAM) and Grouped Channel Attention (CAM).
 
-\begin{figure*}[t]
-\centering
-\begin{subfigure}[b]{\textwidth}
-    \centering
-    \includegraphics[width=\textwidth]{figures/approxda_journal_block.pdf}
-    \caption{ApproxDA block: windowed low-rank PAM ($M$, $r$) and grouped CAM ($G$), fused with a fixed gate $g=\frac{1}{2}$.}
-    \label{fig:block_pam_cam}
-\end{subfigure}
-
-\vspace{6pt}
-\begin{subfigure}[b]{\textwidth}
-    \centering
-    \includegraphics[width=\textwidth]{figures/approxda_decoder_journal.pdf}
-    \caption{One slim decoder stage with additive skip fusion; RB is the residual reduction block.}
-    \label{fig:block_decoder}
-\end{subfigure}
-\caption{Detailed diagrams of (a) the ApproxDA block and (b) a slim decoder stage (64 channels).}
-\label{fig:approxda_block_detail}
-\end{figure*}
 
 \subsubsection{Bottleneck Convolutional Compression}
 As in the DANet head used by DA-TransUNet, each branch first compresses $\mathbf{X}$ with its own convolution:
@@ -57,7 +51,14 @@ As in the DANet head used by DA-TransUNet, each branch first compresses $\mathbf
 where $C' = C/16$. For the bottleneck and the $1/8$, $1/4$, and $1/2$ skips, $C'$ is 8, 32, 16, and 4.
 
 \subsubsection{Low-Rank Windowed Position Attention (PAM)}
-Full spatial self-attention requires pairwise affinities between all $N = HW$ tokens, yielding $\mathcal{O}(N^2 C')$ complexity. We approximate this along two orthogonal dimensions: \textbf{spatial windowing} ($M$) and \textbf{low-rank projection} ($r$).
+\begin{figure*}[!tbp]
+\centering
+\includegraphics[width=\textwidth]{figures/approxda_pam_journal.pdf}
+\caption{Low-rank windowed position attention, shown for one $M\times M$ window. Keys and values are projected from $N_w = M^2$ tokens to rank $r$ by a projection $P$ shared between them, so the attention matrix $A$ is $N_w\times r$ instead of $N_w\times N_w$; the output is added to the input with the scale $\alpha$.}
+\label{fig:pam}
+\end{figure*}
+
+Figure~\ref{fig:pam} shows the computation inside one window. Full spatial self-attention requires pairwise affinities between all $N = HW$ tokens, yielding $\mathcal{O}(N^2 C')$ complexity. We approximate this along two orthogonal dimensions: \textbf{spatial windowing} ($M$) and \textbf{low-rank projection} ($r$).
 
 \paragraph{Window Partitioning} The feature map $\mathbf{X}'$ is partitioned into non-overlapping spatial windows of size $M \times M$, where $M = \min(M, H, W)$ ($M=28$ for $224 \times 224$ inputs). Consequently, the $1/2$ and $1/4$ skip stages are partitioned into $4 \times 4$ and $2 \times 2$ window grids, while the $1/8$ skip and bottleneck operate within a single global window. Within each window of $N_w = M^2$ tokens, queries $\mathbf{Q}$, keys $\mathbf{K}$, and values $\mathbf{V}$ are generated via $1 \times 1$ convolutions:
 \begin{equation}
@@ -77,7 +78,14 @@ The windowed position attention matrix $\mathbf{A} \in \mathbb{R}^{N_w \times r}
 where $\alpha$ is a learnable scalar initialized to 0. All window features are reassembled and passed through a $3 \times 3$ refinement convolution. Setting $r=0$ bypasses projection, recovering exact attention within each window.
 
 \subsubsection{Grouped Channel Attention (CAM)}
-Standard CAM computes channel covariance across all $C'$ channels with $\mathcal{O}(C'^2 N)$ complexity. ApproxDA blocks parameterize channel interactions via grouping parameter $G$: the $C'$ channels are partitioned into $G$ disjoint groups of width $C_g = C'/G$ (with $G \leftarrow \min(G, C')$):
+\begin{figure*}[!tbp]
+\centering
+\includegraphics[width=\textwidth]{figures/approxda_cam_journal.pdf}
+\caption{Grouped channel attention, shown for one of the $G$ groups. The channel affinity $A$ is computed within each group of $C_g = C'/G$ channels, the output is added to the input with the scale $\beta$, and the groups are concatenated.}
+\label{fig:cam}
+\end{figure*}
+
+Figure~\ref{fig:cam} shows the computation for one group. Standard CAM computes channel covariance across all $C'$ channels with $\mathcal{O}(C'^2 N)$ complexity. ApproxDA blocks parameterize channel interactions via grouping parameter $G$: the $C'$ channels are partitioned into $G$ disjoint groups of width $C_g = C'/G$:
 \begin{equation}
     \mathbf{X}' = \left[ \mathbf{X}^{(1)}, \mathbf{X}^{(2)}, \dots, \mathbf{X}^{(G)} \right], \quad \mathbf{X}^{(g)} \in \mathbb{R}^{C_g \times N}.
 \end{equation}
@@ -96,6 +104,13 @@ In our earlier study~\cite{zhong2026approxda}, a learnable per-channel gate $\ma
 where $\mathbf{W}_f$ consists of channel dropout ($p=0.05$), a $1 \times 1$ convolution back to $C$ channels, and ReLU, as in the DANet head; there is no outer residual connection.
 
 \subsection{Compact Decoder Architecture}
+\begin{figure*}[!tbp]
+\centering
+\includegraphics[width=\textwidth]{figures/approxda_decoder_journal.pdf}
+\caption{One slim decoder stage with additive skip fusion (64 channels). RB is the residual reduction block shown on the right.}
+\label{fig:block_decoder}
+\end{figure*}
+
 Unlike the concatenation decoder of DA-TransUNet ($256 \to 128 \to 64 \to 16$ channels), ApproxDA-TransUNet uses 64 channels at every skip stage and fuses skips by addition (Figure~\ref{fig:block_decoder}). A $3\times3$ convolution first maps $\mathbf{Z}$ to 64 channels. At each skip stage $l \in \{1, 2, 3\}$ ($1/8$, $1/4$, $1/2$), the previous map is bilinearly upsampled by $2\times$ and added to the ApproxDA-refined skip $\mathbf{S}_l$ after a channel-reduction block:
 \begin{equation}
     \mathbf{D}_l = \operatorname{RB}\left(\operatorname{Upsample}_{2\times}(\mathbf{D}_{l-1}) + \operatorname{RB}(\mathbf{S}_l)\right) \in \mathbb{R}^{64 \times H_l \times W_l},

@@ -21,7 +21,7 @@ All models are trained with the TransUNet augmentations (random $90^\circ$ rotat
 
 \begin{table*}[t]
 \centering
-\caption{Quantitative comparison across five clinical benchmarks evaluated over three independent random seeds (1234 / 0 / 1). DSC is reported as individual seed scores and Mean $\pm$ Standard Deviation. HD95 is reported in millimeters for FeTA, in voxels for Synapse, and in pixels for ACDC, CVC-ClinicDB, and ISIC 2018. $p$-values are paired $t$-tests over the three seeds.}
+\caption{Quantitative comparison across five clinical benchmarks evaluated over three independent random seeds (1234 / 0 / 1). DSC is reported as individual seed scores and Mean $\pm$ Standard Deviation. HD95 is reported in millimeters for FeTA, in voxels for Synapse, and in pixels for ACDC, CVC-ClinicDB, and ISIC 2018. $p$-values are paired $t$-tests over the three seeds of one dataset ($n = 3$, low power) and are given for completeness; see the text for the analysis across datasets.}
 \label{tab:main_benchmark}
 \resizebox{\textwidth}{!}{
 \begin{tabular}{lcccccc}
@@ -50,7 +50,7 @@ DA-TransUNet~\cite{sun2024datransunet} & 107.95 & 30.21 & 80.93 / 79.61 / 80.23 
 ApproxDA-TransUNet (Ours) & \textbf{10.75} & \textbf{6.92} & 81.66 / 81.08 / 80.41 & \textbf{81.05 $\pm$ 0.63} & 2.85 & \textbf{+0.80} ($p{=}0.17$) \\
 \midrule
 \multicolumn{7}{l}{\textbf{Combined Multi-Benchmark Aggregate (15 Seed Pairs Across 5 Modalities)}} \\
-\multicolumn{5}{l}{Positive Seed Pairs: \textbf{10 / 15}} & \multicolumn{2}{r}{Mean Paired Gain: \textbf{+0.37} pp (Wilcoxon $p = 0.010$)} \\
+\multicolumn{5}{l}{Datasets with a higher mean: \textbf{5 / 5}; positive seed pairs: \textbf{10 / 15}} & \multicolumn{2}{r}{Average gain: \textbf{+0.37} pp} \\
 \multicolumn{5}{l}{Parameter Reduction: \textbf{90.0\%} ($107.95\text{M} \to 10.75\text{M}$)} & \multicolumn{2}{r}{Compute Reduction: \textbf{77.1\%} ($30.21\text{G} \to 6.92\text{G}$)} \\
 \bottomrule
 \end{tabular}
@@ -59,7 +59,7 @@ ApproxDA-TransUNet (Ours) & \textbf{10.75} & \textbf{6.92} & 81.66 / 81.08 / 80.
 
 Table~\ref{tab:main_benchmark} summarizes the results. With a tenth of the parameters and under a quarter of the FLOPs, ApproxDA-TransUNet has a higher mean Dice than DA-TransUNet on all five benchmarks: $+0.32$ points on Synapse (seed standard deviation $0.20$ vs.\ $0.66$), $+0.15$ on ACDC, $+0.41$ on CVC-ClinicDB, $+0.20$ on ISIC 2018, and $+0.80$ on FeTA 2.4 (positive for all three seeds: $+0.73$, $+1.47$, $+0.19$). None of these per-dataset differences is significant with three seeds.
 
-Pooling the 15 seed pairs, 10 favor ApproxDA-TransUNet, with a mean gain of \textbf{$+0.37$ points} (Wilcoxon signed-rank $p = 0.010$; paired $t$-test $p = 0.007$). HD95 does not follow the Dice trend: it is lower than DA-TransUNet's only on CVC-ClinicDB ($12.74$ vs.\ $14.49$ px) and higher on the other four datasets (significantly only on FeTA, $p = 0.04$, see the case audit below).
+Across datasets, the three-seed mean is higher on all five datasets and 10 of the 15 seed pairs favor ApproxDA-TransUNet, with an average gain of \textbf{$+0.37$ points}. Because the three seeds of a dataset are not independent experiments, we treat the five datasets as the independent units: the dataset-level mean gain is $+0.37$ points (one-sample $t$-test on the five dataset means, which for this balanced design is equivalent to a random-intercept model $\Delta\mathrm{DSC} \sim 1 + (1 \mid \text{dataset})$, $p = 0.031$; a hierarchical bootstrap that resamples datasets and then seeds gives a 95\% interval of $[0.13, 0.68]$ points). With only five datasets these estimates are themselves uncertain, and we read them as evidence that accuracy is retained rather than as a claim of superiority. HD95 does not follow the Dice trend: it is lower than DA-TransUNet's only on CVC-ClinicDB ($12.74$ vs.\ $14.49$ px) and higher on the other four datasets (significantly only on FeTA, $p = 0.04$, see the case audit below).
 
 \subsection{Comparison with Published Results}
 \label{sec:literature}
