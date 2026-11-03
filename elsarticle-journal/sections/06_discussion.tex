@@ -13,7 +13,7 @@ The left--right confusions are a plausible side effect of the standard TransUNet
 
 \begin{table}[t]
 \centering
-\caption{Deployment profile on an NVIDIA RTX 5090 (fp32, $224 \times 224$ input, 9 classes, idle GPU). Memory is the peak allocated by PyTorch, including weights and cuDNN workspace; training uses batch size 24 with SGD.}
+\caption{Deployment profile.}
 \label{tab:deployment}
 \resizebox{\columnwidth}{!}{
 \begin{tabular}{lcc}
@@ -30,6 +30,7 @@ Latency, batch 1 & \textbf{6.5 ms} & 9.6 ms \\
 \bottomrule
 \end{tabular}
 }
+\par\vspace{3pt}\begin{minipage}{\linewidth}\footnotesize NVIDIA RTX 5090, fp32, $224 \times 224$ input, 9 classes, idle GPU. Memory: peak allocated by PyTorch, including weights and cuDNN workspace; training with batch size 24 and SGD.\end{minipage}
 \end{table}
 
 Table~\ref{tab:deployment} summarizes the deployment cost. ApproxDA-TransUNet needs $58\%$ less GPU memory for training and inference and stores a ten-times smaller checkpoint. Because volumes are segmented slice by slice in batches, throughput is the relevant speed measure, and it is $2.55$ times higher. At batch size 1, however, the lightweight model is slower (9.6 vs.\ 6.5 ms): its many small LightViT and attention kernels leave the GPU underutilized, so the FLOP reduction does not translate into lower single-slice latency.
