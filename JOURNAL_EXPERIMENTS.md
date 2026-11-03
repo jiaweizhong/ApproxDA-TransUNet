@@ -9,7 +9,7 @@
 
 ## 当前状态（2026-11-01，以此为准；下文 §0 – §5 中与此冲突的内容都是历史记录）
 
-**论文**：`elsarticle-journal/`（投 Biomedical Signal Processing and Control），latexmk 编译通过，稿中已无 TODO。改稿记录见 `elsarticle-journal/AUDIT_2026-10-30.md`。
+**论文**：`elsarticle-journal/`（投 Biomedical Signal Processing and Control；11-02 定题 “ApproxDA-TransUNet: A Lightweight Dual-Attention Architecture for Medical Image Segmentation”），latexmk 编译通过，稿中已无 TODO。改稿记录见 `elsarticle-journal/AUDIT_2026-10-30.md`。11-02 按审稿式意见调整主线：贡献改为（1）轻量化重构，（2）发现：在所评估的优化设置下 dual-attention 算子基本冗余（block 必要、算子可近似 / 精确 / 关闭而精度不变），（3）机制：零初始化残差缩放使 SGD 下 attention 分支停在接近 0，（4）5 数据集 × 3 seed 验证；讨论节新增“为什么保留 attention 算子”（开销几乎为 0、可直接替换 DA 的 DANet head、Adam 下 CVC 的 1/8 skip 学到 |α| ≈ 0.27，但未测其作用）。标题未改，待用户决定。11-02 统计改法：不再以合并 15 组的 Wilcoxon p = 0.010 作为结论，改为描述性“5 / 5 个数据集均值更高、10 / 15 seed 对为正、平均 +0.37”；以数据集为独立单元：数据集均值 t 检验 p = 0.031（11-02 起论文不再写“等价于随机截距模型”），分层 bootstrap（先抽数据集再抽 seed）95% CI [0.13, 0.68]，sign test 5 / 5 双侧 p = 0.0625；单数据集 n = 3 的 p 只作参考。G = 8 改写为沿用自 ViT-B 版的固定默认值（未调），退化写入局限性，建议按阶段自适应分组（如 G = C′/4）。用户决定只改文字（方案 A），不重跑、不加自适应分组的变体。11-02 用户再次调整主线：全文只强调 dual attention，撤回“attention 算子冗余”的叙述——删去消融表“只留卷积（attention 关闭）”一行、讨论节整节零初始化残差缩放 / α β / 测试时关掉 attention 的分析；贡献改为三条（轻量 dual-attention 架构、近似与精确 dual attention 精度相同且更省、五数据集 × 三 seed 验证）。约束：不写“dual attention 带来精度提升”，只写 block 整体必要（−2.76）和近似不掉点（−0.01）。相关数据仍在 §5 P11 和日志里。
 
 **最终模型**：R50 到 1/8 → LightViT-T → ApproxDA block → slim decoder（64 通道，skip 相加融合），3 个 skip 上也有 ApproxDA block；fixed g = ½，M = 28（256 输入为 32），r = 32，G = 8；**不加点损失**。10.75M 参数，6.92 GFLOPs（224²，9 类，CPU 上 fvcore 计数；DA-TransUNet 107.95M / 30.21）。
 
@@ -27,13 +27,13 @@
 - AMOS 不报（不加点损失时比 DA 低 0.56，3 / 3 seed）。点损失不用（Synapse 上 −1.57，§5 P9 / P10）。
 - 其他 baseline：Synapse / ACDC / CVC / ISIC 引用文献值（论文 Table 3，数值取自 `Reference/` 下 DA-TransUNet 论文 Table 1 – 2 和 Swin-Unet 论文 Table 2）；FeTA 用我们按同协议重训的 2D baseline（U-Net 79.21、Att-UNet 79.11、U-Net++ 79.01、TransUNet 81.12、Swin-UNet lr 0.05 78.60），另附 AdaDec3D 复现的 3D 参考（MedNeXt-M 81.22、3D UX-Net 80.01、SwinUNETR 78.38，单 seed、按验证集选 checkpoint）。
 
-**消融**（Synapse，以最终模型为基准，15 个配置 × 3 seed，§5 P11）：去掉 block −2.76（p = 0.008）；R50 第 3 stage 代替 LightViT −1.76（0.007）；block 放在 LightViT 之前 −1.10（0.008）；ViT-B −2.05（0.14）；完整 decoder −0.97（0.40）；r64 −0.93（0.11）；G4 −0.67（0.10）；M112 −0.50（0.54）；LightViT-S −0.26（0.43）；DA 等价 block −0.01（0.97）；r0 +0.19；只留卷积 +0.21（0.57）；G1 +0.55（0.25）；一层卷积 + block −0.02（0.94，论文只用这一行支撑“轻量 Transformer 与 block 可互相替代”，不报 2×2）。
+**消融**（Synapse，以最终模型为基准，15 个配置 × 3 seed，§5 P11）：去掉 block −2.76（p = 0.008）；R50 第 3 stage 代替 LightViT −1.76（0.007）；block 放在 LightViT 之前 −1.10（0.008）；ViT-B −2.05（0.14）；完整 decoder −0.97（0.40）；r64 −0.93（0.11）；G4 −0.67（0.10）；M112 −0.50（0.54）；LightViT-S −0.26（0.43）；DA 等价 block −0.01（0.97）；r0 +0.19；只留卷积 +0.21（0.57）；G1 +0.55（0.25）；一层卷积 + block −0.02（0.94；11-02 用户决定论文不报这一行，也不写“可互相替代”，只写 LightViT-S / ViT-B / R50 第 3 stage 都不更好、最轻的 Transformer 就够）。
 
 **机制**：SGD 训练的最终模型 48 个 block 中 |α| ≤ 0.011、|β| ≤ 0.06；Synapse 上测试时关掉 PAM 和 CAM，Dice 变化 +0.01 / +0.00 / +0.09，0.006 – 0.016% 的体素改变（§5 P11 下）。
 
 **部署**（RTX 5090，fp32，224²）：训练显存 4.85 / 11.52 GiB，推理显存 1.09 / 2.59 GiB，batch 32 吞吐 1415 / 555 slices/s，batch 1 延迟 9.6 / 6.5 ms（我们更慢），checkpoint 43.5 / 432 MB。
 
-**图表来源**：图 1 `elsarticle-journal/figures/generate_overview_journal.py`；图 2(a) `figures/plotnn/approxda_journal_block.py`（PlotNeuralNet），图 2(b) `figures/generate_block_decoder_journal.py`；图 3 `experiments/qualitative_journal_predict.py` + `experiments/make_qualitative_figure_journal.py`（seed 1234，中位数病例，只按真值选切片）。
+**图表来源**（11-02 重排）：图 1 =（a）整体架构 `elsarticle-journal/figures/generate_overview_journal.py` +（b）ApproxDA block `figures/plotnn/approxda_journal_block.py`（PlotNeuralNet）；图 2 PAM 原理、图 3 CAM 原理 `figures/generate_pam_cam_journal.py`（分别放在 PAM、CAM 小节）；图 4 decoder `figures/generate_block_decoder_journal.py`（decoder 小节）；图 5 定性图 `experiments/qualitative_journal_predict.py` + `experiments/make_qualitative_figure_journal.py`（seed 1234，中位数病例，只按真值选切片）。讨论节 6.3 标题改为 “Computational Efficiency and Deployment Profile”。
 
 ---
 
