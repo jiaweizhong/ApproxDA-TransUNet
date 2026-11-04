@@ -1,37 +1,32 @@
 {
  "Synapse": {
-  "case": "case0004",
-  "slice": 99,
-  "case_dice_ours": 0.7953749462348945,
-  "DA-TransUNet": 0.7327661082215318,
-  "ApproxDA-TransUNet": 0.7140273802287262
+  "case": "case0022",
+  "slice": 50,
+  "DA-TransUNet": 0.6640742582404116,
+  "ApproxDA-TransUNet": 0.9140960820560756
  },
  "ACDC": {
-  "case": "case_008_volume_ES",
-  "slice": 2,
-  "case_dice_ours": 0.9205318746775258,
-  "DA-TransUNet": 0.9379270644674826,
-  "ApproxDA-TransUNet": 0.9443776078256146
+  "case": "case_002_volume_ES",
+  "slice": 5,
+  "DA-TransUNet": 0.619690738673642,
+  "ApproxDA-TransUNet": 0.8301932893638523
  },
  "CVC": {
-  "case": "182",
+  "case": "529",
   "slice": null,
-  "case_dice_ours": 0.9567118495846086,
-  "DA-TransUNet": 0.9616434420341905,
-  "ApproxDA-TransUNet": 0.9567118495846086
+  "DA-TransUNet": 0.6823765354725495,
+  "ApproxDA-TransUNet": 0.9046941678520626
  },
  "ISIC": {
-  "case": "ISIC_0014698",
+  "case": "ISIC_0012248",
   "slice": null,
-  "case_dice_ours": 0.9298653042266605,
-  "DA-TransUNet": 0.9226812409580454,
-  "ApproxDA-TransUNet": 0.9298653042266605
+  "DA-TransUNet": 0.5274328833839401,
+  "ApproxDA-TransUNet": 0.7618768328445747
  },
  "FeTA": {
-  "case": "sub-076",
-  "slice": 71,
-  "case_dice_ours": 0.8659333556167678,
-  "DA-TransUNet": 0.688450000999144,
-  "ApproxDA-TransUNet": 0.7156359960880506
+  "case": "sub-021",
+  "slice": 38,
+  "DA-TransUNet": 0.5930637953008764,
+  "ApproxDA-TransUNet": 0.7209333467830707
  }
 }

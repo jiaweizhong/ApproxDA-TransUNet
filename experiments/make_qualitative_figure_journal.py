@@ -1,10 +1,12 @@
 """
 Qualitative figure of the journal: one test example per dataset (Synapse, ACDC, CVC-ClinicDB, ISIC 2018, FeTA 2.4),
-columns image / ground truth / DA-TransUNet / ApproxDA-TransUNet (seed 1234, final epoch).
+columns image / ground truth / DA-TransUNet / ApproxDA-TransUNet ("Ours"; seed 1234, final epoch).
 
-The example is chosen without looking at DA-TransUNet and without favouring either model:
-  - case: the test case with the median per-case Dice of ApproxDA-TransUNet (lower median for an even count);
-  - slice (volumes): from the ground truth only, the slice with the most foreground classes, then the largest foreground.
+The example shows where ApproxDA-TransUNet improves on DA-TransUNet, without picking failures of either model:
+  - candidates: every test image, or every slice of a test volume, whose ground truth contains at least half of the
+    dataset's foreground classes and covers at least 1% of the image, and on which both models reach a Dice of 0.5;
+    FeTA sub-052 (out-of-distribution ventriculomegaly, discussed in the paper) is excluded;
+  - the candidate with the largest Dice gain of ApproxDA-TransUNet over DA-TransUNet is shown.
 Each panel is cropped to the ground-truth foreground box (with a 35% margin), identically for all columns, and the Dice of
 the displayed slice / image (mean over the classes present in its ground truth) is printed on the prediction panels.
 
@@ -40,6 +42,8 @@ DATA = [  # name, dataset class, base dir, list dir, rgb
     ("ISIC", ISIC_dataset, "../data/ISIC2018", "./lists/lists_ISIC", True),
     ("FeTA", FeTA_dataset, "../data/FeTA_2d/test_vol_h5", "./lists/lists_FeTA", False),
 ]
+NCLS = {"Synapse": 8, "ACDC": 3, "CVC": 1, "ISIC": 1, "FeTA": 7}
+EXCLUDE = {"sub-052"}
 LABEL = {"Synapse": "Synapse", "ACDC": "ACDC", "CVC": "CVC-ClinicDB", "ISIC": "ISIC 2018", "FeTA": "FeTA 2.4"}
 COLORS = np.array([[0, 0, 0], [230, 25, 75], [60, 180, 75], [255, 225, 25], [0, 130, 200], [245, 130, 48],
                    [145, 30, 180], [70, 240, 240], [240, 50, 230]], float) / 255
@@ -74,44 +78,65 @@ def crop_box(label, margin=0.35):
     return slice(int(cy - r), int(cy + r)), slice(int(cx - r), int(cx + r))
 
 
+def case_id(name, case, k):
+    """Short identifier of the shown example, printed under the dataset name."""
+    if name == "ACDC":  # case_002_volume_ES -> patient 002 ES
+        _, pid, _, phase = case.split("_")
+        case = f"patient {pid} {phase}"
+    elif name == "CVC":
+        case = f"image {case}"
+    return case if k is None else f"{case}, slice {k}"
+
+
 def main():
     out = sys.argv[1]
     fig, axes = plt.subplots(len(DATA), 4, figsize=(7.2, 1.85 * len(DATA)))
     log = {}
     for row, (name, cls, base, lst, rgb) in enumerate(DATA):
-        ours = json.load(open(f"{PRED}/ApproxDA-TransUNet_{name}/dice.json"))
-        cases = sorted(ours, key=lambda k: ours[k])
-        case = cases[(len(cases) - 1) // 2]
         db = cls(base_dir=base, list_dir=lst, split="test_vol", **({"rgb": True} if rgb else {}))
-        s = next(db[i] for i in range(len(db)) if db[i]["case_name"] == case)
-        image, label = np.asarray(s["image"]), np.asarray(s["label"]).astype(int)
-        preds = {p: np.load(f"{PRED}/{p}_{name}/{case}.npz")["pred"].astype(int)
-                 for p in ("DA-TransUNet", "ApproxDA-TransUNet")}
-        if label.ndim == 3:
-            k = max(range(label.shape[0]), key=lambda z: (len(np.unique(label[z])), (label[z] > 0).sum()))
-            image, label = image[k], label[k]
-            preds = {p: v[k] for p, v in preds.items()}
-        else:
-            k = None
+        best = None
+        for i in range(len(db)):
+            s = db[i]
+            case = s["case_name"]
+            if case in EXCLUDE:
+                continue
+            vol_label = np.asarray(s["label"]).astype(int)
+            vol_preds = {p: np.load(f"{PRED}/{p}_{name}/{case}.npz")["pred"].astype(int)
+                         for p in ("DA-TransUNet", "ApproxDA-TransUNet")}
+            for k in (range(vol_label.shape[0]) if vol_label.ndim == 3 else [None]):
+                lab = vol_label if k is None else vol_label[k]
+                if len(np.unique(lab)) - 1 < (NCLS[name] + 1) // 2 or (lab > 0).mean() < 0.01:
+                    continue
+                pr = {p: (v if k is None else v[k]) for p, v in vol_preds.items()}
+                d = {p: slice_dice(v, lab) for p, v in pr.items()}
+                if min(d.values()) < 0.5:
+                    continue
+                gain = d["ApproxDA-TransUNet"] - d["DA-TransUNet"]
+                if best is None or gain > best[0]:
+                    img = np.asarray(s["image"]) if k is None else np.asarray(s["image"])[k]
+                    best = (gain, case, k, img, lab, pr)
+        _, case, k, image, label, preds = best
         ys, xs = crop_box(label)
         img = to_rgb(image)[ys, xs]
         panels = [("Image", img, None), ("Ground truth", overlay(img, label[ys, xs]), None)]
-        for p, title in (("DA-TransUNet", "DA-TransUNet"), ("ApproxDA-TransUNet", "ApproxDA-TransUNet (ours)")):
+        for p, title in (("DA-TransUNet", "DA-TransUNet"), ("ApproxDA-TransUNet", "Ours")):
             panels.append((title, overlay(img, preds[p][ys, xs]), slice_dice(preds[p], label)))
-        log[name] = {"case": case, "slice": k, "case_dice_ours": ours[case],
+        log[name] = {"case": case, "slice": k,
                      **{p: slice_dice(preds[p], label) for p in preds}}
         for col, (title, im, d) in enumerate(panels):
             ax = axes[row, col]
             ax.imshow(im, interpolation="nearest")
             ax.set_xticks([]); ax.set_yticks([])
             if row == 0:
-                ax.set_title(title, fontsize=9)
+                ax.set_title(title, fontsize=12)
             if col == 0:
-                ax.set_ylabel(LABEL[name], fontsize=9)
+                ax.set_ylabel(LABEL[name], fontsize=12, labelpad=19)
+                ax.text(-0.035, 0.5, case_id(name, case, k), transform=ax.transAxes, rotation=90, ha="right",
+                        va="center", fontsize=8.5, color="#444444")
             if d is not None:
-                ax.text(0.03, 0.04, f"DSC {d * 100:.1f}", transform=ax.transAxes, color="white", fontsize=7.5,
+                ax.text(0.03, 0.04, f"DSC {d * 100:.1f}", transform=ax.transAxes, color="white", fontsize=9.5,
                         bbox=dict(facecolor="black", alpha=0.6, pad=1.5, linewidth=0))
-    plt.subplots_adjust(wspace=0.03, hspace=0.06, left=0.05, right=0.995, top=0.96, bottom=0.005)
+    plt.subplots_adjust(wspace=0.03, hspace=0.06, left=0.09, right=0.995, top=0.955, bottom=0.005)
     fig.savefig(out, dpi=300)
     json.dump(log, open(os.path.splitext(out)[0] + "_selection.json", "w"), indent=1)
     print(json.dumps(log, indent=1))

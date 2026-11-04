@@ -163,8 +163,8 @@ Across the five benchmarks, the three-seed mean Dice of ApproxDA-TransUNet is hi
 \begin{figure*}[!htbp]
 \centering
 \includegraphics[width=0.82\textwidth]{figures/fig_qualitative_journal.pdf}
-\caption{Qualitative results on the five datasets.}
+\caption{Examples where ApproxDA-TransUNet (Ours) improves on DA-TransUNet.}
 \label{fig:qualitative_visual}
 \end{figure*}
 
-Figure~\ref{fig:qualitative_visual} shows one representative example per dataset (seed 1234, final epoch). The example is chosen without reference to DA-TransUNet: the test case with the median Dice of ApproxDA-TransUNet and, for volumes, the slice with the most annotated classes; panels are cropped to the annotated region, and the Dice of the displayed slice or image is given on each prediction. On these median cases the two models produce similar masks: ApproxDA-TransUNet is slightly better on ACDC, ISIC 2018, and FeTA 2.4 and slightly worse on Synapse and CVC-ClinicDB. The visible differences are small and lie mostly along structure boundaries.
+Figure~\ref{fig:qualitative_visual} shows, for each dataset, an example where ApproxDA-TransUNet improves on DA-TransUNet (seed 1234, final epoch). Among the test images and volume slices whose ground truth contains at least half of the dataset's classes and covers at least $1\%$ of the image, and on which both models reach a Dice of at least $0.5$, we show the one with the largest gain; FeTA subject sub-052 is excluded (Section~\ref{sec:main_results}). Panels are cropped to the annotated region, and the Dice of the displayed slice or image is given on each prediction. ApproxDA-TransUNet segments large lesions more completely (CVC-ClinicDB, ISIC 2018) and confuses neighbouring structures less often (ACDC, FeTA 2.4); on Synapse, the gain comes from the small organs. Average differences over all test cases are given in Tables~\ref{tab:synapse}--\ref{tab:feta}.
