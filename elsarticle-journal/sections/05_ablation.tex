@@ -8,44 +8,44 @@ Single-axis ablations are run on Synapse with three seeds (1234, 0, 1). The refe
 \caption{Single-axis ablations on Synapse.}
 \label{tab:ablation_synapse}
 \resizebox{\textwidth}{!}{
-\begin{tabular}{lccccc}
+\begin{tabular}{lccc}
 \toprule
-\textbf{Ablation Variant} & \textbf{Params (M)} & \textbf{FLOPs (G)} & \textbf{Mean DSC (\%)} & \textbf{HD95} & \textbf{Paired Diff. ($p$)} \\
+\textbf{Ablation Variant} & \textbf{Mean DSC (\%)} & \textbf{HD95} & \textbf{Paired Diff. ($p$)} \\
 \midrule
-\textbf{ApproxDA-TransUNet baseline} & \textbf{10.75} & \textbf{6.92} & \textbf{80.57 $\pm$ 0.19} & \textbf{24.52} & -- \\
+\textbf{ApproxDA-TransUNet baseline} & \textbf{80.57 $\pm$ 0.19} & \textbf{24.52} & -- \\
 \midrule
-\multicolumn{6}{l}{\textit{Block presence and exact dual attention}} \\
-\quad w/o ApproxDA blocks & 10.20 & 6.3 & 77.82 $\pm$ 0.33 & 29.12 & \textbf{$-2.76$} (0.008) \\
-\quad Exact global dual attention ($M{=}112, r{=}0, G{=}1$) & 10.65 & 7.90 & 80.56 $\pm$ 0.62 & 23.64 & $-0.01$ (0.97) \\
+\multicolumn{4}{l}{\textit{Block presence and exact dual attention}} \\
+\quad w/o ApproxDA blocks & 77.82 $\pm$ 0.33 & 29.12 & $\mathbf{-2.76}$ (0.008) \\
+\quad Exact global dual attention ($M{=}112, r{=}0, G{=}1$) & 80.56 $\pm$ 0.62 & 23.64 & $-0.01$ (0.97) \\
 \midrule
-\multicolumn{6}{l}{\textit{Window size $M$}} \\
-\quad $M = 112$ (global window at every stage) & 12.25 & 6.92 & 80.07 $\pm$ 0.98 & 28.99 & $-0.50$ (0.54) \\
+\multicolumn{4}{l}{\textit{Window size $M$}} \\
+\quad $M = 112$ (global window at every stage) & 80.07 $\pm$ 0.98 & 28.99 & $-0.50$ (0.54) \\
 \midrule
-\multicolumn{6}{l}{\textit{Projection rank $r$}} \\
-\quad $r = 0$ (exact attention inside each window) & 10.65 & 7.03 & 80.76 $\pm$ 0.15 & 21.12 & $+0.19$ (0.44) \\
-\quad $r = 64$ & 10.85 & 6.93 & 79.64 $\pm$ 0.40 & 26.85 & $-0.93$ (0.11) \\
+\multicolumn{4}{l}{\textit{Projection rank $r$}} \\
+\quad $r = 0$ (exact attention inside each window) & 80.76 $\pm$ 0.15 & 21.12 & $+0.19$ (0.44) \\
+\quad $r = 64$ & 79.64 $\pm$ 0.40 & 26.85 & $-0.93$ (0.11) \\
 \midrule
-\multicolumn{6}{l}{\textit{Channel groups $G$}} \\
-\quad $G = 1$ (un-grouped CAM) & 10.75 & 6.92 & 81.12 $\pm$ 0.77 & 23.48 & $+0.55$ (0.25) \\
-\quad $G = 4$ & 10.75 & 6.92 & 79.91 $\pm$ 0.57 & 26.69 & $-0.67$ (0.10) \\
+\multicolumn{4}{l}{\textit{Channel groups $G$}} \\
+\quad $G = 1$ (un-grouped CAM) & 81.12 $\pm$ 0.77 & 23.48 & $+0.55$ (0.25) \\
+\quad $G = 4$ & 79.91 $\pm$ 0.57 & 26.69 & $-0.67$ (0.10) \\
 \midrule
-\multicolumn{6}{l}{\textit{Encoder}} \\
-\quad R50 third stage instead of LightViT-T & 15.42 & 8.7 & 78.81 $\pm$ 0.27 & 27.71 & \textbf{$-1.76$} (0.007) \\
-\quad ViT-B/16 instead of LightViT-T & 100.47 & 26.0 & 78.52 $\pm$ 1.64 & 26.01 & $-2.05$ (0.14) \\
-\quad LightViT-S instead of LightViT-T & 20.50 & 8.0 & 80.31 $\pm$ 0.63 & 23.62 & $-0.26$ (0.43) \\
+\multicolumn{4}{l}{\textit{Encoder}} \\
+\quad R50 third stage instead of LightViT-T & 78.81 $\pm$ 0.27 & 27.71 & $\mathbf{-1.76}$ (0.007) \\
+\quad ViT-B/16 instead of LightViT-T & 78.52 $\pm$ 1.64 & 26.01 & $-2.05$ (0.14) \\
+\quad LightViT-S instead of LightViT-T & 80.31 $\pm$ 0.63 & 23.62 & $-0.26$ (0.43) \\
 \midrule
-\multicolumn{6}{l}{\textit{Bottleneck placement and decoder}} \\
-\quad Bottleneck block before LightViT-T & 11.06 & 7.2 & 79.47 $\pm$ 0.36 & 26.10 & \textbf{$-1.10$} (0.008) \\
-\quad Full decoder ($256 \to 128 \to 64 \to 16$) & 14.24 & 10.4 & 79.60 $\pm$ 1.64 & 25.63 & $-0.97$ (0.40) \\
+\multicolumn{4}{l}{\textit{Bottleneck placement and decoder}} \\
+\quad Bottleneck block before LightViT-T & 79.47 $\pm$ 0.36 & 26.10 & $\mathbf{-1.10}$ (0.008) \\
+\quad Full decoder ($256 \to 128 \to 64 \to 16$) & 79.60 $\pm$ 1.64 & 25.63 & $-0.97$ (0.40) \\
 \bottomrule
 \end{tabular}
 }
-\par\vspace{3pt}\begin{minipage}{\linewidth}\footnotesize Seeds 1234 / 0 / 1, $224 \times 224$, 9 classes. Baseline: ApproxDA-TransUNet ($M=28$, $r=32$, $G=8$, $g=\frac{1}{2}$, LightViT-T, slim decoder). HD95 in voxels. Paired differences and $p$-values (paired $t$-test over three seeds, $n = 3$) are relative to the baseline. FLOPs counted on CPU with explicit attention products.\end{minipage}
+\par\vspace{3pt}\begin{minipage}{\linewidth}\footnotesize Seeds 1234 / 0 / 1, $224 \times 224$, 9 classes. Baseline: ApproxDA-TransUNet ($M=28$, $r=32$, $G=8$, $g=\frac{1}{2}$, LightViT-T, slim decoder). HD95 in voxels. Paired differences and $p$-values (paired $t$-test over three seeds, $n = 3$) are relative to the baseline.\end{minipage}
 \end{table*}
 
 \subsection{Dual-Attention Blocks and Their Approximation}
 \begin{itemize}
-    \item \textbf{The blocks matter in this configuration}: removing all ApproxDA blocks lowers Dice on Synapse by \textbf{$2.76$ points} for every seed ($p = 0.008$) and raises HD95 from $24.52$ to $29.12$; the largest drops are in the gallbladder and pancreas.
+    \item \textbf{The blocks matter in this configuration}: removing all ApproxDA blocks lowers Dice on Synapse by $2.76$ points for every seed ($p = 0.008$) and raises HD95 from $24.52$ to $29.12$; the largest drops are in the gallbladder and pancreas.
     \item \textbf{The approximation costs no accuracy}: replacing the approximated attention by the exact global dual attention of DA-TransUNet ($M=112$, $r=0$, $G=1$) leaves Dice unchanged ($-0.01$, $p = 0.97$), and exact attention inside each window ($r=0$) is also on par ($+0.19$). The exact global variant costs $14\%$ more FLOPs and about twice the training time per run (94 vs.\ 45 minutes).
 \end{itemize}
 
@@ -54,6 +54,6 @@ Single-axis ablations are run on Synapse with three seeds (1234, 0, 1). The refe
     \item \textbf{Window size and rank}: a global window ($M=112$, $-0.50$, $p = 0.54$) and a higher rank ($r=64$, $-0.93$, $p = 0.11$) are not significantly different from the defaults; with three seeds on Synapse, differences below about one point cannot be resolved.
     \item \textbf{Channel groups}: $G=8$ is a fixed default carried over from the ViT-B/16 version of the block, where the bottleneck has $C' = 48$ channels and each group six; it was not tuned for the lightweight model. Here it leaves one channel per group in the bottleneck ($C'=8$) and the $1/2$ skip ($C'=4$, four groups), where CAM degenerates to the scaling $(1+\beta)\mathbf{X}'$ (Section~\ref{sec:method}). Un-grouped CAM ($G=1$) is $0.55$ points higher ($p = 0.25$) at no extra cost. We nevertheless keep $G=8$ in the final model as a fixed, non-tuned setting, for consistency with the workshop design and with all other experiments reported here; the results do not show that $G=8$ is optimal, and $G=1$ or a stage-adaptive grouping (Section~\ref{sec:discussion}) is a reasonable alternative.
     \item \textbf{Channel groups $G=4$}: $-0.67$ ($p = 0.10$), not significant.
-    \item \textbf{Encoder}: replacing LightViT-T with the third ResNet-50 stage (the TransUNet stem, 15.42M parameters) lowers Dice by $1.76$ points for every seed ($p = 0.007$) while adding 4.7M parameters. ViT-B/16 is also lower ($-2.05$, $p = 0.14$), and the larger LightViT-S is not better ($-0.26$, $p = 0.43$), so the lightest transformer tested is sufficient.
+    \item \textbf{Encoder}: replacing LightViT-T with the third ResNet-50 stage (the TransUNet stem; 15.42M parameters in total) lowers Dice by $1.76$ points for every seed ($p = 0.007$) while adding 4.7M parameters. ViT-B/16 is also lower ($-2.05$, $p = 0.14$), and the larger LightViT-S is not better ($-0.26$, $p = 0.43$), so the lightest transformer tested is sufficient.
     \item \textbf{Block placement}: applying the bottleneck block before LightViT-T, on the $28\times28\times512$ stage-2 output as in DA-TransUNet's ordering, lowers Dice by $1.10$ points for every seed ($p = 0.008$) and adds 0.31M parameters. The full decoder of DA-TransUNet is not better than the slim decoder ($-0.97$, $p = 0.40$) at 1.3 times the parameters and 1.5 times the FLOPs.
 \end{itemize}

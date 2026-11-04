@@ -1,7 +1,7 @@
-\section{Discussion and Mechanistic Insights}
+\section{Discussion}
 \label{sec:discussion}
 
-This section discusses left--right errors caused by mirror augmentation, reports deployment costs, and outlines limitations.
+This section discusses possible left--right errors from mirror augmentation, reports deployment costs, and outlines limitations.
 
 \subsection{Anatomical Symmetries and Data Augmentation}
 \label{sec:symmetry}
@@ -11,29 +11,7 @@ The left--right confusions are a plausible side effect of the standard TransUNet
 
 \subsection{Computational Efficiency and Deployment Profile}
 
-\begin{table}[t]
-\centering
-\caption{Deployment profile.}
-\label{tab:deployment}
-\resizebox{\columnwidth}{!}{
-\begin{tabular}{lcc}
-\toprule
-\textbf{Metric} & \textbf{DA-TransUNet} & \textbf{ApproxDA-TransUNet (Ours)} \\
-\midrule
-Parameters & 107.95 M & \textbf{10.75 M} ($-90.0\%$) \\
-GFLOPs per slice & 30.21 & \textbf{6.92} ($-77.1\%$) \\
-Checkpoint size (FP32) & 432 MB & \textbf{43.5 MB} \\
-Peak training memory (batch 24) & 11.52 GiB & \textbf{4.85 GiB} ($-58\%$) \\
-Peak inference memory (batch 1) & 2.59 GiB & \textbf{1.09 GiB} ($-58\%$) \\
-Throughput, batch 32 (slices/s) & 555 & \textbf{1415} ($2.55\times$) \\
-Latency, batch 1 & \textbf{6.5 ms} & 9.6 ms \\
-\bottomrule
-\end{tabular}
-}
-\par\vspace{3pt}\begin{minipage}{\linewidth}\footnotesize NVIDIA RTX 5090, fp32, $224 \times 224$ input, 9 classes, idle GPU. Memory: peak allocated by PyTorch, including weights and cuDNN workspace; training with batch size 24 and SGD.\end{minipage}
-\end{table}
-
-Table~\ref{tab:deployment} summarizes the deployment cost. ApproxDA-TransUNet needs $58\%$ less GPU memory for training and inference and stores a ten-times smaller checkpoint. Because volumes are segmented slice by slice in batches, throughput is the relevant speed measure, and it is $2.55$ times higher. At batch size 1, however, the lightweight model is slower (9.6 vs.\ 6.5 ms): its many small LightViT and attention kernels leave the GPU underutilized, so the FLOP reduction does not translate into lower single-slice latency.
+The lower part of Table~\ref{tab:arch_comparison} reports the cost measured on the GPU. ApproxDA-TransUNet needs $58\%$ less GPU memory for training and inference, and its FP32 checkpoint is ten times smaller (43.5 vs.\ 432 MB). Because volumes are segmented slice by slice in batches, throughput is the relevant speed measure, and it is $2.55$ times higher. At batch size 1, however, the lightweight model is slower (9.6 vs.\ 6.5 ms): its many small LightViT and attention kernels leave the GPU underutilized, so the FLOP reduction does not translate into lower single-slice latency.
 
 \subsection{Limitations and Future Work}
 The channel grouping is a fixed default ($G=8$) rather than an optimized design: with the small compressed widths of the lightweight model it removes cross-channel interaction in two of the four blocks. A stage-adaptive grouping that keeps at least two channels per group (for example $G = C'/4$) would be the more principled choice. The ablations were run on Synapse only, where three seeds resolve differences of about one Dice point at best, and the statistical analysis across datasets rests on five benchmarks. ApproxDA-TransUNet processes 3D scans on a 2D planar basis. It therefore cannot use inter-slice context, which matters, for example, at the cranial and caudal ends of organs. Extending ApproxDA blocks to lightweight 2.5D or anisotropic 3D formulations presents a promising avenue for volumetric research.
