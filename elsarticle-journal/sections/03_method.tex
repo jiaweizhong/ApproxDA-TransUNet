@@ -62,7 +62,7 @@ where $C' = C/16$. For the bottleneck and the $1/8$, $1/4$, and $1/2$ skips, $C'
 
 Figure~\ref{fig:pam} shows the computation inside one window. Full spatial self-attention requires pairwise affinities between all $N = HW$ tokens, yielding $\mathcal{O}(N^2 C')$ complexity. We approximate this along two orthogonal dimensions: \textbf{spatial windowing} ($M$) and \textbf{low-rank projection} ($r$).
 
-\paragraph{Window Partitioning} The feature map $\mathbf{X}'$ is partitioned into non-overlapping spatial windows of size $M \times M$, where $M = \min(M, H, W)$ ($M=28$ for $224 \times 224$ inputs). Consequently, the $1/2$ and $1/4$ skip stages are partitioned into $4 \times 4$ and $2 \times 2$ window grids, while the $1/8$ skip and bottleneck operate within a single global window. Within each window of $N_w = M^2$ tokens, queries $\mathbf{Q}$, keys $\mathbf{K}$, and values $\mathbf{V}$ are generated via $1 \times 1$ convolutions:
+\paragraph{Window Partitioning} The feature map $\mathbf{X}'$ is partitioned into non-overlapping spatial windows of size $M \times M$, where $M \leftarrow \min(M, H, W)$ ($M=28$ for $224 \times 224$ inputs and $M=32$ for $256 \times 256$ inputs). Consequently, the $1/2$ and $1/4$ skip stages are partitioned into $4 \times 4$ and $2 \times 2$ window grids, while the $1/8$ skip and bottleneck operate within a single global window. Within each window of $N_w = M^2$ tokens, queries $\mathbf{Q}$, keys $\mathbf{K}$, and values $\mathbf{V}$ are generated via $1 \times 1$ convolutions:
 \begin{equation}
     \mathbf{Q} = \mathbf{W}_Q \mathbf{X}_w, \quad \mathbf{K} = \mathbf{W}_K \mathbf{X}_w \in \mathbb{R}^{C_q \times N_w}, \quad \mathbf{V} = \mathbf{W}_V \mathbf{X}_w \in \mathbb{R}^{C' \times N_w},
 \end{equation}
@@ -72,12 +72,12 @@ where $C_q = \max(1, \lfloor C'/8 \rfloor)$.
 \begin{equation}
     \tilde{\mathbf{K}} = \mathbf{K} \mathbf{P} \in \mathbb{R}^{C_q \times r}, \quad \tilde{\mathbf{V}} = \mathbf{V} \mathbf{P} \in \mathbb{R}^{C' \times r}.
 \end{equation}
-The windowed position attention matrix $\mathbf{A} \in \mathbb{R}^{N_w \times r}$ and refined features $\mathbf{E}_{\text{PAM}}$ are then computed as:
+When $M$ is clamped to a smaller feature map, the leading $N_w$ rows of $\mathbf{P}$ are used. The windowed position attention matrix $\mathbf{A} \in \mathbb{R}^{N_w \times r}$ and refined features $\mathbf{E}_{\text{PAM}}$ are then computed as:
 \begin{align}
     \mathbf{A} &= \operatorname{softmax}\left( \mathbf{Q}^\top \tilde{\mathbf{K}} \right), \\
     \mathbf{E}_{\text{PAM}} &= \alpha \left( \mathbf{A} \tilde{\mathbf{V}}^\top \right)^\top + \mathbf{X}_w \in \mathbb{R}^{C' \times N_w},
 \end{align}
-where $\alpha$ is a learnable scalar initialized to 0. All window features are reassembled into the $H \times W$ grid and refined by a $3 \times 3$ convolution, BN, and ReLU. Setting $r=0$ bypasses projection, recovering exact attention within each window.
+where the softmax normalizes each row over the $r$ projected keys, without temperature scaling as in the PAM of DANet~\cite{fu2019dual}, and $\alpha$ is a learnable scalar initialized to 0. All windows are reassembled into the $H \times W$ grid and refined by a $3 \times 3$ convolution, BN, and ReLU, giving $\hat{\mathbf{E}}_{\text{PAM}} \in \mathbb{R}^{C' \times H \times W}$. Setting $r=0$ bypasses projection, recovering exact attention within each window.
 
 \subsubsection{Grouped Channel Attention (CAM)}
 \begin{figure*}[!tbp]
@@ -96,12 +96,12 @@ Within each group $g$, the channel correlation energy between channel slice $i$ 
     x_{ij}^{(g)} &= \operatorname{softmax}_j \left( \max_k s_{ik} - s_{ij} \right), \\
     \mathbf{E}_{\text{CAM}, i}^{(g)} &= \beta \sum_{j=1}^{C_g} x_{ij}^{(g)} \mathbf{X}_j^{(g)} + \mathbf{X}_i^{(g)},
 \end{align}
-where $\beta$ is a learnable scalar initialized to 0. Groups are concatenated along the channel dimension to form $\mathbf{E}_{\text{CAM}} \in \mathbb{R}^{C' \times H \times W}$ and refined by a $3 \times 3$ convolution, BN, and ReLU; $G=1$ recovers the original CAM. When $G$ does not divide $C'$, the largest divisor of $C'$ not exceeding $G$ is used. Because $C'$ is small in the lightweight model, $G=8$ leaves a single channel per group in the bottleneck ($C'=8$) and in the $1/2$ skip ($C'=4$, four groups), where CAM reduces to $(1+\beta)\mathbf{X}'$; the cost of CAM is negligible at every stage. $G=8$ is therefore a fixed setting retained from the workshop design rather than a tuned choice; un-grouped CAM ($G=1$) is evaluated in Section~\ref{sec:ablation}.
+where $\beta$ is a learnable scalar initialized to 0. Groups are concatenated along the channel dimension to form $\mathbf{E}_{\text{CAM}} \in \mathbb{R}^{C' \times H \times W}$, which is refined by a $3 \times 3$ convolution, BN, and ReLU into $\hat{\mathbf{E}}_{\text{CAM}}$; $G=1$ recovers the original CAM. When $G$ does not divide $C'$, the largest divisor of $C'$ not exceeding $G$ is used. Because $C'$ is small in the lightweight model, $G=8$ leaves a single channel per group in the bottleneck ($C'=8$) and in the $1/2$ skip ($C'=4$, four groups), where CAM reduces to $(1+\beta)\mathbf{X}'$; the cost of CAM is negligible at every stage. $G=8$ is therefore a fixed setting retained from the workshop design rather than a tuned choice; un-grouped CAM ($G=1$) is evaluated in Section~\ref{sec:ablation}.
 
 \subsubsection{Fixed Equal-Blend Routing}
 In our earlier study~\cite{zhong2026approxda}, a learnable per-channel gate $\mathbf{g} = \sigma(\mathbf{W}_g \operatorname{GAP}(\mathbf{x}))$ stayed at a near-uniform blend throughout training on Synapse (block means within $0.499$--$0.512$ over 300 epochs) and did not outperform single-branch routing. ApproxDA-TransUNet therefore fixes the gate to an equal blend:
 \begin{equation}
-    \mathbf{Y} = \mathbf{W}_f \left( 0.5 \cdot \mathbf{E}_{\text{PAM}} + 0.5 \cdot \mathbf{E}_{\text{CAM}} \right) \in \mathbb{R}^{C \times H \times W},
+    \mathbf{Y} = \mathbf{W}_f \left( 0.5 \cdot \hat{\mathbf{E}}_{\text{PAM}} + 0.5 \cdot \hat{\mathbf{E}}_{\text{CAM}} \right) \in \mathbb{R}^{C \times H \times W},
 \end{equation}
 where $\mathbf{W}_f$ consists of channel dropout ($p=0.05$), a $1 \times 1$ convolution back to $C$ channels, and ReLU, as in the DANet head; there is no outer residual connection.
 
@@ -117,45 +117,49 @@ Unlike the concatenation decoder of DA-TransUNet ($256 \to 128 \to 64 \to 16$ ch
 \begin{equation}
     \mathbf{D}_l = \operatorname{RB}\left(\operatorname{Upsample}_{2\times}(\mathbf{D}_{l-1}) + \operatorname{RB}(\mathbf{S}_l)\right) \in \mathbb{R}^{64 \times H_l \times W_l},
 \end{equation}
-where $\operatorname{RB}$ is a residual block of two $3 \times 3$ convolutions with batch normalization and a $1\times1$ shortcut. The full-resolution stage upsamples once more and applies two $3\times3$ convolutions with 16 channels, followed by a $1\times1$ segmentation head. The decoder without the skip blocks has 0.95M parameters (3.68 GFLOPs).
+where $\operatorname{RB}$ is a residual block of two $3 \times 3$ convolutions with batch normalization, whose shortcut is a $1\times1$ convolution when the number of channels changes and the identity otherwise. The full-resolution stage upsamples once more and applies two $3\times3$ convolutions with 16 channels, followed by a $3\times3$ convolutional segmentation head. The decoder without the skip blocks has 0.95M parameters (3.68 GFLOPs).
 
 \subsection{Computational Complexity and Parameter Breakdown}
 \label{sec:complexity}
 
 \begin{table*}[t]
 \centering
-\caption{Computational cost.}
+\caption{Model computational cost and efficiency.}
 \label{tab:arch_comparison}
 \resizebox{\textwidth}{!}{
-\begin{tabular}{lcccc}
+\begin{tabular}{lcccccc}
 \toprule
-\textbf{Component} & \multicolumn{2}{c}{\textbf{DA-TransUNet~\cite{sun2024datransunet}}} & \multicolumn{2}{c}{\textbf{ApproxDA-TransUNet (Ours)}} \\
-\cmidrule(lr){2-3} \cmidrule(lr){4-5}
-& \textbf{Params (M)} & \textbf{FLOPs (G)} & \textbf{Params (M)} & \textbf{FLOPs (G)} \\
+\textbf{Component} & \multicolumn{2}{c}{\textbf{TransUNet~\cite{chen2021transunet}}} & \multicolumn{2}{c}{\textbf{DA-TransUNet~\cite{sun2024datransunet}}} & \multicolumn{2}{c}{\textbf{Ours}} \\
+\cmidrule(lr){2-3} \cmidrule(lr){4-5} \cmidrule(lr){6-7}
+& \textbf{Params (M)} & \textbf{FLOPs (G)} & \textbf{Params (M)} & \textbf{FLOPs (G)} & \textbf{Params (M)} & \textbf{FLOPs (G)} \\
 \midrule
-\multicolumn{5}{l}{\textit{Parameters and FLOPs by component}} \\
-CNN stem & 11.90 (R50, 3 stages) & 3.96 & 1.45 (R50, 2 stages) & 1.83 \\
-Token embedding & 0.94 & 0.15 & -- & -- \\
-Bottleneck transformer & 85.06 (ViT-B/16) & 17.37 & 7.81 (LightViT-T) & 0.75 \\
-Dual-attention blocks & 2.68 (DANet heads) & 0.87 & 0.54 (4 ApproxDA blocks) & 0.60 \\
-Decoder (without attention blocks) & 7.39 & 7.78 & 0.95 & 3.68 \\
-Segmentation head & $<0.01$ & 0.07 & $<0.01$ & 0.07 \\
+\multicolumn{7}{l}{\textit{Parameters and FLOPs}} \\
+CNN stem & 11.90 & 3.96 & 11.90 (R50, 3 stages) & 3.96 & 1.45 (R50, 2 stages) & 1.83 \\
+Token embedding & 0.94 & 0.15 & 0.94 & 0.15 & -- & -- \\
+Transformer & 85.06 & 17.37 & 85.06 (ViT-B/16) & 17.37 & 7.81 (LightViT-T) & 0.75 \\
+Dual-attention blocks & -- & -- & 2.68 (DANet heads) & 0.87 & 0.54 (4 ApproxDA blocks) & 0.60 \\
+Decoder$^{\ast}$ & 7.39 & 7.78 & 7.39 & 7.78 & 0.95 & 3.68 \\
+Head & $<0.01$ & 0.07 & $<0.01$ & 0.07 & $<0.01$ & 0.07 \\
 \midrule
-\textbf{Total} & \textbf{107.95} & \textbf{30.21} & \textbf{10.75} & \textbf{6.92} \\
-\textbf{Relative} & 100\% & 100\% & \textbf{10.0\%} & \textbf{22.9\%} \\
+\textbf{Total} & 105.28 & 29.33 & 107.95 & 30.21 & \textbf{10.75} & \textbf{6.92} \\
+\textbf{Relative} & 97.5\% & 97.1\% & 100\% & 100\% & \textbf{10.0\%} & \textbf{22.9\%} \\
 \midrule
-\multicolumn{5}{l}{\textit{Measured on the GPU}} \\
-Peak training memory (batch 24) & \multicolumn{2}{c}{11.52 GiB} & \multicolumn{2}{c}{\textbf{4.85 GiB} ($-58\%$)} \\
-Peak inference memory (batch 1) & \multicolumn{2}{c}{2.59 GiB} & \multicolumn{2}{c}{\textbf{1.09 GiB} ($-58\%$)} \\
-Throughput, batch 32 (slices/s) & \multicolumn{2}{c}{555} & \multicolumn{2}{c}{\textbf{1415} ($2.55\times$)} \\
-Latency, batch 1 & \multicolumn{2}{c}{\textbf{6.5 ms}} & \multicolumn{2}{c}{9.6 ms} \\
+\multicolumn{7}{l}{\textit{GPU measurements}} \\
+Training memory & \multicolumn{2}{c}{8.22 GiB} & \multicolumn{2}{c}{11.52 GiB} & \multicolumn{2}{c}{\textbf{4.85 GiB} ($-58\%$)} \\
+Inference memory & \multicolumn{2}{c}{2.58 GiB} & \multicolumn{2}{c}{2.59 GiB} & \multicolumn{2}{c}{\textbf{1.09 GiB} ($-58\%$)} \\
+Throughput (slices/s) & \multicolumn{2}{c}{634} & \multicolumn{2}{c}{555} & \multicolumn{2}{c}{\textbf{1415} ($2.55\times$)} \\
+Latency & \multicolumn{2}{c}{\textbf{5.9 ms}} & \multicolumn{2}{c}{6.5 ms} & \multicolumn{2}{c}{10.0 ms} \\
 \bottomrule
 \end{tabular}
 }
-\par\vspace{3pt}\begin{minipage}{\linewidth}\footnotesize $224 \times 224$ input, 9 classes. Upper part: fvcore on CPU, attention matrix products included; DA-TransUNet instantiates three DANet heads per decoder stage but executes one, and its parameter count includes all of them. Lower part: NVIDIA RTX 5090, fp32, idle GPU; memory is the peak allocated by PyTorch, including weights and cuDNN workspace, with training at batch size 24 and SGD.\end{minipage}
+\begin{tablenotes}
+\item $224 \times 224$ input, 9 classes; Ours: ApproxDA-TransUNet. Relative values and changes in parentheses are with respect to DA-TransUNet.
+\item Parameters and FLOPs: fvcore on CPU, attention matrix products included. $^{\ast}$Without attention blocks. DA-TransUNet's count includes DANet heads that are built but never executed.
+\item GPU: RTX 5090, fp32; peak memory at batch size 24 for training (SGD) and 1 for inference; throughput at batch size 32; latency at batch size 1.
+\end{tablenotes}
 \end{table*}
 
-As detailed in the upper part of Table~\ref{tab:arch_comparison}, ApproxDA-TransUNet reduces the parameters from 107.95M to \textbf{10.75M} ($-90.0\%$) and the FLOPs from 30.21G to \textbf{6.92G} ($-77.1\%$). Most of the saving comes from replacing ViT-B/16 and from the slim decoder; the attention blocks themselves are a small part of either model. For high-resolution skip features ($112 \times 112$, $N = 12{,}544$), windowing ($M=28$) and low-rank projection ($r=32$) cut spatial affinity entries from $N^2 = 1.57 \times 10^8$ to $N \cdot r = 4.01 \times 10^5$ (a $392\times$ reduction). Channel grouping divides the size of the CAM affinity matrix by $G$, but CAM is already negligible after the $C/16$ compression.
+As detailed in the upper part of Table~\ref{tab:arch_comparison}, ApproxDA-TransUNet reduces the parameters from 107.95M to \textbf{10.75M} ($-90.0\%$) and the FLOPs from 30.21G to \textbf{6.92G} ($-77.1\%$). The table also traces the architectural lineage: DA-TransUNet adds dual attention to TransUNet at a small cost (2.7M parameters and 0.9 GFLOPs), and ApproxDA-TransUNet keeps the dual attention while removing most of the backbone cost. Most of the saving comes from replacing ViT-B/16 and from the slim decoder; the attention blocks themselves are a small part of every model. For high-resolution skip features ($112 \times 112$, $N = 12{,}544$), windowing ($M=28$) and low-rank projection ($r=32$) cut spatial affinity entries from $N^2 = 1.57 \times 10^8$ to $N \cdot r = 4.01 \times 10^5$ (a $392\times$ reduction). Channel grouping divides the size of the CAM affinity matrix by $G$, but CAM is already negligible after the $C/16$ compression.
 
 \subsection{Optimization Objective}
 All models are trained with a composite objective combining Cross-Entropy ($\mathcal{L}_{\text{CE}}$) and multi-class soft Dice loss ($\mathcal{L}_{\text{Dice}}$) with equal weighting:

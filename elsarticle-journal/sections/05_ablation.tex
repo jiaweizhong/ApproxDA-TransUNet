@@ -1,7 +1,7 @@
 \section{Ablation Studies}
 \label{sec:ablation}
 
-Single-axis ablations are run on Synapse with three seeds (1234, 0, 1). The reference is ApproxDA-TransUNet ($80.57 \pm 0.19\%$ Dice, HD95 $24.52$ voxels); each variant changes exactly one factor.
+Single-axis ablations are run on Synapse with three random seeds. The reference is ApproxDA-TransUNet ($80.57 \pm 0.19\%$ Dice, HD95 $24.52$ voxels); each variant changes exactly one factor.
 
 \begin{table*}[t]
 \centering
@@ -10,9 +10,9 @@ Single-axis ablations are run on Synapse with three seeds (1234, 0, 1). The refe
 \resizebox{\textwidth}{!}{
 \begin{tabular}{lccc}
 \toprule
-\textbf{Ablation Variant} & \textbf{Mean DSC (\%)} & \textbf{HD95} & \textbf{Paired Diff. ($p$)} \\
+\textbf{Variant} & \textbf{DSC (\%)}~$\uparrow$ & \textbf{HD95}~$\downarrow$ & \textbf{Paired Diff. ($p$)} \\
 \midrule
-\textbf{ApproxDA-TransUNet baseline} & \textbf{80.57 $\pm$ 0.19} & \textbf{24.52} & -- \\
+\textbf{Ours (baseline)} & \textbf{80.57 $\pm$ 0.19} & \textbf{24.52} & -- \\
 \midrule
 \multicolumn{4}{l}{\textit{Block presence and exact dual attention}} \\
 \quad w/o ApproxDA blocks & 77.82 $\pm$ 0.33 & 29.12 & $\mathbf{-2.76}$ (0.008) \\
@@ -40,7 +40,11 @@ Single-axis ablations are run on Synapse with three seeds (1234, 0, 1). The refe
 \bottomrule
 \end{tabular}
 }
-\par\vspace{3pt}\begin{minipage}{\linewidth}\footnotesize Seeds 1234 / 0 / 1, $224 \times 224$, 9 classes. Baseline: ApproxDA-TransUNet ($M=28$, $r=32$, $G=8$, $g=\frac{1}{2}$, LightViT-T, slim decoder). HD95 in voxels. Paired differences and $p$-values (paired $t$-test over three seeds, $n = 3$) are relative to the baseline.\end{minipage}
+\begin{tablenotes}
+\item Synapse, three random seeds, $224 \times 224$; HD95 in voxels.
+\item Baseline: Ours ($M=28$, $r=32$, $G=8$, $g=\frac{1}{2}$, LightViT-T, slim decoder).
+\item Paired differences and $p$-values (paired $t$-test, $n = 3$) are relative to the baseline.
+\end{tablenotes}
 \end{table*}
 
 \subsection{Dual-Attention Blocks and Their Approximation}

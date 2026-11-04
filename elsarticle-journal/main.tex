@@ -14,6 +14,9 @@
 \usepackage{placeins}
 \usepackage[hidelinks]{hyperref}
 
+%% Bulleted table notes
+\newenvironment{tablenotes}{\par\vspace{3pt}\begin{minipage}{\linewidth}\footnotesize\begin{list}{\textbullet}{\setlength{\leftmargin}{1em}\setlength{\itemsep}{0pt}\setlength{\parsep}{0pt}\setlength{\topsep}{0pt}}}{\end{list}\end{minipage}}
+
 \journal{Biomedical Signal Processing and Control}
 
 \begin{document}
@@ -41,7 +44,7 @@
             country={Country}}
 
 \begin{abstract}
-Dual-attention networks such as DA-TransUNet capture long-range spatial and channel dependencies for medical image segmentation, but the quadratic cost of attention and the heavy hybrid CNN-Transformer backbone around it make them expensive to train and deploy. We present \textbf{ApproxDA-TransUNet}, a lightweight dual-attention architecture that approximates both attention branches and slims the network around them. Each ApproxDA block combines windowed low-rank position attention with grouped channel attention, and the blocks refine the bottleneck and all skip connections of a network built from a truncated ResNet-50 stem, a compact LightViT transformer, and a slim decoder. Compared with DA-TransUNet, ApproxDA-TransUNet needs only ${\sim}10\%$ of the parameters, ${\sim}23\%$ of the FLOPs, and ${\sim}42\%$ of the GPU memory, while processing ${\sim}2.5\times$ more slices per second. On five benchmarks (CT, cardiac MRI, colonoscopy, dermoscopy, and fetal brain MRI; three seeds each), it attains a higher mean Dice than DA-TransUNet on every dataset, by $0.37$ points on average. Single-axis ablations on Synapse show that the dual-attention blocks matter (removing them lowers Dice by ${\sim}2.8$ points), whereas the approximation costs no accuracy: exact global dual attention yields the same Dice at ${\sim}14\%$ more FLOPs and $2\times$ the training time. With its small memory footprint and high throughput, ApproxDA-TransUNet makes dual-attention segmentation practical on the modest GPUs available in clinical settings and for high-volume, slice-by-slice processing of volumetric scans.
+Attention-based U-Net architectures such as TransUNet and DA-TransUNet obtain global context from Transformer encoders and attention modules with quadratic cost, which makes them expensive to train and deploy. Taking DA-TransUNet, which combines a Transformer encoder with spatial and channel (dual) attention, as a representative case, we present \textbf{ApproxDA-TransUNet}, a lightweight dual-attention architecture that approximates the attention and slims the network around it. Each ApproxDA block combines windowed low-rank position attention with grouped channel attention, and the blocks refine the bottleneck and all skip connections of a network built from a truncated ResNet-50 stem, a compact LightViT transformer, and a slim decoder. Compared with DA-TransUNet, ApproxDA-TransUNet needs only ${\sim}10\%$ of the parameters, ${\sim}23\%$ of the FLOPs, and ${\sim}42\%$ of the GPU memory, while processing ${\sim}2.5\times$ more slices per second. On five benchmarks (CT, cardiac MRI, colonoscopy, dermoscopy, and fetal brain MRI; three random seeds each), it attains a higher mean Dice than DA-TransUNet on every dataset, by $0.37$ points on average. Single-axis ablations on Synapse show that the dual-attention blocks matter (removing them lowers Dice by ${\sim}2.8$ points), whereas the approximation costs no accuracy: exact global dual attention yields the same Dice at ${\sim}14\%$ more FLOPs and $2\times$ the training time. Its small memory footprint and high throughput make dual-attention segmentation practical on modest clinical GPUs and for high-volume, slice-by-slice processing of volumetric scans.
 \end{abstract}
 
 \begin{keyword}

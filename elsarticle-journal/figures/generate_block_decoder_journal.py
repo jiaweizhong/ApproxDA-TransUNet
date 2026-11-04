@@ -101,7 +101,7 @@ cx, sx = RX + 1.62, RX + 0.38
 Y1, Y2, YS = 1.86, 1.16, 0.50
 box(ax, cx, Y1, 1.36, 0.42, C_DEC, "3×3 · BN · ReLU", fs=10.5)
 box(ax, cx, Y2, 1.36, 0.42, C_DEC, "3×3 · BN", fs=10.5)
-box(ax, sx, (Y1 + Y2) / 2, 0.52, 0.42, C_IO, "1×1", sublabel="", fs=10.5)
+box(ax, sx, (Y1 + Y2) / 2, 0.62, 0.42, C_IO, "1×1/id", sublabel="", fs=9.5)
 add_circle(ax, cx, YS, r=0.14)
 note(ax, cx + 0.22, YS, "ReLU", ha="left", fs=10.5, style="normal")
 note(ax, RX + 0.16, 2.22, "in", ha="left", fs=11)

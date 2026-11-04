@@ -4,10 +4,10 @@
 This section details the experimental protocol on five clinical benchmarks, compares ApproxDA-TransUNet on each benchmark with published or reproduced baselines and with DA-TransUNet retrained under the same protocol, summarizes the paired comparison across datasets, and shows qualitative results.
 
 \subsection{Experimental Setup and Benchmark Datasets}
-Models are evaluated across \textbf{five clinical benchmarks} spanning four distinct imaging modalities under a strict \textbf{three-seed protocol} (seeds: 1234, 0, 1):
+Models are evaluated across \textbf{five clinical benchmarks} spanning four distinct imaging modalities under a strict \textbf{three-seed protocol} (three random seeds per model and dataset):
 \begin{enumerate}
-    \item \textbf{Synapse Multi-Organ CT}~\cite{landman2015miccai}: 30 volumetric abdominal CT scans (18 train, 12 test; 2211 slices) covering 8 abdominal organs (aorta, gallbladder, left/right kidneys, liver, pancreas, spleen, stomach), trained for 300 epochs at $224 \times 224$ and evaluated with Dice (\%) and HD95 in voxels (the TransUNet evaluation code, without voxel spacing).
-    \item \textbf{ACDC Cardiac Cine-MRI}~\cite{bernard2018deep}: 100 patient exams (40 end-diastolic/systolic 3D test volumes) targeting right ventricle, myocardium, and left ventricle, trained for 300 epochs at $224 \times 224$ and evaluated with Dice (\%).
+    \item \textbf{Synapse Multi-Organ CT}~\cite{landman2015miccai}: 30 volumetric abdominal CT scans (18 train, 12 test; 2211 training slices) covering 8 abdominal organs (aorta, gallbladder, left/right kidneys, liver, pancreas, spleen, stomach), trained for 300 epochs at $224 \times 224$ and evaluated with Dice (\%) and HD95 in voxels (the TransUNet evaluation code, without voxel spacing).
+    \item \textbf{ACDC Cardiac Cine-MRI}~\cite{bernard2018deep}: 100 patient exams (40 end-diastolic and end-systolic 3D test volumes) targeting right ventricle, myocardium, and left ventricle, trained for 300 epochs at $224 \times 224$ and evaluated with Dice (\%).
     \item \textbf{CVC-ClinicDB Colonoscopy}~\cite{bernal2015cvc}: 612 colonoscopy frames (75/25 split) for binary polyp segmentation, trained with Adam ($10^{-3}$) for 500 epochs at $256 \times 256$, evaluated with Dice (\%) and IoU (\%).
     \item \textbf{ISIC 2018 Dermoscopy}~\cite{codella2019isic}: 2594 dermoscopic images (75/25 split) for binary skin-lesion segmentation, trained with SGD for 50 epochs at $256 \times 256$, evaluated with Dice (\%) and IoU (\%).
     \item \textbf{FeTA 2.4 Fetal Brain MRI}~\cite{payette2021feta}: 80 reconstructed T2-weighted fetal brain MRI volumes under the standard EffiDec3D split (64 train, 8 val, 8 test) across 7 brain tissues (eCSF, GM, WM, LV, CBM, SGM, BS), trained for 61 epochs at $224 \times 224$ and evaluated with Dice (\%) and HD95 (mm, using each subject's voxel spacing).
@@ -46,11 +46,15 @@ DA-TransUNet~\cite{sun2024datransunet} & 79.80 & \underline{23.48} & 86.54 & 65.
 \midrule
 \multicolumn{11}{l}{\textit{Retrained in this work (three seeds)}} \\
 DA-TransUNet~\cite{sun2024datransunet} & \underline{80.26 $\pm$ 0.66} & 23.49 & 85.84 & 63.32 & \textbf{83.29} & \textbf{80.64} & \textbf{94.89} & \underline{62.41} & \underline{90.48} & \textbf{81.16} \\
-\textbf{ApproxDA-TransUNet (Ours)} & \textbf{80.57 $\pm$ 0.19} & 24.52 & 88.13 & 66.23 & 82.04 & 79.88 & \underline{94.67} & \textbf{63.36} & 89.19 & \underline{81.08} \\
+\textbf{Ours} & \textbf{80.57 $\pm$ 0.19} & 24.52 & 88.13 & 66.23 & 82.04 & 79.88 & \underline{94.67} & \textbf{63.36} & 89.19 & \underline{81.08} \\
 \bottomrule
 \end{tabular}
 }
-\par\vspace{3pt}\begin{minipage}{\linewidth}\footnotesize Reported values as compiled by Sun et al.~\cite{sun2024datransunet} (single runs). Retrained: three seeds (1234 / 0 / 1), final epoch; DSC as mean $\pm$ standard deviation, per-organ DSC as three-seed means. HD95 in voxels (TransUNet evaluation code, without voxel spacing). Bold: best; underlined: second best.\end{minipage}
+\begin{tablenotes}
+\item Reported: values compiled by Sun et al.~\cite{sun2024datransunet} (single runs).
+\item Retrained: three random seeds, final epoch; DSC as mean $\pm$ standard deviation, per-organ DSC as three-seed means.
+\item HD95 in voxels (TransUNet evaluation code, without voxel spacing). Bold: best; underlined: second best.
+\end{tablenotes}
 \end{table*}
 
 \paragraph{Synapse} ApproxDA-TransUNet reaches $80.57 \pm 0.19\%$ Dice (Table~\ref{tab:synapse}), above all reported values, including those of DA-TransUNet ($79.80\%$) and Swin-Unet ($79.13\%$). Our retrained DA-TransUNet reaches $80.26\%$, close to its reported $79.80\%$, which supports the fairness of our training setup. Against it, ApproxDA-TransUNet is $0.32$ points higher ($p = 0.43$) with a smaller seed standard deviation ($0.19$ vs.\ $0.66$). The gain comes from the aorta ($+2.29$), gallbladder ($+2.91$), and pancreas ($+0.95$), whereas both kidneys ($-1.26$, $-0.76$) and the spleen ($-1.29$) are lower. HD95 is $24.52$ voxels, against $23.49$ for the retrained DA-TransUNet and $21.55$ reported for Swin-Unet.
@@ -75,11 +79,15 @@ Swin-Unet~\cite{cao2022swinunet} & 90.00 & 88.55 & 85.62 & \textbf{95.83} \\
 \midrule
 \multicolumn{5}{l}{\textit{Retrained in this work (three seeds)}} \\
 DA-TransUNet~\cite{sun2024datransunet} & \underline{90.94 $\pm$ 0.24} & \underline{88.89} & \underline{88.53} & 95.38 \\
-\textbf{ApproxDA-TransUNet (Ours)} & \textbf{91.08 $\pm$ 0.12} & \textbf{89.06} & \textbf{88.65} & 95.54 \\
+\textbf{Ours} & \textbf{91.08 $\pm$ 0.12} & \textbf{89.06} & \textbf{88.65} & 95.54 \\
 \bottomrule
 \end{tabular}
 }
-\par\vspace{3pt}\begin{minipage}{\linewidth}\footnotesize Reported values from Cao et al.~\cite{cao2022swinunet}; $^{\dagger}$ResNet-50 encoder variants. Retrained: as in Table~\ref{tab:synapse}. RV: right ventricle; Myo: myocardium; LV: left ventricle.\end{minipage}
+\begin{tablenotes}
+\item Reported: values from Cao et al.~\cite{cao2022swinunet}; $^{\dagger}$ResNet-50 encoder variants.
+\item Retrained and highlighting: as in Table~\ref{tab:synapse}.
+\item RV: right ventricle; Myo: myocardium; LV: left ventricle.
+\end{tablenotes}
 \end{table}
 
 \paragraph{ACDC} ApproxDA-TransUNet reaches $91.08 \pm 0.12\%$ Dice (Table~\ref{tab:acdc}), above the values reported for Swin-Unet ($90.00\%$) and TransUNet ($89.71\%$). Against the retrained DA-TransUNet it is $0.15$ points higher ($p = 0.55$), with all three structures slightly higher ($+0.12$ to $+0.16$).
@@ -106,11 +114,14 @@ DA-TransUNet~\cite{sun2024datransunet} & \underline{89.47} & 82.51 & \textbf{88.
 \midrule
 \multicolumn{5}{l}{\textit{Retrained in this work (three seeds)}} \\
 DA-TransUNet~\cite{sun2024datransunet} & \underline{89.47 $\pm$ 0.23} & \underline{84.55} & 88.30 $\pm$ 0.20 & 81.54 \\
-\textbf{ApproxDA-TransUNet (Ours)} & \textbf{89.88 $\pm$ 0.48} & \textbf{85.19} & 88.51 $\pm$ 0.28 & 81.63 \\
+\textbf{Ours} & \textbf{89.88 $\pm$ 0.48} & \textbf{85.19} & 88.51 $\pm$ 0.28 & 81.63 \\
 \bottomrule
 \end{tabular}
 }
-\par\vspace{3pt}\begin{minipage}{\linewidth}\footnotesize Reported values from Table~2 of Sun et al.~\cite{sun2024datransunet}, obtained on random 75/25 splits that were not released; our 75/25 splits differ, so the comparison with these rows is indicative only. Retrained: as in Table~\ref{tab:synapse}.\end{minipage}
+\begin{tablenotes}
+\item Reported: Table~2 of Sun et al.~\cite{sun2024datransunet}, on unreleased random 75/25 splits; our splits differ, so these rows are indicative only.
+\item Retrained and highlighting: as in Table~\ref{tab:synapse}.
+\end{tablenotes}
 \end{table*}
 
 \paragraph{CVC-ClinicDB and ISIC 2018} On CVC-ClinicDB (Table~\ref{tab:binary}), ApproxDA-TransUNet reaches $89.88\%$ Dice and $85.19\%$ IoU against $89.47\%$ and $84.55\%$ for the retrained DA-TransUNet ($+0.41$ Dice, $p = 0.20$). On ISIC 2018 it is $0.20$ points higher ($88.51\%$ vs.\ $88.30\%$, $p = 0.29$), with similar IoU ($81.63\%$ vs.\ $81.54\%$). Both retrained models are slightly below the ISIC 2018 values reported for TransUNet and DA-TransUNet, which were obtained on a different split.
@@ -135,11 +146,15 @@ Swin-Unet~\cite{cao2022swinunet} & 78.60 $\pm$ 0.46 & 2.60 & 74.13 & 68.63 & 83.
 \midrule
 \multicolumn{10}{l}{\textit{Retrained in this work (three seeds)}} \\
 DA-TransUNet~\cite{sun2024datransunet} & 80.26 $\pm$ 0.66 & 2.17 & 73.86 & \underline{68.70} & 85.25 & 87.43 & 81.89 & 84.07 & \underline{80.60} \\
-\textbf{ApproxDA-TransUNet (Ours)} & \underline{81.05 $\pm$ 0.63} & 2.85 & \textbf{75.53} & \textbf{71.29} & \textbf{87.91} & \underline{87.93} & 81.76 & 83.69 & 79.25 \\
+\textbf{Ours} & \underline{81.05 $\pm$ 0.63} & 2.85 & \textbf{75.53} & \textbf{71.29} & \textbf{87.91} & \underline{87.93} & 81.76 & 83.69 & 79.25 \\
 \bottomrule
 \end{tabular}
 }
-\par\vspace{3pt}\begin{minipage}{\linewidth}\footnotesize All models trained under the same protocol (Swin-Unet with its official learning rate of 0.05): three seeds (1234 / 0 / 1), final epoch; DSC as mean $\pm$ standard deviation, per-tissue DSC as three-seed means. Test set of 8 subjects; HD95 in millimeters. eCSF: external cerebrospinal fluid; GM: grey matter; WM: white matter; LV: lateral ventricles; CBM: cerebellum; SGM: deep grey matter; BS: brainstem.\end{minipage}
+\begin{tablenotes}
+\item All models trained by us under the same protocol (Swin-Unet with its official learning rate of 0.05); three seeds, final epoch; DSC as mean $\pm$ standard deviation, per-tissue DSC as three-seed means.
+\item Test set of 8 subjects; HD95 in millimeters. Highlighting as in Table~\ref{tab:synapse}.
+\item eCSF: external cerebrospinal fluid; GM: grey matter; WM: white matter; LV: lateral ventricles; CBM: cerebellum; SGM: deep grey matter; BS: brainstem.
+\end{tablenotes}
 \end{table*}
 
 \paragraph{FeTA 2.4} Table~\ref{tab:feta} places ApproxDA-TransUNet among six 2D models trained under the same protocol:
@@ -156,7 +171,7 @@ The higher HD95 of ApproxDA-TransUNet on FeTA comes from a single subject, \text
 \subsection{Paired Comparison Across Datasets}
 \label{sec:cross_dataset}
 
-Across the five benchmarks, the three-seed mean Dice of ApproxDA-TransUNet is higher than that of the retrained DA-TransUNet on all five datasets. The per-seed differences (seeds 1234 / 0 / 1) are $+0.87$ / $-0.26$ / $+0.34$ points on Synapse, $+0.55$ / $-0.004$ / $-0.11$ on ACDC, $+0.60$ / $-0.03$ / $+0.65$ on CVC-ClinicDB, $+0.35$ / $+0.33$ / $-0.08$ on ISIC 2018, and $+0.73$ / $+1.47$ / $+0.19$ on FeTA 2.4: 10 of the 15 seed pairs are positive, and the average gain is $+0.37$ points. None of the per-dataset differences is significant with three seeds. Because the three seeds of a dataset are not independent experiments, we treat the five datasets as the independent experimental units: the mean dataset-level gain is $+0.37$ points (one-sample $t$-test across the five dataset means, $p = 0.031$), and a hierarchical bootstrap that resamples datasets and then seeds yields a 95\% interval of $[0.13, 0.68]$ points. With only five datasets these estimates are themselves uncertain, and we read them as evidence that accuracy is retained rather than as a claim of superiority. HD95, reported for Synapse and FeTA 2.4, does not follow the Dice trend: it is higher than DA-TransUNet's on both (significantly only on FeTA, $p = 0.04$, where the difference comes from sub-052).
+Across the five benchmarks, the three-seed mean Dice of ApproxDA-TransUNet is higher than that of the retrained DA-TransUNet on all five datasets. The per-seed differences (first / second / third seed) are $+0.87$ / $-0.26$ / $+0.34$ points on Synapse, $+0.55$ / $-0.004$ / $-0.11$ on ACDC, $+0.60$ / $-0.03$ / $+0.65$ on CVC-ClinicDB, $+0.35$ / $+0.33$ / $-0.08$ on ISIC 2018, and $+0.73$ / $+1.47$ / $+0.19$ on FeTA 2.4: 10 of the 15 seed pairs are positive, and the average gain is $+0.37$ points. None of the per-dataset differences is significant with three seeds. Because the three seeds of a dataset are not independent experiments, we treat the five datasets as the independent experimental units: the mean dataset-level gain is $+0.37$ points (one-sample $t$-test across the five dataset means, $p = 0.031$), and a hierarchical bootstrap that resamples datasets and then seeds yields a 95\% interval of $[0.13, 0.68]$ points. With only five datasets these estimates are themselves uncertain, and we read them as evidence that accuracy is retained rather than as a claim of superiority. HD95, reported for Synapse and FeTA 2.4, does not follow the Dice trend: it is higher than DA-TransUNet's on both (significantly only on FeTA, $p = 0.04$, where the difference comes from sub-052).
 
 \subsection{Qualitative Visual Evaluation}
 
@@ -167,4 +182,4 @@ Across the five benchmarks, the three-seed mean Dice of ApproxDA-TransUNet is hi
 \label{fig:qualitative_visual}
 \end{figure*}
 
-Figure~\ref{fig:qualitative_visual} shows, for each dataset, an example where ApproxDA-TransUNet improves on DA-TransUNet (seed 1234, final epoch). Among the test images and volume slices whose ground truth contains at least half of the dataset's classes and covers at least $1\%$ of the image, and on which both models reach a Dice of at least $0.5$, we show the one with the largest gain; FeTA subject sub-052 is excluded (Section~\ref{sec:main_results}). Panels are cropped to the annotated region, and the Dice of the displayed slice or image is given on each prediction. ApproxDA-TransUNet segments large lesions more completely (CVC-ClinicDB, ISIC 2018) and confuses neighbouring structures less often (ACDC, FeTA 2.4); on Synapse, the gain comes from the small organs. Average differences over all test cases are given in Tables~\ref{tab:synapse}--\ref{tab:feta}.
+Figure~\ref{fig:qualitative_visual} shows, for each dataset, an example where ApproxDA-TransUNet improves on DA-TransUNet (first seed, final epoch). Among the test images and volume slices whose ground truth contains at least half of the dataset's classes and covers at least $1\%$ of the image, and on which both models reach a Dice of at least $0.5$, we show the one with the largest gain; FeTA subject sub-052 is excluded (Section~\ref{sec:main_results}). Panels are cropped to the annotated region, and the Dice of the displayed slice or image is given on each prediction. ApproxDA-TransUNet segments large lesions more completely (CVC-ClinicDB, ISIC 2018) and confuses neighbouring structures less often (ACDC, FeTA 2.4); on Synapse, the gain comes from the small organs. Average differences over all test cases are given in Tables~\ref{tab:synapse}--\ref{tab:feta}.
